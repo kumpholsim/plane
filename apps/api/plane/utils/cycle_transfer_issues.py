@@ -431,14 +431,22 @@ def transfer_cycle_issues(
     }
     current_cycle.save(update_fields=["progress_snapshot"])
 
-    # Get issues to transfer (only incomplete issues)
-    cycle_issues = CycleIssue.objects.filter(
+    # Get issues to transfer (hierarchy fully-done rule + classic incomplete)
+    from plane.utils.hierarchy_status import issue_ids_to_transfer_from_cycle
+
+    cycle_issues_qs = CycleIssue.objects.filter(
         cycle_id=cycle_id,
         project_id=project_id,
         workspace__slug=slug,
         issue__archived_at__isnull=True,
         issue__is_draft=False,
-        issue__state__group__in=["backlog", "unstarted", "started"],
+    )
+    transfer_issue_ids = issue_ids_to_transfer_from_cycle(cycle_issues_qs)
+    cycle_issues = CycleIssue.objects.filter(
+        cycle_id=cycle_id,
+        project_id=project_id,
+        workspace__slug=slug,
+        issue_id__in=transfer_issue_ids,
     )
 
     updated_cycles = []

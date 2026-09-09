@@ -29,7 +29,7 @@ import { SingleSelectFilterValueInput } from "./select/single";
 export const FilterValueInput = observer(function FilterValueInput<P extends TFilterProperty, V extends TFilterValue>(
   props: TFilterValueInputProps<P, V>
 ) {
-  const { condition, filterFieldConfig, isDisabled = false, onChange } = props;
+  const { condition, filterFieldConfig, isDisabled = false, openOnEmpty = true, onChange } = props;
 
   // Single select input
   if (filterFieldConfig?.type === FILTER_FIELD_TYPE.SINGLE_SELECT) {
@@ -38,6 +38,7 @@ export const FilterValueInput = observer(function FilterValueInput<P extends TFi
         config={filterFieldConfig as TSingleSelectFilterFieldConfig<string>}
         condition={condition as TFilterConditionNodeForDisplay<P, string>}
         isDisabled={isDisabled}
+        openOnEmpty={openOnEmpty}
         onChange={(value) => onChange(value as SingleOrArray<V>)}
       />
     );
@@ -50,6 +51,7 @@ export const FilterValueInput = observer(function FilterValueInput<P extends TFi
         config={filterFieldConfig as TMultiSelectFilterFieldConfig<string>}
         condition={condition as TFilterConditionNode<P, string>}
         isDisabled={isDisabled}
+        openOnEmpty={openOnEmpty}
         onChange={(value) => onChange(value as SingleOrArray<V>)}
       />
     );

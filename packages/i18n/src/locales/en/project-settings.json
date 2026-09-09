@@ -55,6 +55,11 @@
         "error": "Error while updating the label"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Sub-task",
+      "heading": "Sub-task",
+      "description": "Organize sub-tasks by role such as Design, Dev, and QA. Drag to reorder or delete unused categories."
+    },
     "estimates": {
       "heading": "Estimates",
       "description": "Set up estimation systems to track and communicate the effort required for each work item.",

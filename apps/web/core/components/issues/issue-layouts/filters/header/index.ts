@@ -9,3 +9,4 @@ export * from "./filters";
 export * from "./helpers";
 export * from "./layout-selection";
 export * from "./mobile-layout-selection";
+export { GroupExpandCollapseControls } from "@/components/issues/issue-layouts/expand-collapse";

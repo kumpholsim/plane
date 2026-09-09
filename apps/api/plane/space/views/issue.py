@@ -164,6 +164,7 @@ class ProjectIssuesPublicEndpoint(BaseAPIView):
                             slug=slug,
                             project_id=project_id,
                             filters=filters,
+                            for_subgroup=True,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,

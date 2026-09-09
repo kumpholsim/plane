@@ -17,20 +17,28 @@ import { useOutsideClickDetector } from "@plane/hooks";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TIssue, IIssueDisplayProperties, IIssueMap } from "@plane/types";
-import { EIssueServiceType } from "@plane/types";
+import { EIssueServiceType, EIssuesStoreType } from "@plane/types";
 // ui
 import { ControlLink, DropIndicator } from "@plane/ui";
 import { cn, generateWorkItemLink } from "@plane/utils";
 // components
 import RenderIfVisible from "@/components/core/render-if-visible-HOC";
+import { EstimateDropdown } from "@/components/dropdowns/estimate";
+import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
 import { HIGHLIGHT_CLASS, getIssueBlockId } from "@/components/issues/issue-layouts/utils";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
+import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 // hooks
+import { useProjectEstimates } from "@/hooks/store/estimates";
+import { useEstimate } from "@/hooks/store/estimates/use-estimate";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useKanbanView } from "@/hooks/store/use-kanban-view";
 import { useProject } from "@/hooks/store/use-project";
+import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-redirection";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+import { useTranslation } from "@plane/i18n";
 // local components
 import type { TRenderQuickActions } from "../list/list-view-types";
 import { IssueProperties } from "../properties/all-properties";
@@ -60,16 +68,120 @@ interface IssueDetailsBlockProps {
   quickActions: TRenderQuickActions;
   isReadOnly: boolean;
   isEpic?: boolean;
+  isCompact?: boolean;
 }
 
+const KanbanCardFooter = observer(function KanbanCardFooter(props: {
+  issue: TIssue;
+  displayProperties: IIssueDisplayProperties | undefined;
+  updateIssue: IssueDetailsBlockProps["updateIssue"];
+  isReadOnly: boolean;
+}) {
+  const { issue, displayProperties, updateIssue, isReadOnly } = props;
+  const { t } = useTranslation();
+  const { isMobile } = usePlatformOS();
+  const { getProjectById } = useProject();
+  const { areEstimateEnabledByProjectId, currentActiveEstimateIdByProjectId, estimates } = useProjectEstimates();
+  const projectDetails = issue.project_id ? getProjectById(issue.project_id) : undefined;
+  const activeEstimateId =
+    projectDetails?.estimate ?? (issue.project_id ? currentActiveEstimateIdByProjectId(issue.project_id) : undefined);
+  const { estimatePointById } = useEstimate(activeEstimateId ?? undefined);
+
+  const estimatePointId = issue.estimate_point ?? undefined;
+  const selectedEstimate = estimatePointId
+    ? (estimatePointById?.(estimatePointId) ??
+      Object.values(estimates ?? {})
+        .map((estimate) => estimate.estimatePointById?.(estimatePointId))
+        .find(Boolean))
+    : undefined;
+  const estimateDisplayValue = selectedEstimate?.value;
+  const hasEstimateValue = Boolean(estimatePointId);
+
+  const showAssignee = Boolean(displayProperties?.assignee && issue.project_id);
+  const showEstimate =
+    Boolean(displayProperties?.estimate && issue.project_id) &&
+    Boolean(issue.project_id && areEstimateEnabledByProjectId(issue.project_id));
+
+  if (!showAssignee && !showEstimate) return null;
+
+  const handleEstimate = async (value: string | undefined) => {
+    if (updateIssue) await updateIssue(issue.project_id, issue.id, { estimate_point: value });
+  };
+
+  const handleAssignee = async (ids: string[]) => {
+    if (updateIssue) await updateIssue(issue.project_id, issue.id, { assignee_ids: ids });
+  };
+
+  // oxlint-disable-next-line unicorn/consistent-function-scoping
+  const stopPropagation = (e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
+
+  return (
+    // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
+    <div
+      className="absolute inset-x-0 bottom-0 z-[1] flex items-center gap-2"
+      onFocus={stopPropagation}
+      onClick={stopPropagation}
+    >
+      {showAssignee && issue.project_id && (
+        <div className="min-w-0 shrink">
+          <MemberDropdown
+            projectId={issue.project_id}
+            value={issue.assignee_ids}
+            onChange={handleAssignee}
+            disabled={isReadOnly}
+            multiple
+            buttonVariant={issue.assignee_ids?.length > 0 ? "transparent-without-text" : "border-without-text"}
+            buttonClassName={issue.assignee_ids?.length > 0 ? "hover:bg-transparent px-0" : ""}
+            showTooltip={issue.assignee_ids?.length === 0}
+            placeholder={t("common.assignees")}
+            optionsClassName="z-10"
+            tooltipContent=""
+            renderByDefault={isMobile}
+          />
+        </div>
+      )}
+
+      {showEstimate && issue.project_id && (
+        <div className="ml-auto shrink-0">
+          <EstimateDropdown
+            value={estimatePointId}
+            onChange={handleEstimate}
+            projectId={issue.project_id}
+            disabled={isReadOnly}
+            buttonVariant="transparent-without-text"
+            button={
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-subtle px-1.5 text-11 font-semibold text-secondary">
+                {estimateDisplayValue || (hasEstimateValue ? "…" : "–")}
+              </span>
+            }
+          />
+        </div>
+      )}
+    </div>
+  );
+});
+
 const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props: IssueDetailsBlockProps) {
-  const { cardRef, issue, updateIssue, quickActions, isReadOnly, displayProperties, isEpic = false } = props;
+  const {
+    cardRef,
+    issue,
+    updateIssue,
+    quickActions,
+    isReadOnly,
+    displayProperties,
+    isEpic = false,
+    isCompact = false,
+  } = props;
   // refs
   const menuActionRef = useRef<HTMLDivElement | null>(null);
   // states
   const [isMenuActive, setIsMenuActive] = useState(false);
   // hooks
   const { isMobile } = usePlatformOS();
+  const showCardFooter = Boolean(displayProperties?.assignee || displayProperties?.estimate);
 
   const customActionButton = (
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
@@ -93,8 +205,8 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
   useOutsideClickDetector(menuActionRef, () => setIsMenuActive(false));
 
   return (
-    <>
-      <div className="relative">
+    <div className={cn("relative", showCardFooter ? "pb-6" : undefined)}>
+      <div className={cn("relative flex items-center gap-1.5")}>
         {issue.project_id && (
           <IssueIdentifier
             issueId={issue.id}
@@ -104,6 +216,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
             displayProperties={displayProperties}
           />
         )}
+        <HierarchyTypeBadge issue={issue} disabled={isReadOnly} updateIssue={updateIssue} />
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
         <div
           className={cn("absolute -top-1 right-0", {
@@ -127,7 +240,10 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
       </Tooltip>
 
       <IssueProperties
-        className="flex flex-wrap items-center gap-2 pt-1.5 whitespace-nowrap text-tertiary"
+        className={cn(
+          "flex flex-wrap items-center whitespace-nowrap text-tertiary",
+          isCompact ? "gap-1.5 pt-1" : "gap-2 pt-1.5"
+        )}
         issue={issue}
         displayProperties={displayProperties}
         activeLayout="Kanban"
@@ -135,7 +251,14 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
         isReadOnly={isReadOnly}
         isEpic={isEpic}
       />
-    </>
+
+      <KanbanCardFooter
+        issue={issue}
+        displayProperties={displayProperties}
+        updateIssue={updateIssue}
+        isReadOnly={isReadOnly}
+      />
+    </div>
   );
 });
 
@@ -161,6 +284,8 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
   const { workspaceSlug: routerWorkspaceSlug } = useParams();
   const workspaceSlug = routerWorkspaceSlug?.toString();
   // hooks
+  const storeType = useIssueStoreType();
+  const isCompact = storeType === EIssuesStoreType.CYCLE;
   const { getProjectIdentifierById } = useProject();
   const { getIsIssuePeeked } = useIssueDetail(isEpic ? EIssueServiceType.EPICS : EIssueServiceType.ISSUES);
   const { handleRedirection } = useIssuePeekOverviewRedirection(isEpic);
@@ -237,13 +362,17 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
 
   if (!issue) return null;
 
+  const shouldHighlightCycleDoneCard = isCompact && isFullyDoneL3ForCycleHighlight(issue, issuesMap);
+
   return (
     <>
       <DropIndicator isVisible={!isCurrentBlockDragging && isDraggingOverBlock} />
       <div
         id={`issue-${issueId}`}
         // make Z-index higher at the beginning of drag, to have a issue drag image of issue block without any overlaps
-        className={cn("group/kanban-block relative mb-2", { "z-[1]": isCurrentBlockDragging })}
+        className={cn("group/kanban-block relative", isCompact ? "mb-1.5" : "mb-2", {
+          "z-[1]": isCurrentBlockDragging,
+        })}
         onDragStart={() => {
           if (isDragAllowed) setIsCurrentBlockDragging(true);
           else {
@@ -262,18 +391,22 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
           href={workItemLink}
           ref={cardRef}
           className={cn(
-            "block w-full rounded-lg border border-subtle bg-layer-2 p-3 text-13 shadow-raised-100 outline-[0.5px] outline-transparent transition-all hover:border-strong hover:shadow-raised-200",
+            "block w-full rounded-lg border border-subtle bg-layer-2 text-13 shadow-raised-100 outline-[0.5px] outline-transparent transition-all hover:border-strong hover:shadow-raised-200",
+            isCompact ? "p-2" : "p-3",
             { "hover:cursor-pointer": isDragAllowed },
             { "border border-accent-strong hover:border-accent-strong": getIsIssuePeeked(issue.id) },
-            { "z-[100] bg-layer-1": isCurrentBlockDragging }
+            { "z-[100] bg-layer-1": isCurrentBlockDragging },
+            {
+              "border-success-subtle bg-success-subtle hover:border-success-strong": shouldHighlightCycleDoneCard,
+            }
           )}
           onClick={() => handleIssuePeekOverview(issue)}
           disabled={!!issue?.tempId}
         >
           <RenderIfVisible
-            classNames="space-y-2"
+            classNames={isCompact ? "space-y-1.5" : "space-y-2"}
             root={scrollableContainerRef}
-            defaultHeight="100px"
+            defaultHeight={isCompact ? "80px" : "100px"}
             horizontalOffset={100}
             verticalOffset={200}
             defaultValue={shouldRenderByDefault}
@@ -286,6 +419,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
               quickActions={quickActions}
               isReadOnly={!canEditIssueProperties}
               isEpic={isEpic}
+              isCompact={isCompact}
             />
           </RenderIfVisible>
         </ControlLink>

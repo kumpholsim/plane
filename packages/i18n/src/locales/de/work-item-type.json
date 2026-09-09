@@ -439,7 +439,7 @@
       "content": {
         "intro": "Der Arbeitselement-Typ „{workItemTypeName}“ umfasst:",
         "parent_items": "{count, plural, one {# übergeordnete Verknüpfung wird} other {# übergeordnete Verknüpfungen werden}} entfernt.",
-        "child_items": "{count, plural, one {Unterarbeitselement} other {Unterarbeitselemente}}",
+        "child_items": "{count, plural, one {Unteraufgabe} other {Unteraufgaben}}",
         "parent_line_suffix_when_also_children": ", und ",
         "footer": "Diese Änderung entfernt übergeordnete und untergeordnete Beziehungen bei vorhandenen Arbeitselementen des Typs {workItemTypeName}."
       },

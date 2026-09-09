@@ -439,7 +439,7 @@
       "content": {
         "intro": "Typ pracovnej položky {workItemTypeName} obsahuje:",
         "parent_items": "{count, plural, one {Bude odstránené # nadradené prepojenie} few {Budú odstránené # nadradené prepojenia} other {Bude odstránených # nadradených prepojení}}.",
-        "child_items": "{count, plural, one {podradenú pracovnú položku} few {podradené pracovné položky} other {podradených pracovných položiek}}",
+        "child_items": "{count, plural, one {čiastková úloha} few {čiastkové úlohy} many {čiastkových úloh} other {čiastkových úloh}}",
         "parent_line_suffix_when_also_children": ", a ",
         "footer": "Táto zmena odstráni nadradené a podradené vzťahy u existujúcich pracovných položiek typu {workItemTypeName}."
       },

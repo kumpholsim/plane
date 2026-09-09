@@ -19,11 +19,13 @@
       "start_date": "시작 날짜 추가",
       "due_date": "마감일 추가",
       "parent": "상위 작업 항목 추가",
-      "sub_issue": "하위 작업 항목 추가",
+      "sub_issue": "하위 작업 추가",
       "dependency": "종속성 추가",
       "relation": "관계 추가",
       "link": "링크 추가",
-      "existing": "기존 작업 항목 추가"
+      "existing": "기존 작업 항목 추가",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "작업 항목 제거",
@@ -57,14 +59,14 @@
         "label": "디스플레이 속성",
         "id": "ID",
         "issue_type": "작업 항목 유형",
-        "sub_issue_count": "하위 작업 항목 수",
+        "sub_issue_count": "하위 작업 수",
         "attachment_count": "첨부 파일 수",
         "created_on": "생성일",
-        "sub_issue": "하위 작업 항목",
+        "sub_issue": "하위 작업",
         "work_item_count": "작업 항목 수"
       },
       "extra": {
-        "show_sub_issues": "하위 작업 항목 표시",
+        "show_sub_issues": "하위 작업 표시",
         "show_empty_groups": "빈 그룹 표시"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "클릭하여 비추천",
       "click_to_view_upvotes": "클릭하여 추천 목록 보기",
       "click_to_view_downvotes": "클릭하여 비추천 목록 보기"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "하위 작업 항목이 성공적으로 업데이트되었습니다",
-      "error": "하위 작업 항목 업데이트 중 오류 발생"
+      "success": "하위 작업이 업데이트되었습니다",
+      "error": "하위 작업 업데이트 중 오류가 발생했습니다"
     },
     "remove": {
-      "success": "하위 작업 항목이 성공적으로 제거되었습니다",
-      "error": "하위 작업 항목 제거 중 오류 발생"
+      "success": "하위 작업이 제거되었습니다",
+      "error": "하위 작업 제거 중 오류가 발생했습니다"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "적용된 필터에 일치하는 하위 작업 항목이 없습니다.",
-        "description": "모든 하위 작업 항목을 보려면 모든 적용된 필터를 지우세요.",
+        "title": "적용한 필터와 일치하는 하위 작업이 없습니다.",
+        "description": "모든 하위 작업을 보려면 적용된 필터를 모두 지우세요.",
         "action": "필터 지우기"
       },
       "list_filters": {

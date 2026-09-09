@@ -8,16 +8,17 @@
 import { Outlet } from "react-router";
 import { AppHeader } from "@/components/core/app-header";
 import { ContentWrapper } from "@/components/core/content-wrapper";
+import { IssueExpandCollapseProvider } from "@/components/issues/issue-layouts/expand-collapse";
 import { ProjectIssuesHeader } from "./header";
 import { ProjectIssuesMobileHeader } from "./mobile-header";
 
 export default function ProjectIssuesLayout() {
   return (
-    <>
+    <IssueExpandCollapseProvider>
       <AppHeader header={<ProjectIssuesHeader />} mobileHeader={<ProjectIssuesMobileHeader />} />
       <ContentWrapper>
         <Outlet />
       </ContentWrapper>
-    </>
+    </IssueExpandCollapseProvider>
   );
 }

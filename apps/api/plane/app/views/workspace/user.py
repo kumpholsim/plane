@@ -200,6 +200,7 @@ class WorkspaceUserProfileIssuesEndpoint(BaseAPIView):
                             slug=slug,
                             filters=filters,
                             queryset=total_issue_queryset,
+                            for_subgroup=True,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,

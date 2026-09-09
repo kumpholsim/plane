@@ -13,6 +13,7 @@ import { CircularProgressIndicator, CollapsibleButton } from "@plane/ui";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { SubWorkItemTitleActions } from "./title-actions";
+import { childrenSectionTitleKey, getHierarchyLevel } from "./depth";
 
 type Props = {
   isOpen: boolean;
@@ -29,13 +30,16 @@ export const SubIssuesCollapsibleTitle = observer(function SubIssuesCollapsibleT
   const { t } = useTranslation();
   // store hooks
   const {
+    issue: { getIssueById },
     subIssues: { subIssuesByIssueId, stateDistributionByIssueId },
   } = useIssueDetail(issueServiceType);
-  // derived values
+  // derived values — always render header, even with zero sub-tasks
   const subIssuesDistribution = stateDistributionByIssueId(parentIssueId);
-  const subIssues = subIssuesByIssueId(parentIssueId);
-  // if there are no sub-issues, return null
-  if (!subIssues) return null;
+  const subIssues = subIssuesByIssueId(parentIssueId) ?? [];
+  const parentIssue = getIssueById(parentIssueId);
+  const parentLevel = getHierarchyLevel(parentIssue);
+  const isEpicService = issueServiceType === EIssueServiceType.EPICS;
+  const titleKey = childrenSectionTitleKey(parentLevel, isEpicService);
 
   // calculate percentage of completed sub-issues
   const completedCount = subIssuesDistribution?.completed?.length ?? 0;
@@ -45,7 +49,7 @@ export const SubIssuesCollapsibleTitle = observer(function SubIssuesCollapsibleT
   return (
     <CollapsibleButton
       isOpen={isOpen}
-      title={`${issueServiceType === EIssueServiceType.EPICS ? t("issue.label", { count: 1 }) : t("common.sub_work_items")}`}
+      title={`${t(titleKey, { count: 2 })}`}
       indicatorElement={
         <div className="flex items-center gap-1.5 text-13 text-tertiary">
           <CircularProgressIndicator size={18} percentage={percentage} strokeWidth={3} />

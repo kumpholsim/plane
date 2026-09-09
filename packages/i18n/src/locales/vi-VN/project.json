@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Thêm mô-đun",
+    "add_module": "Thêm epic",
     "update_module": "Cập nhật mô-đun",
-    "create_module": "Tạo mô-đun",
+    "create_module": "Tạo epic",
     "archive_module": "Lưu trữ mô-đun",
     "restore_module": "Khôi phục mô-đun",
     "delete_module": "Xóa mô-đun",
     "empty_state": {
       "general": {
-        "title": "Ánh xạ cột mốc dự án vào mô-đun, dễ dàng theo dõi công việc tổng hợp.",
-        "description": "Một nhóm mục công việc thuộc cấp cha trong cấu trúc logic tạo thành một mô-đun. Xem nó như một cách theo dõi công việc theo cột mốc dự án. Chúng có chu kỳ riêng và thời hạn cùng với các tính năng phân tích giúp bạn hiểu bạn đang ở đâu so với cột mốc.",
+        "title": "Tổ chức epic dưới các cột mốc và theo dõi công việc bàn giao dễ dàng.",
+        "description": "Epic là work item L2 dưới cột mốc. Dùng chúng để nhóm story, bug và task.",
         "primary_button": {
-          "text": "Xây dựng mô-đun đầu tiên của bạn",
+          "text": "Tạo epic đầu tiên",
           "comic": {
-            "title": "Mô-đun giúp nhóm công việc theo cấu trúc phân cấp.",
-            "description": "Mô-đun giỏ hàng, mô-đun khung gầm và mô-đun kho đều là ví dụ tốt về nhóm như vậy."
+            "title": "Epic giúp nhóm công việc theo phân cấp.",
+            "description": "Epic giỏ hàng, epic khung xe và epic kho là các ví dụ tốt cho cách nhóm này."
           }
         }
       },
       "no_issues": {
-        "title": "Không có mục công việc trong mô-đun",
-        "description": "Tạo hoặc thêm mục công việc bạn muốn hoàn thành như một phần của mô-đun này",
+        "title": "Không có work item trong epic",
+        "description": "Tạo hoặc thêm work item bạn muốn hoàn thành trong epic này",
         "primary_button": {
           "text": "Tạo mục công việc mới"
         },

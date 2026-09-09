@@ -19,11 +19,13 @@
       "start_date": "Startdatum hinzufügen",
       "due_date": "Fälligkeitsdatum hinzufügen",
       "parent": "Übergeordnetes Arbeitselement hinzufügen",
-      "sub_issue": "Untergeordnetes Arbeitselement hinzufügen",
+      "sub_issue": "Unteraufgabe hinzufügen",
       "dependency": "Abhängigkeit hinzufügen",
       "relation": "Beziehung hinzufügen",
       "link": "Link hinzufügen",
-      "existing": "Vorhandenes Arbeitselement hinzufügen"
+      "existing": "Vorhandenes Arbeitselement hinzufügen",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Arbeitselement entfernen",
@@ -57,14 +59,14 @@
         "label": "Anzuzeigende Eigenschaften",
         "id": "ID",
         "issue_type": "Typ des Arbeitselements",
-        "sub_issue_count": "Anzahl untergeordneter Elemente",
+        "sub_issue_count": "Anzahl der Unteraufgaben",
         "attachment_count": "Anzahl Anhänge",
         "created_on": "Erstellt am",
-        "sub_issue": "Untergeordnetes Element",
+        "sub_issue": "Unteraufgabe",
         "work_item_count": "Anzahl Arbeitselemente"
       },
       "extra": {
-        "show_sub_issues": "Untergeordnete Elemente anzeigen",
+        "show_sub_issues": "Unteraufgaben anzeigen",
         "show_empty_groups": "Leere Gruppen anzeigen"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Klicken zum Runterstimmen",
       "click_to_view_upvotes": "Klicken um Hochstimmen anzuzeigen",
       "click_to_view_downvotes": "Klicken um Runterstimmen anzuzeigen"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Untergeordnetes Arbeitselement erfolgreich aktualisiert",
-      "error": "Fehler beim Aktualisieren des untergeordneten Elements"
+      "success": "Unteraufgabe erfolgreich aktualisiert",
+      "error": "Fehler beim Aktualisieren der Unteraufgabe"
     },
     "remove": {
-      "success": "Untergeordnetes Arbeitselement erfolgreich entfernt",
-      "error": "Fehler beim Entfernen des untergeordneten Elements"
+      "success": "Unteraufgabe erfolgreich entfernt",
+      "error": "Fehler beim Entfernen der Unteraufgabe"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Sie haben keine untergeordneten Arbeitselemente, die den von Ihnen angewendeten Filtern entsprechen.",
-        "description": "Um alle untergeordneten Arbeitselemente anzuzeigen, entfernen Sie alle angewendeten Filter.",
+        "title": "Keine Unteraufgaben entsprechen den angewendeten Filtern.",
+        "description": "Um alle Unteraufgaben zu sehen, löschen Sie alle angewendeten Filter.",
         "action": "Filter entfernen"
       },
       "list_filters": {

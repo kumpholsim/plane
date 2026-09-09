@@ -20,6 +20,7 @@ import type { IWorkItemFilterInstance, TWorkItemFilterKey } from "./shared";
 
 type TGetOrCreateFilterParams = {
   showOnMount?: boolean;
+  pinnedProperties?: readonly string[];
   entityId: string;
   entityType: EIssuesStoreType;
   expressionOptions?: TExpressionOptions<TWorkItemFilterExpression>;
@@ -90,9 +91,11 @@ export class WorkItemFilterStore implements IWorkItemFilterStore {
       if (params.onExpressionChange) {
         existingFilter.onExpressionChange = params.onExpressionChange;
       }
-      // Update visibility if provided
-      if (params.showOnMount !== undefined) {
-        existingFilter.toggleVisibility(params.showOnMount);
+      // Do not force visibility here — callers re-run getOrCreateFilter often
+      // (unstable deps). Visibility is controlled by the toggle / HOC effect.
+      if (params.pinnedProperties !== undefined) {
+        existingFilter.pinnedProperties = params.pinnedProperties as typeof existingFilter.pinnedProperties;
+        existingFilter.ensurePinnedConditions();
       }
       return existingFilter;
     }
@@ -218,6 +221,7 @@ export class WorkItemFilterStore implements IWorkItemFilterStore {
       onExpressionChange: params.onExpressionChange,
       options: {
         expression: params.expressionOptions,
+        pinnedProperties: params.pinnedProperties,
         visibility: params.showOnMount
           ? { autoSetVisibility: false, isVisibleOnMount: true }
           : { autoSetVisibility: true },

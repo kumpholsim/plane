@@ -53,7 +53,12 @@ export type TIssueRelationModal = {
   relationType: TIssueRelationTypes | null;
 };
 
-export type TIssueCrudState = { toggle: boolean; parentIssueId: string | undefined; issue: TIssue | undefined };
+export type TIssueCrudState = {
+  toggle: boolean;
+  parentIssueId: string | undefined;
+  issue: TIssue | undefined;
+  categoryId?: string | null;
+};
 
 export type TIssueCrudOperationState = {
   create: TIssueCrudState;
@@ -74,6 +79,7 @@ export interface IIssueDetail
     IIssueCommentReactionStoreActions {
   // observables
   peekIssue: TPeekIssue | undefined;
+  peekIssueHistory: TPeekIssue[];
   relationKey: TIssueRelationTypes | null;
   issueLinkData: TIssueLink | null;
   issueCrudOperationState: TIssueCrudOperationState;
@@ -90,10 +96,13 @@ export interface IIssueDetail
   // computed
   isAnyModalOpen: boolean;
   isPeekOpen: boolean;
+  canPeekBack: boolean;
   // helper actions
   getIsIssuePeeked: (issueId: string) => boolean;
   // actions
   setPeekIssue: (peekIssue: TPeekIssue | undefined) => void;
+  navigatePeekIssue: (peekIssue: TPeekIssue) => void;
+  peekBack: () => void;
   setIssueLinkData: (issueLinkData: TIssueLink | null) => void;
   toggleCreateIssueModal: (value: boolean) => void;
   toggleIssueLinkModal: (value: boolean) => void;
@@ -125,6 +134,7 @@ export interface IIssueDetail
 export class IssueDetail implements IIssueDetail {
   // observables
   peekIssue: TPeekIssue | undefined = undefined;
+  peekIssueHistory: TPeekIssue[] = [];
   relationKey: TIssueRelationTypes | null = null;
   issueLinkData: TIssueLink | null = null;
   issueCrudOperationState: TIssueCrudOperationState = {
@@ -168,6 +178,7 @@ export class IssueDetail implements IIssueDetail {
     makeObservable(this, {
       // observables
       peekIssue: observable,
+      peekIssueHistory: observable,
       relationKey: observable,
       issueLinkData: observable,
       issueCrudOperationState: observable,
@@ -184,8 +195,11 @@ export class IssueDetail implements IIssueDetail {
       // computed
       isAnyModalOpen: computed,
       isPeekOpen: computed,
+      canPeekBack: computed,
       // action
       setPeekIssue: action,
+      navigatePeekIssue: action,
+      peekBack: action,
       setIssueLinkData: action,
       toggleCreateIssueModal: action,
       toggleIssueLinkModal: action,
@@ -235,13 +249,33 @@ export class IssueDetail implements IIssueDetail {
     return !!this.peekIssue;
   }
 
+  get canPeekBack() {
+    return this.peekIssueHistory.length > 0;
+  }
+
   // helper actions
   getIsIssuePeeked = (issueId: string) => this.peekIssue?.issueId === issueId;
 
   // actions
   setRelationKey = (relationKey: TIssueRelationTypes | null) => (this.relationKey = relationKey);
   setIssueCrudOperationState = (state: TIssueCrudOperationState) => (this.issueCrudOperationState = state);
-  setPeekIssue = (peekIssue: TPeekIssue | undefined) => (this.peekIssue = peekIssue);
+  setPeekIssue = (peekIssue: TPeekIssue | undefined) => {
+    this.peekIssue = peekIssue;
+    this.peekIssueHistory = [];
+  };
+  navigatePeekIssue = (peekIssue: TPeekIssue) => {
+    if (this.peekIssue && this.peekIssue.issueId !== peekIssue.issueId) {
+      this.peekIssueHistory = [...this.peekIssueHistory, this.peekIssue];
+    }
+    this.peekIssue = peekIssue;
+  };
+  peekBack = () => {
+    if (this.peekIssueHistory.length === 0) return;
+    const history = [...this.peekIssueHistory];
+    const previous = history.pop();
+    this.peekIssueHistory = history;
+    this.peekIssue = previous;
+  };
   toggleCreateIssueModal = (value: boolean) => (this.isCreateIssueModalOpen = value);
   toggleIssueLinkModal = (value: boolean) => (this.isIssueLinkModalOpen = value);
   toggleParentIssueModal = (issueId: string | null) => (this.isParentIssueModalOpen = issueId);
@@ -255,8 +289,8 @@ export class IssueDetail implements IIssueDetail {
     this.openWidgets = state;
     if (this.lastWidgetAction) this.lastWidgetAction = null;
   };
-  setLastWidgetAction = (action: TWorkItemWidgets) => {
-    this.openWidgets = [action];
+  setLastWidgetAction = (issueAction: TWorkItemWidgets) => {
+    this.openWidgets = [issueAction];
   };
   toggleOpenWidget = (state: TWorkItemWidgets) => {
     if (this.openWidgets && this.openWidgets.includes(state))

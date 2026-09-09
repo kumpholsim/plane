@@ -20,6 +20,8 @@ import { useMember } from "@/hooks/store/use-member";
 import { useUser } from "@/hooks/store/user";
 import useReloadConfirmations from "@/hooks/use-reload-confirmation";
 // plane web components
+import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
+import { canHaveParent } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 import { IssueTypeSwitcher } from "@/components/issues/issue-type-switcher";
 // plane web hooks
 // services
@@ -82,7 +84,7 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
 
   return (
     <div className="space-y-2">
-      {issue.parent_id && (
+      {issue.parent_id && canHaveParent(issue) && (
         <IssueParentDetail
           workspaceSlug={workspaceSlug}
           projectId={issue.project_id}
@@ -92,7 +94,17 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
         />
       )}
       <div className="flex items-center justify-between gap-2">
-        <IssueTypeSwitcher issueId={issueId} disabled={isArchived || disabled} />
+        <div className="flex items-center gap-2">
+          <HierarchyTypeBadge
+            issue={issue}
+            disabled={isArchived || disabled}
+            updateIssue={async (pid, iid, data) => {
+              if (!pid) return;
+              await issueOperations.update(workspaceSlug, pid, iid, data);
+            }}
+          />
+          <IssueTypeSwitcher issueId={issueId} disabled={isArchived || disabled} />
+        </div>
       </div>
       <IssueTitleInput
         workspaceSlug={workspaceSlug}

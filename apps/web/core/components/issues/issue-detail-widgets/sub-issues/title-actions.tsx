@@ -24,7 +24,6 @@ import { useMember } from "@/hooks/store/use-member";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { SubIssueDisplayFilters } from "./display-filters";
 import { SubIssueFilters } from "./filters";
-import { SubIssuesActionButton } from "./quick-action-button";
 
 type TSubWorkItemTitleActionsProps = {
   disabled: boolean;
@@ -34,7 +33,7 @@ type TSubWorkItemTitleActionsProps = {
 };
 
 export const SubWorkItemTitleActions = observer(function SubWorkItemTitleActions(props: TSubWorkItemTitleActionsProps) {
-  const { disabled, issueServiceType = EIssueServiceType.ISSUES, parentId, projectId } = props;
+  const { issueServiceType = EIssueServiceType.ISSUES, parentId, projectId } = props;
 
   // store hooks
   const {
@@ -88,6 +87,7 @@ export const SubWorkItemTitleActions = observer(function SubWorkItemTitleActions
 
   return (
     // prevent click everywhere
+    // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
     <div
       className="flex items-center gap-2"
       onClick={(e) => {
@@ -110,9 +110,6 @@ export const SubWorkItemTitleActions = observer(function SubWorkItemTitleActions
         states={projectStates}
         availableFilters={SUB_WORK_ITEM_AVAILABLE_FILTERS_FOR_WORK_ITEM_PAGE}
       />
-      {!disabled && (
-        <SubIssuesActionButton issueId={parentId} disabled={disabled} issueServiceType={issueServiceType} />
-      )}
     </div>
   );
 });

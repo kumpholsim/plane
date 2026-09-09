@@ -86,7 +86,9 @@ export type TIssueParams =
   | "issue_type"
   | "layout"
   | "expand"
-  | "filters";
+  | "filters"
+  | "hierarchy_level"
+  | "parent";
 
 export type TCalendarLayouts = "month" | "week";
 
@@ -98,6 +100,7 @@ export const WORK_ITEM_FILTER_PROPERTY_KEYS = [
   "priority",
   "start_date",
   "target_date",
+  "progress_status",
   "assignee_id",
   "mention_id",
   "created_by_id",

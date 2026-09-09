@@ -14,6 +14,8 @@ import { EFileAssetType, EIssueServiceType } from "@plane/types";
 // components
 import { DescriptionVersionsRoot } from "@/components/core/description-versions";
 import { DescriptionInput } from "@/components/editor/rich-text/description-input";
+import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
+import { canHaveParent } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 import { IssueTypeSwitcher } from "@/components/issues/issue-type-switcher";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -78,7 +80,7 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
   return (
     <>
       <div className="space-y-4 rounded-lg">
-        {issue.parent_id && (
+        {issue.parent_id && canHaveParent(issue) && (
           <IssueParentDetail
             workspaceSlug={workspaceSlug}
             projectId={projectId}
@@ -89,7 +91,17 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
         )}
 
         <div className="mb-2.5 flex items-center justify-between gap-4">
-          <IssueTypeSwitcher issueId={issueId} disabled={isArchived || !isEditable} />
+          <div className="flex items-center gap-2">
+            <HierarchyTypeBadge
+              issue={issue}
+              disabled={isArchived || !isEditable}
+              updateIssue={async (pid, iid, data) => {
+                if (!pid) return;
+                await issueOperations.update(workspaceSlug, pid, iid, data);
+              }}
+            />
+            <IssueTypeSwitcher issueId={issueId} disabled={isArchived || !isEditable} />
+          </div>
           <div className="flex items-center gap-3">
             <NameDescriptionUpdateStatus isSubmitting={isSubmitting} />
           </div>

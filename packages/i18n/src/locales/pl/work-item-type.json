@@ -439,7 +439,7 @@
       "content": {
         "intro": "Typ elementu roboczego {workItemTypeName} obejmuje:",
         "parent_items": "{count, plural, one {Zostanie usunięte # powiązanie nadrzędne} few {Zostaną usunięte # powiązania nadrzędne} other {Zostanie usuniętych # powiązań nadrzędnych}}.",
-        "child_items": "{count, plural, one {podelement} few {podelementy} other {podelementów}}",
+        "child_items": "{count, plural, one {podzadanie} few {podzadania} many {podzadań} other {podzadania}}",
         "parent_line_suffix_when_also_children": ", oraz ",
         "footer": "Ta zmiana usunie relacje nadrzędne i podrzędne z istniejących elementów roboczych typu {workItemTypeName}."
       },

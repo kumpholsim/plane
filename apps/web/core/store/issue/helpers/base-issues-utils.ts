@@ -189,6 +189,30 @@ export const getSortOrderToFilterEmptyValues = (key: string, object: any) => {
 // get IssueIds from Issue data List
 export const getIssueIds = (issues: TIssue[]) => issues.map((issue) => issue?.id);
 
+/** Fallback order when hierarchy type sort_order is unavailable (Design → Dev → QA). */
+const FALLBACK_SUBTASK_TYPE_ORDER: Record<string, number> = {
+  design: 10000,
+  dev: 20000,
+  qa: 30000,
+};
+
+/**
+ * Sort sub-work-items by hierarchy type (Design → Dev → QA), then created_at ascending
+ * so new items of the same type append at the bottom of their group.
+ */
+export const sortSubWorkItemsByHierarchyType = (workItems: TIssue[]): TIssue[] => {
+  const getTypeSortOrder = (item: TIssue) => {
+    const typeId = item.hierarchy_type_id ?? item.sub_work_item_category_id;
+    if (!typeId) return Number.MAX_SAFE_INTEGER;
+    const type = store.projectHierarchyType?.getTypeById?.(typeId);
+    if (type?.sort_order != null) return type.sort_order;
+    const nameKey = type?.name?.toLowerCase?.() ?? "";
+    return FALLBACK_SUBTASK_TYPE_ORDER[nameKey] ?? Number.MAX_SAFE_INTEGER;
+  };
+
+  return orderBy(workItems, [getTypeSortOrder, (item) => convertToISODateString(item.created_at)], ["asc", "asc"]);
+};
+
 /**
  * Checks if an issue meets the date filter criteria
  * @param issue The issue to check
@@ -285,6 +309,9 @@ export const getOrderedWorkItems = (workItems: TIssue[], orderByKey: TIssueOrder
     case "-created_at":
       return getIssueIds(orderBy(workItems, (item) => convertToISODateString(item["created_at"]), ["desc"]));
 
+    case "created_at":
+      return getIssueIds(orderBy(workItems, (item) => convertToISODateString(item["created_at"]), ["asc"]));
+
     case "-start_date":
       return getIssueIds(
         orderBy(
@@ -308,7 +335,7 @@ export const getOrderedWorkItems = (workItems: TIssue[], orderByKey: TIssueOrder
 export const getGroupedWorkItemIds = (
   workItems: TIssue[],
   groupByKey?: TIssueGroupByOptions,
-  orderByKey: TIssueOrderByOptions = "-created_at"
+  orderByKey: TIssueOrderByOptions = "created_at"
 ): Record<string, string[]> => {
   // If group by is not set set default as ALL ISSUES
   if (!groupByKey) {
@@ -318,14 +345,14 @@ export const getGroupedWorkItemIds = (
   }
 
   // Get the default key for the group by key
-  const getDefaultGroupKey = (groupByKey: TIssueGroupByOptions) => {
-    switch (groupByKey) {
+  const getDefaultGroupKey = (nestedGroupByKey: TIssueGroupByOptions) => {
+    switch (nestedGroupByKey) {
       case "state_detail.group":
         return "state__group";
       case null:
         return null;
       default:
-        return ISSUE_GROUP_BY_KEY[groupByKey];
+        return ISSUE_GROUP_BY_KEY[nestedGroupByKey];
     }
   };
 
@@ -336,7 +363,7 @@ export const getGroupedWorkItemIds = (
     if (Array.isArray(value)) {
       if (value.length === 0) return "None";
       // Sort & join to build deterministic set-like key
-      return value.slice().sort().join(",");
+      return value.slice().toSorted().join(",");
     }
     return value ?? "None";
   });

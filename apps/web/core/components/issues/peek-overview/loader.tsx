@@ -23,11 +23,6 @@ export function IssuePeekOverviewLoader(props: TIssuePeekOverviewLoader) {
     <Loader className="h-screen w-full space-y-6 overflow-hidden p-5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Tooltip tooltipContent="Close the peek view" isMobile={isMobile}>
-            <button onClick={removeRoutePeekId}>
-              <MoveRight className="h-4 w-4 text-tertiary hover:text-secondary" />
-            </button>
-          </Tooltip>
           <Loader.Item width="30px" height="30px" />
         </div>
         <div className="flex items-center gap-2">
@@ -35,6 +30,11 @@ export function IssuePeekOverviewLoader(props: TIssuePeekOverviewLoader) {
           <Loader.Item width="30px" height="30px" />
           <Loader.Item width="30px" height="30px" />
           <Loader.Item width="30px" height="30px" />
+          <Tooltip tooltipContent="Close the peek view" isMobile={isMobile}>
+            <button type="button" onClick={removeRoutePeekId}>
+              <MoveRight className="h-4 w-4 text-tertiary hover:text-secondary" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

@@ -449,6 +449,8 @@
     "layout": "Düzen",
     "filters": "Filtreler",
     "display": "Görüntüle",
+    "expand_all": "Tümünü genişlet",
+    "collapse_all": "Tümünü daralt",
     "load_more": "Daha fazla yükle",
     "activity": "Aktivite",
     "analytics": "Analitik",
@@ -464,7 +466,7 @@
     "epics": "Epikler",
     "work_item": "İş öğesi",
     "work_items": "İş Öğeleri",
-    "sub_work_item": "Alt iş öğesi",
+    "sub_work_item": "Alt görev",
     "views": "Görünümler",
     "pages": "Sayfalar",
     "add": "Ekle",
@@ -507,7 +509,7 @@
       "private": "Özel"
     },
     "done": "Tamamlandı",
-    "sub_work_items": "Alt iş öğeleri",
+    "sub_work_items": "Alt görevler",
     "comment": "Yorum",
     "workspace_level": "Çalışma Alanı Seviyesi",
     "order_by": {

@@ -22,6 +22,9 @@ export type TFiltersRowProps<K extends TFilterProperty, E extends TExternalFilte
   buttonConfig?: TAddFilterButtonProps<K, E>["buttonConfig"];
   disabledAllOperations?: boolean;
   filter: IFilterInstance<K, E>;
+  /** Rendered before filter chips (e.g. expand/collapse). Keeps the bar visible even when filters are hidden. */
+  leadingControls?: React.ReactNode;
+  suppressProperties?: K[];
   variant?: "modal" | "header";
   trackerElements?: {
     clearFilter?: string;
@@ -37,6 +40,8 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
     buttonConfig,
     disabledAllOperations: disabledAllOperationsProp = false,
     filter,
+    leadingControls,
+    suppressProperties = [],
     variant = "header",
     trackerElements,
   } = props;
@@ -47,6 +52,20 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
   const hasAnyConditions = filter.allConditionsForDisplay.length > 0;
   const hasAvailableOperations =
     !disabledAllOperations && (filter.canClearFilters || filter.canSaveView || filter.canUpdateView);
+  const pinnedConditions = filter.allConditionsForDisplay.filter(
+    (condition) =>
+      condition.property &&
+      !suppressProperties.includes(condition.property) &&
+      filter.isPropertyPinned(condition.property)
+  );
+  const otherConditions = filter.allConditionsForDisplay.filter(
+    (condition) =>
+      !(condition.property && filter.isPropertyPinned(condition.property)) &&
+      !(condition.property && suppressProperties.includes(condition.property))
+  );
+  const showPinnedChips = pinnedConditions.length > 0 || Boolean(leadingControls);
+  const showExtraFilters = filter.isVisible;
+  const showRow = showPinnedChips || showExtraFilters;
 
   const headerButtonConfig: Partial<TAddFilterButtonProps<K, E>["buttonConfig"]> = {
     label: null,
@@ -65,29 +84,24 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
     }
   }, [filter]);
 
-  const leftContent = (
-    <>
-      {filter.allConditionsForDisplay.map((condition) => (
-        <FilterItem key={condition.id} filter={filter} condition={condition} isDisabled={disabledAllOperations} />
-      ))}
-      <AddFilterButton
-        filter={filter}
-        buttonConfig={{
-          label: null,
-          ...(variant === "modal" ? modalButtonConfig : headerButtonConfig),
-          size: "lg",
-          iconConfig: {
-            shouldShowIcon: true,
-            iconComponent: ListFilterPlus,
-          },
-          ...buttonConfig,
-          isDisabled: disabledAllOperations,
-        }}
-      />
-    </>
+  const addFilterButton = (
+    <AddFilterButton
+      filter={filter}
+      buttonConfig={{
+        label: null,
+        ...(variant === "modal" ? modalButtonConfig : headerButtonConfig),
+        size: "lg",
+        iconConfig: {
+          shouldShowIcon: true,
+          iconComponent: ListFilterPlus,
+        },
+        ...buttonConfig,
+        isDisabled: disabledAllOperations,
+      }}
+    />
   );
 
-  const rightContent = !disabledAllOperations && (
+  const rightContent = (showExtraFilters || showPinnedChips) && !disabledAllOperations && (
     <>
       <ElementTransition show={filter.canClearFilters}>
         <Button
@@ -126,14 +140,26 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
 
   const mainContent = (
     <div className="flex w-full items-start gap-2 rounded-lg bg-layer-1 px-4 py-2">
-      <div className="flex w-full flex-wrap items-center gap-2">{leftContent}</div>
-      <div
-        className={cn("flex items-center gap-2 border-l border-subtle pl-4", {
-          "border-l-transparent pl-0": !hasAvailableOperations,
-        })}
-      >
-        {rightContent}
+      <div className="flex w-full flex-wrap items-center gap-2">
+        {leadingControls}
+        {pinnedConditions.map((condition) => (
+          <FilterItem key={condition.id} filter={filter} condition={condition} isDisabled={disabledAllOperations} />
+        ))}
+        {showExtraFilters &&
+          otherConditions.map((condition) => (
+            <FilterItem key={condition.id} filter={filter} condition={condition} isDisabled={disabledAllOperations} />
+          ))}
+        {(showPinnedChips || showExtraFilters) && addFilterButton}
       </div>
+      {(showExtraFilters || showPinnedChips) && (
+        <div
+          className={cn("flex items-center gap-2 border-l border-subtle pl-4", {
+            "border-l-transparent pl-0": !hasAvailableOperations,
+          })}
+        >
+          {rightContent}
+        </div>
+      )}
     </div>
   );
 
@@ -147,7 +173,7 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
     </Header>
   );
 
-  if (!filter.configManager.areConfigsReady && !hasAnyConditions) {
+  if (!filter.configManager.areConfigsReady && !hasAnyConditions && !leadingControls) {
     return (
       <RowTransition show={filter.isVisible}>
         <Loader>
@@ -157,7 +183,7 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
     );
   }
 
-  return <RowTransition show={filter.isVisible}>{variant === "modal" ? ModalVariant : HeaderVariant}</RowTransition>;
+  return <RowTransition show={showRow}>{variant === "modal" ? ModalVariant : HeaderVariant}</RowTransition>;
 });
 
 const COMMON_OPERATION_BUTTON_CLASSNAME = "py-1";

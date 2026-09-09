@@ -19,11 +19,13 @@
       "start_date": "Ajouter une date de début",
       "due_date": "Ajouter une date d’échéance",
       "parent": "Ajouter un élément de travail parent",
-      "sub_issue": "Ajouter un sous-élément de travail",
+      "sub_issue": "Ajouter une sous-tâche",
       "dependency": "Ajouter une dépendance",
       "relation": "Ajouter une relation",
       "link": "Ajouter un lien",
-      "existing": "Ajouter un élément de travail existant"
+      "existing": "Ajouter un élément de travail existant",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Supprimer l’élément de travail",
@@ -57,14 +59,14 @@
         "label": "Propriétés d’affichage",
         "id": "ID",
         "issue_type": "Type d’élément de travail",
-        "sub_issue_count": "Nombre de sous-éléments",
+        "sub_issue_count": "Nombre de sous-tâches",
         "attachment_count": "Nombre de pièces jointes",
         "created_on": "Créé le",
-        "sub_issue": "Sous-élément de travail",
+        "sub_issue": "Sous-tâche",
         "work_item_count": "Nombre d’éléments de travail"
       },
       "extra": {
-        "show_sub_issues": "Afficher les sous-éléments",
+        "show_sub_issues": "Afficher les sous-tâches",
         "show_empty_groups": "Afficher les groupes vides"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Cliquez pour voter contre",
       "click_to_view_upvotes": "Cliquez pour voir les votes pour",
       "click_to_view_downvotes": "Cliquez pour voir les votes contre"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Sous-élément de travail mis à jour avec succès",
-      "error": "Erreur lors de la mise à jour du sous-élément de travail"
+      "success": "Sous-tâche mise à jour avec succès",
+      "error": "Erreur lors de la mise à jour de la sous-tâche"
     },
     "remove": {
-      "success": "Sous-élément de travail supprimé avec succès",
-      "error": "Erreur lors de la suppression du sous-élément de travail"
+      "success": "Sous-tâche supprimée avec succès",
+      "error": "Erreur lors de la suppression de la sous-tâche"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Vous n’avez pas de sous-éléments de travail qui correspondent aux filtres que vous avez appliqués.",
-        "description": "Pour voir tous les sous-éléments de travail, effacer tous les filtres appliqués.",
+        "title": "Aucune sous-tâche ne correspond aux filtres appliqués.",
+        "description": "Pour voir toutes les sous-tâches, effacez tous les filtres appliqués.",
         "action": "Effacer les filtres"
       },
       "list_filters": {

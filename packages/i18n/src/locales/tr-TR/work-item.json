@@ -19,11 +19,13 @@
       "start_date": "Başlangıç tarihi ekle",
       "due_date": "Son tarih ekle",
       "parent": "Üst iş öğesi ekle",
-      "sub_issue": "Alt iş öğesi ekle",
+      "sub_issue": "Alt görev ekle",
       "dependency": "Bağımlılık ekle",
       "relation": "İlişki ekle",
       "link": "Bağlantı ekle",
-      "existing": "Varolan iş öğesi ekle"
+      "existing": "Varolan iş öğesi ekle",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "İş öğesini kaldır",
@@ -57,14 +59,14 @@
         "label": "Görünen Özellikler",
         "id": "ID",
         "issue_type": "İş Öğesi Türü",
-        "sub_issue_count": "Alt iş öğesi sayısı",
+        "sub_issue_count": "Alt görev sayısı",
         "attachment_count": "Ek sayısı",
         "created_on": "Oluşturulma tarihi",
-        "sub_issue": "Alt iş öğesi",
+        "sub_issue": "Alt görev",
         "work_item_count": "İş öğesi sayısı"
       },
       "extra": {
-        "show_sub_issues": "Alt iş öğelerini göster",
+        "show_sub_issues": "Alt görevleri göster",
         "show_empty_groups": "Boş grupları göster"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Olumsuz oy vermek için tıklayın",
       "click_to_view_upvotes": "Olumlu oyları görüntülemek için tıklayın",
       "click_to_view_downvotes": "Olumsuz oyları görüntülemek için tıklayın"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Alt iş öğesi başarıyla güncellendi",
-      "error": "Alt iş öğesi güncellenirken hata oluştu"
+      "success": "Alt görev başarıyla güncellendi",
+      "error": "Alt görev güncellenirken hata oluştu"
     },
     "remove": {
-      "success": "Alt iş öğesi başarıyla kaldırıldı",
-      "error": "Alt iş öğesi kaldırılırken hata oluştu"
+      "success": "Alt görev başarıyla kaldırıldı",
+      "error": "Alt görev kaldırılırken hata oluştu"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Alt iş öğelerinizin filtreleriyle eşleşmiyor.",
-        "description": "Tüm alt iş öğelerini görmek için tüm uygulanan filtreleri temizleyin.",
+        "title": "Uygulanan filtrelerle eşleşen alt görev yok.",
+        "description": "Tüm alt görevleri görmek için uygulanan tüm filtreleri temizleyin.",
         "action": "Filtreleri temizle"
       },
       "list_filters": {

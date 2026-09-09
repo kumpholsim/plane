@@ -904,9 +904,17 @@ class CycleIssueListCreateAPIEndpoint(BaseAPIView):
         Returns paginated results with work item details, assignees, and labels.
         """
         # List
+        from plane.utils.issue_cycle import (
+            cycle_visible_hierarchy_levels,
+            purge_milestone_and_epic_from_cycles,
+        )
+
+        purge_milestone_and_epic_from_cycles(cycle_id=cycle_id, project_id=project_id)
+
         order_by = sanitize_order_by(request.GET.get("order_by", "created_at"), ISSUE_ORDER_BY_ALLOWLIST, "created_at")
         issues = (
             Issue.issue_objects.filter(issue_cycle__cycle_id=cycle_id, issue_cycle__deleted_at__isnull=True)
+            .filter(hierarchy_level__in=cycle_visible_hierarchy_levels())
             .annotate(
                 sub_issues_count=Issue.issue_objects.filter(parent=OuterRef("id"))
                 .order_by()
@@ -988,6 +996,21 @@ class CycleIssueListCreateAPIEndpoint(BaseAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        from plane.utils.issue_cycle import (
+            filter_cycle_assignable_issue_ids,
+            sync_subtask_cycles_for_parents,
+        )
+
+        issues = filter_cycle_assignable_issue_ids(issues)
+        if not issues:
+            return Response(
+                {
+                    "error": "Only delivery work items and sub-tasks can be added to a cycle",
+                    "code": "INVALID_HIERARCHY_LEVEL",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Get all CycleWorkItems already created
         cycle_issues = list(CycleIssue.objects.filter(~Q(cycle_id=cycle_id), issue_id__in=issues))
         existing_issues = [
@@ -1041,6 +1064,14 @@ class CycleIssueListCreateAPIEndpoint(BaseAPIView):
 
         # Update the cycle issues
         CycleIssue.objects.bulk_update(updated_records, ["cycle_id"], batch_size=100)
+
+        sync_subtask_cycles_for_parents(
+            issues,
+            cycle_id,
+            project_id,
+            cycle.workspace_id,
+            request.user.id,
+        )
 
         # Capture Issue Activity
         issue_activity.delay(

@@ -439,7 +439,7 @@
       "content": {
         "intro": "O tipo de item de trabalho {workItemTypeName} possui:",
         "parent_items": "{count, plural, one {# vínculo pai será} other {# vínculos pai serão}} removidos.",
-        "child_items": "{count, plural, one {subitem de trabalho} other {subitens de trabalho}}",
+        "child_items": "{count, plural, one {subtarefa} other {subtarefas}}",
         "parent_line_suffix_when_also_children": ", e ",
         "footer": "Esta alteração removerá as relações pai-filho dos itens de trabalho existentes do tipo {workItemTypeName}."
       },

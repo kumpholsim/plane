@@ -8,6 +8,7 @@ import React from "react";
 import { observer } from "mobx-react";
 import { Circle } from "lucide-react";
 import { ChevronDownIcon, ChevronUpIcon } from "@plane/propel/icons";
+import { cn } from "@plane/utils";
 // Plane
 import type { TIssueGroupByOptions, TIssueKanbanFilters } from "@plane/types";
 
@@ -19,14 +20,18 @@ interface IHeaderSubGroupByCard {
   collapsedGroups: TIssueKanbanFilters;
   sub_group_by: TIssueGroupByOptions | undefined;
   handleCollapsedGroups: (toggle: "group_by" | "sub_group_by", value: string) => void;
+  className?: string;
 }
 
 export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props: IHeaderSubGroupByCard) {
-  const { icon, title, count, column_id, collapsedGroups, handleCollapsedGroups } = props;
+  const { icon, title, count, column_id, collapsedGroups, handleCollapsedGroups, className } = props;
   return (
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
     <div
-      className={`relative flex w-full flex-shrink-0 cursor-pointer flex-row items-center gap-1 rounded-xs py-1.5`}
+      className={cn(
+        "relative flex w-full flex-shrink-0 cursor-pointer flex-row items-center gap-1 rounded-xs py-1.5",
+        className
+      )}
       onClick={() => handleCollapsedGroups("sub_group_by", column_id)}
     >
       <div className="flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center overflow-hidden rounded-xs transition-all hover:bg-layer-1">

@@ -19,11 +19,13 @@
       "start_date": "Tambah tanggal mulai",
       "due_date": "Tambah tanggal jatuh tempo",
       "parent": "Tambah item kerja induk",
-      "sub_issue": "Tambah sub-item kerja",
+      "sub_issue": "Tambah sub-tugas",
       "dependency": "Tambah ketergantungan",
       "relation": "Tambah hubungan",
       "link": "Tambah tautan",
-      "existing": "Tambah item kerja yang ada"
+      "existing": "Tambah item kerja yang ada",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Hapus item kerja",
@@ -57,14 +59,14 @@
         "label": "Tampilkan Properti",
         "id": "ID",
         "issue_type": "Tipe item kerja",
-        "sub_issue_count": "Jumlah sub-item kerja",
+        "sub_issue_count": "Jumlah sub-tugas",
         "attachment_count": "Jumlah lampiran",
         "created_on": "Dibuat pada",
-        "sub_issue": "Sub-item kerja",
+        "sub_issue": "Sub-tugas",
         "work_item_count": "Jumlah item kerja"
       },
       "extra": {
-        "show_sub_issues": "Tampilkan sub-item kerja",
+        "show_sub_issues": "Tampilkan sub-tugas",
         "show_empty_groups": "Tampilkan grup kosong"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Klik untuk memberi suara turun",
       "click_to_view_upvotes": "Klik untuk melihat suara naik",
       "click_to_view_downvotes": "Klik untuk melihat suara turun"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Sub-item kerja berhasil diperbarui",
-      "error": "Kesalahan saat memperbarui sub-item kerja"
+      "success": "Sub-tugas berhasil diperbarui",
+      "error": "Gagal memperbarui sub-tugas"
     },
     "remove": {
-      "success": "Sub-item kerja berhasil dihapus",
-      "error": "Kesalahan saat menghapus sub-item kerja"
+      "success": "Sub-tugas berhasil dihapus",
+      "error": "Gagal menghapus sub-tugas"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Anda tidak memiliki sub-item kerja yang cocok dengan filter yang Anda terapkan.",
-        "description": "Untuk melihat semua sub-item kerja, hapus semua filter yang diterapkan.",
+        "title": "Tidak ada sub-tugas yang cocok dengan filter yang diterapkan.",
+        "description": "Untuk melihat semua sub-tugas, hapus semua filter yang diterapkan.",
         "action": "Hapus filter"
       },
       "list_filters": {

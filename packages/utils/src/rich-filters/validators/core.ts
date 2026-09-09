@@ -15,20 +15,23 @@ import { isConditionNode, isGroupNode } from "../types/core";
  * @param value - The filter value to check
  * @returns True if we should notify, false otherwise
  */
+const isMeaningfulFilterScalar = (value: unknown): boolean =>
+  value !== null && value !== undefined && !(typeof value === "string" && value.trim() === "");
+
 export const hasValidValue = (value: SingleOrArray<TFilterValue>): boolean => {
   if (value === null || value === undefined) {
     return false;
   }
 
-  // If it's an array, check if it's empty or contains only null/undefined values
+  // If it's an array, check if it's empty or contains only null/undefined/blank values
   if (Array.isArray(value)) {
     if (value.length === 0) {
       return false;
     }
-    return value.some((v) => v !== null && v !== undefined);
+    return value.some(isMeaningfulFilterScalar);
   }
 
-  return true;
+  return isMeaningfulFilterScalar(value);
 };
 
 /**

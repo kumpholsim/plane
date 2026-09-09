@@ -12,7 +12,14 @@ import scrollIntoView from "smooth-scroll-into-view-if-needed";
 import type { FC } from "react";
 import { CalendarDays, LayersIcon, Paperclip } from "lucide-react";
 // plane types
-import { EIconSize, ISSUE_PRIORITIES, STATE_GROUPS } from "@plane/constants";
+import {
+  EIconSize,
+  ISSUE_PRIORITIES,
+  STATE_GROUPS,
+  HIERARCHY_BOARD_STATE_PREFIX,
+  L4_BOARD_STATE_OPTIONS,
+  boardStateKeyFromExternalId,
+} from "@plane/constants";
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import type { ISvgIcons } from "@plane/propel/icons";
 import {
@@ -48,6 +55,7 @@ import type {
 import { EIssuesStoreType } from "@plane/types";
 // plane ui
 import { Avatar } from "@plane/ui";
+import { getHierarchyLevel } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 import { renderFormattedDate, getFileURL } from "@plane/utils";
 // store
 import { store } from "@/lib/store-context";
@@ -110,6 +118,8 @@ type TGetGroupByColumns = {
   isWorkspaceLevel: boolean;
   isEpic?: boolean;
   projectId?: string;
+  /** When true and groupBy is module, build L3 delivery-parent swimlanes (not Epic columns) */
+  asSubGroup?: boolean;
 };
 
 // NOTE: Type of groupBy is different compared to what's being passed from the components.
@@ -121,6 +131,7 @@ export const getGroupByColumns = ({
   isWorkspaceLevel,
   isEpic = false,
   projectId,
+  asSubGroup = false,
 }: TGetGroupByColumns): IGroupByColumn[] | undefined => {
   // If no groupBy is specified and includeNone is true, return "All Issues" group
   if (!groupBy && includeNone) {
@@ -144,7 +155,7 @@ export const getGroupByColumns = ({
   > = {
     project: getProjectColumns,
     cycle: getCycleColumns,
-    module: getModuleColumns,
+    module: asSubGroup ? getDeliveryParentColumns : getModuleColumns,
     state: getStateColumns,
     "state_detail.group": getStateGroupColumns,
     priority: getPriorityColumns,
@@ -215,35 +226,136 @@ const getModuleColumns = (): IGroupByColumn[] | undefined => {
   // get current project details
   const { currentProjectDetails } = store.projectRoot.project;
   if (!currentProjectDetails || !currentProjectDetails?.id) return;
-  // get project module ids and module details
-  const { getProjectModuleDetails } = store.module;
-  // get module details
-  const moduleDetails = currentProjectDetails?.id ? getProjectModuleDetails(currentProjectDetails?.id) : undefined;
-  // map module details to group by columns
+  // Epics (L2) that have L3/L4 children in the currently loaded issue map
+  // (cycle/project views only load related work items — avoids empty epic headers)
+  const { issuesMap } = store.issue.issues;
+  const projectId = currentProjectDetails.id;
+  const epicIdsWithWork = new Set<string>();
+  Object.values(issuesMap).forEach((issue) => {
+    if (!issue || issue.project_id !== projectId) return;
+    const level = getHierarchyLevel(issue);
+    if (level === 3 && issue.parent_id) {
+      epicIdsWithWork.add(issue.parent_id);
+      return;
+    }
+    if (level === 4) {
+      if (issue.module_ids?.[0]) {
+        epicIdsWithWork.add(issue.module_ids[0]);
+        return;
+      }
+      if (issue.parent_id) {
+        const parent = issuesMap[issue.parent_id];
+        if (parent?.parent_id) epicIdsWithWork.add(parent.parent_id);
+      }
+    }
+  });
+
   const modules: IGroupByColumn[] = [];
-  moduleDetails?.map((module) => {
+  epicIdsWithWork.forEach((epicId) => {
+    const epic = issuesMap[epicId];
     modules.push({
-      id: module.id,
-      name: module.name,
+      id: epicId,
+      name: epic?.name ?? "Epic",
       icon: <ModuleIcon className="h-3.5 w-3.5" />,
-      payload: { module_ids: [module.id] },
+      payload: { parent_id: epicId },
     });
   });
-  modules.push({
-    id: "None",
-    name: "None",
-    icon: <ModuleIcon className="h-3.5 w-3.5" />,
-    payload: {},
+  // "None" only when there are delivery items without an epic parent in the map
+  const hasUngrouped = Object.values(issuesMap).some((issue) => {
+    if (!issue || issue.project_id !== projectId) return false;
+    const level = getHierarchyLevel(issue);
+    if (level !== 3 && level !== 4) return false;
+    if (level === 3) return !issue.parent_id;
+    // L4 without resolvable epic
+    if (issue.module_ids?.[0]) return false;
+    if (issue.parent_id) {
+      const parent = issuesMap[issue.parent_id];
+      return !parent?.parent_id;
+    }
+    return true;
   });
+  if (hasUngrouped) {
+    modules.push({
+      id: "None",
+      name: "None",
+      icon: <ModuleIcon className="h-3.5 w-3.5" />,
+      payload: {},
+    });
+  }
   return modules;
+};
+
+/** Board swimlanes when sub-grouped by module: L3 delivery items as row containers, L4 in state columns */
+const getDeliveryParentColumns = (): IGroupByColumn[] | undefined => {
+  const { currentProjectDetails } = store.projectRoot.project;
+  if (!currentProjectDetails?.id) return;
+  const { issuesMap } = store.issue.issues;
+  const projectId = currentProjectDetails.id;
+  const deliveryIds = new Set<string>();
+
+  Object.values(issuesMap).forEach((issue) => {
+    if (!issue || issue.project_id !== projectId) return;
+    const level = getHierarchyLevel(issue);
+    if (level === 4 && issue.parent_id) {
+      deliveryIds.add(issue.parent_id);
+      return;
+    }
+    // module_ids holds L3 parent id for L4 when this subgroup mode is active
+    if (level === 4 && issue.module_ids?.[0]) {
+      deliveryIds.add(issue.module_ids[0]);
+    }
+  });
+
+  const columns: IGroupByColumn[] = [];
+  deliveryIds.forEach((deliveryId) => {
+    const delivery = issuesMap[deliveryId];
+    columns.push({
+      id: deliveryId,
+      name: delivery?.name ?? "Work item",
+      icon: <LayersIcon className="h-3.5 w-3.5" />,
+      payload: { parent_id: deliveryId },
+    });
+  });
+
+  const hasUngroupedL4 = Object.values(issuesMap).some((issue) => {
+    if (!issue || issue.project_id !== projectId) return false;
+    if (getHierarchyLevel(issue) !== 4) return false;
+    return !issue.parent_id && !issue.module_ids?.[0];
+  });
+  if (hasUngroupedL4) {
+    columns.push({
+      id: "None",
+      name: "None",
+      icon: <LayersIcon className="h-3.5 w-3.5" />,
+      payload: {},
+    });
+  }
+  return columns;
 };
 
 const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefined => {
   const { getProjectStates, projectStates } = store.state;
   const _states = projectId ? getProjectStates(projectId) : projectStates;
   if (!_states) return;
+  const hierarchyBoardStates = _states.filter((state) =>
+    Boolean(state.external_id?.startsWith(HIERARCHY_BOARD_STATE_PREFIX))
+  );
+  // Hierarchy board columns must follow fixed product order (To Do → … → Done),
+  // not STATE_GROUPS (unstarted before started), which incorrectly puts QA To Do
+  // before In Progress / Under Review.
+  const boardOrder = L4_BOARD_STATE_OPTIONS.map((opt) => opt.key);
+  const statesForColumns =
+    hierarchyBoardStates.length > 0
+      ? [...hierarchyBoardStates].toSorted((a, b) => {
+          const keyA = boardStateKeyFromExternalId(a.external_id);
+          const keyB = boardStateKeyFromExternalId(b.external_id);
+          const indexA = keyA ? boardOrder.indexOf(keyA) : Number.MAX_SAFE_INTEGER;
+          const indexB = keyB ? boardOrder.indexOf(keyB) : Number.MAX_SAFE_INTEGER;
+          return indexA - indexB;
+        })
+      : _states;
   // map project states to group by columns
-  return _states.map((state) => ({
+  return statesForColumns.map((state) => ({
     id: state.id,
     name: state.name,
     icon: (

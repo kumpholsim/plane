@@ -149,7 +149,14 @@ export class CycleIssuesFilter extends IssueFilterHelperStore implements ICycleI
     const _filters = await this.issueFilterService.fetchCycleIssueFilters(workspaceSlug, projectId, cycleId);
 
     const richFilters: TWorkItemFilterExpression = _filters?.rich_filters;
-    const displayFilters: IIssueDisplayFilterOptions = this.computedDisplayFilters(_filters?.display_filters);
+    const displayFilters: IIssueDisplayFilterOptions = this.computedDisplayFilters(_filters?.display_filters, {
+      // List layout defaults: Epic grouping, manual order, hide L4 / empty groups
+      group_by: "module",
+      order_by: "sort_order",
+      layout: "list",
+      sub_issue: false,
+      show_empty_groups: false,
+    });
     const displayProperties: IIssueDisplayProperties = this.computedDisplayProperties(_filters?.display_properties);
 
     // fetching the kanban toggle helpers in the local storage
@@ -216,7 +223,22 @@ export class CycleIssuesFilter extends IssueFilterHelperStore implements ICycleI
 
       switch (type) {
         case EIssueFilterType.DISPLAY_FILTERS: {
-          const updatedDisplayFilters = filters as IIssueDisplayFilterOptions;
+          const updatedDisplayFilters = { ...(filters as IIssueDisplayFilterOptions) };
+          const nextLayout = updatedDisplayFilters.layout ?? _filters.displayFilters.layout;
+
+          // List / board layouts are locked — don't persist view tweaks into shared display filters
+          // so other layouts' settings stay independent.
+          if (nextLayout === "list" || nextLayout === "kanban") {
+            const layoutOnlyUpdate = Object.keys(updatedDisplayFilters).every((key) => key === "layout");
+            if (!layoutOnlyUpdate) {
+              delete updatedDisplayFilters.group_by;
+              delete updatedDisplayFilters.order_by;
+              delete updatedDisplayFilters.sub_issue;
+              delete updatedDisplayFilters.show_empty_groups;
+              delete updatedDisplayFilters.sub_group_by;
+            }
+          }
+
           _filters.displayFilters = { ..._filters.displayFilters, ...updatedDisplayFilters };
 
           // set sub_group_by to null if group_by is set to null

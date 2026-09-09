@@ -112,7 +112,13 @@ class IssueArchiveViewSet(BaseViewSet):
 
         issue_queryset = self.get_queryset()
 
-        issue_queryset = issue_queryset if show_sub_issues == "true" else issue_queryset.filter(parent__isnull=True)
+        from plane.utils.issue_parent import HIERARCHY_LEVEL_SUB_TASK
+
+        issue_queryset = (
+            issue_queryset
+            if show_sub_issues == "true"
+            else issue_queryset.filter(hierarchy_level__lt=HIERARCHY_LEVEL_SUB_TASK)
+        )
         # Apply filtering from filterset
         issue_queryset = self.filter_queryset(issue_queryset)
 
@@ -167,6 +173,7 @@ class IssueArchiveViewSet(BaseViewSet):
                             slug=slug,
                             project_id=project_id,
                             filters=filters,
+                            for_subgroup=True,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,

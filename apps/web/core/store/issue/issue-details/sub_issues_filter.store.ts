@@ -16,7 +16,12 @@ import type {
   TGroupedIssues,
   TIssue,
 } from "@plane/types";
-import { getFilteredWorkItems, getGroupedWorkItemIds, updateSubWorkItemFilters } from "../helpers/base-issues-utils";
+import {
+  getFilteredWorkItems,
+  getGroupedWorkItemIds,
+  sortSubWorkItemsByHierarchyType,
+  updateSubWorkItemFilters,
+} from "../helpers/base-issues-utils";
 import type { IssueSubIssuesStore } from "./sub_issues.store";
 
 export const DEFAULT_DISPLAY_PROPERTIES = {
@@ -28,6 +33,7 @@ export const DEFAULT_DISPLAY_PROPERTIES = {
   labels: true,
   priority: true,
   state: true,
+  cycle: true,
 };
 export interface IWorkItemSubIssueFiltersStore {
   subIssueFilters: Record<string, Partial<ISubWorkItemFilters>>;
@@ -70,7 +76,16 @@ export class WorkItemSubIssueFiltersStore implements IWorkItemSubIssueFiltersSto
     if (!this.subIssueFilters[workItemId]) {
       this.initializeFilters(workItemId);
     }
-    return this.subIssueFilters[workItemId];
+    const filters = this.subIssueFilters[workItemId];
+    // Backfill cycle for sessions initialized before it was a sub-issue display property
+    if (filters.displayProperties && filters.displayProperties.cycle === undefined) {
+      set(filters, ["displayProperties", "cycle"], true);
+    }
+    // Default chronological order so newly created sub-tasks append at the bottom
+    if (!filters.displayFilters?.order_by) {
+      set(filters, ["displayFilters", "order_by"], "created_at");
+    }
+    return filters;
   };
 
   /**
@@ -80,7 +95,7 @@ export class WorkItemSubIssueFiltersStore implements IWorkItemSubIssueFiltersSto
   initializeFilters = (workItemId: string) => {
     set(this.subIssueFilters, [workItemId, "displayProperties"], DEFAULT_DISPLAY_PROPERTIES);
     set(this.subIssueFilters, [workItemId, "filters"], {});
-    set(this.subIssueFilters, [workItemId, "displayFilters"], {});
+    set(this.subIssueFilters, [workItemId, "displayFilters"], { order_by: "created_at" });
   };
 
   /**
@@ -110,7 +125,13 @@ export class WorkItemSubIssueFiltersStore implements IWorkItemSubIssueFiltersSto
 
     // get group by and order by
     const groupByKey = subIssueFilters.displayFilters?.group_by;
-    const orderByKey = subIssueFilters.displayFilters?.order_by;
+    const orderByKey = subIssueFilters.displayFilters?.order_by ?? "created_at";
+
+    // Default chronological view: Design → Dev → QA groups, newest at bottom within each
+    if (orderByKey === "created_at") {
+      const sortedByType = sortSubWorkItemsByHierarchyType(filteredWorkItems);
+      return getGroupedWorkItemIds(sortedByType, groupByKey, "sort_order");
+    }
 
     const groupedWorkItemIds = getGroupedWorkItemIds(filteredWorkItems, groupByKey, orderByKey);
 

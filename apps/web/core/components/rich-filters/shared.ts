@@ -20,5 +20,7 @@ export type TFilterValueInputProps<P extends TFilterProperty, V extends TFilterV
   condition: TFilterConditionNodeForDisplay<P, V>;
   filterFieldConfig: TSupportedFilterFieldConfigs<V>;
   isDisabled?: boolean;
+  /** When false, empty values do not auto-open the dropdown (used for always-visible pinned chips). */
+  openOnEmpty?: boolean;
   onChange: (values: SingleOrArray<V>) => void;
 };

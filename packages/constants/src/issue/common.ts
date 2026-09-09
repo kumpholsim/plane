@@ -15,6 +15,9 @@ import type {
 
 export const ALL_ISSUES = "All Issues";
 
+/** Max ancestor depth for sub-tasks (root=0 → first sub-task=1 → second=2). */
+export const MAX_SUB_TASK_DEPTH = 3;
+
 export type TIssuePriorities = "urgent" | "high" | "medium" | "low" | "none";
 
 export type TIssueFilterPriorityObject = {
@@ -33,6 +36,7 @@ export enum EIssueGroupByToServerOptions {
   "cycle" = "cycle_id",
   "module" = "issue_module__module_id",
   "target_date" = "target_date",
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
   "project" = "project_id",
   "created_by" = "created_by",
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
@@ -120,7 +124,7 @@ export const ISSUE_GROUP_BY_OPTIONS: {
   { key: "team_project", titleTranslationKey: "common.team_project" }, // required this on team issues
   { key: "project", titleTranslationKey: "common.project" }, // required this on my issues
   { key: "cycle", titleTranslationKey: "common.cycle" }, // required this on my issues
-  { key: "module", titleTranslationKey: "common.module" }, // required this on my issues
+  { key: "module", titleTranslationKey: "common.epic" }, // group-by epic (legacy key "module")
   { key: "labels", titleTranslationKey: "common.labels" },
   { key: "assignees", titleTranslationKey: "common.assignees" },
   { key: "created_by", titleTranslationKey: "common.created_by" },
@@ -132,6 +136,7 @@ export const ISSUE_ORDER_BY_OPTIONS: {
   titleTranslationKey: string;
 }[] = [
   { key: "sort_order", titleTranslationKey: "common.order_by.manual" },
+  { key: "created_at", titleTranslationKey: "common.sort.created_on" },
   { key: "-created_at", titleTranslationKey: "common.order_by.last_created" },
   { key: "-updated_at", titleTranslationKey: "common.order_by.last_updated" },
   { key: "start_date", titleTranslationKey: "common.order_by.start_date" },
@@ -165,6 +170,7 @@ export const SUB_ISSUES_DISPLAY_PROPERTIES_KEYS: (keyof IIssueDisplayProperties)
   "due_date",
   "priority",
   "state",
+  "cycle",
 ];
 
 export const ISSUE_DISPLAY_PROPERTIES: {
@@ -206,7 +212,7 @@ export const ISSUE_DISPLAY_PROPERTIES: {
     key: "estimate",
     titleTranslationKey: "common.estimate",
   },
-  { key: "modules", titleTranslationKey: "common.module" },
+  { key: "modules", titleTranslationKey: "common.epic" },
   { key: "cycle", titleTranslationKey: "common.cycle" },
 ];
 

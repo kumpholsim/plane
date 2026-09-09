@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Aggiungi Modulo",
+    "add_module": "Aggiungi epic",
     "update_module": "Aggiorna Modulo",
-    "create_module": "Crea Modulo",
+    "create_module": "Crea epic",
     "archive_module": "Archivia Modulo",
     "restore_module": "Ripristina Modulo",
     "delete_module": "Elimina modulo",
     "empty_state": {
       "general": {
-        "title": "Associa i traguardi del tuo progetto ai Moduli e traccia facilmente il lavoro aggregato.",
-        "description": "Un gruppo di elementi di lavoro che appartengono a un genitore logico e gerarchico forma un modulo. Considerali come un modo per tracciare il lavoro in base ai traguardi del progetto. Hanno i propri intervalli temporali e scadenze, oltre ad analisi che ti aiutano a vedere quanto sei vicino o lontano da un traguardo.",
+        "title": "Organizza gli epic sotto i milestone e monitora facilmente il lavoro di delivery.",
+        "description": "Gli epic sono work item L2 sotto i milestone. Usali per raggruppare story, bug e task.",
         "primary_button": {
-          "text": "Crea il tuo primo modulo",
+          "text": "Crea il tuo primo epic",
           "comic": {
-            "title": "I moduli aiutano a raggruppare il lavoro per gerarchia.",
-            "description": "Un modulo per il carrello, un modulo per il telaio e un modulo per il magazzino sono tutti buoni esempi di questo raggruppamento."
+            "title": "Gli epic aiutano a raggruppare il lavoro per gerarchia.",
+            "description": "Un epic carrello, un epic telaio e un epic magazzino sono buoni esempi di questo raggruppamento."
           }
         }
       },
       "no_issues": {
-        "title": "Nessun elemento di lavoro nel modulo",
-        "description": "Crea o aggiungi elementi di lavoro che desideri completare come parte di questo modulo",
+        "title": "Nessun work item nell’epic",
+        "description": "Crea o aggiungi work item da completare come parte di questo epic",
         "primary_button": {
           "text": "Crea nuovi elementi di lavoro"
         },

@@ -243,7 +243,7 @@
         "description": "No work items yet. Add one to structure your work better."
       },
       "no_sub_work_items": {
-        "description": "No sub-work items yet. Add one to structure your work better."
+        "description": "No sub-tasks yet. Add one to structure your work better."
       },
       "page": {
         "no_templates": {

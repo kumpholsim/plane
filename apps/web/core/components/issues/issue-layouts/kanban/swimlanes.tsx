@@ -22,6 +22,7 @@ import type {
 import { Row } from "@plane/ui";
 // hooks
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
 // plane web imports
 import { useWorkFlowFDragNDrop } from "@/components/workflow";
 // local imports
@@ -83,7 +84,7 @@ const SubGroupSwimlaneHeader = observer(function SubGroupSwimlaneHeader({
           if (subGroupByVisibilityToggle === false) return <></>;
 
           return (
-            <div key={`${sub_group_by}_${_list.id}`} className="flex w-[350px] flex-shrink-0 flex-col">
+            <div key={`${sub_group_by}_${_list.id}`} className="flex w-[228px] flex-shrink-0 flex-col">
               <HeaderGroupByCard
                 sub_group_by={sub_group_by}
                 group_by={group_by}
@@ -193,6 +194,11 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                     collapsedGroups={collapsedGroups}
                     handleCollapsedGroups={handleCollapsedGroups}
                     sub_group_by={sub_group_by}
+                    className={
+                      isFullyDoneL3ForCycleHighlight(issuesMap[_list.id] ?? { id: _list.id }, issuesMap)
+                        ? "rounded-md bg-success-subtle px-1.5"
+                        : undefined
+                    }
                   />
                 </Row>
               </div>
@@ -301,6 +307,7 @@ export const KanBanSwimLanes = observer(function KanBanSwimLanes(props: IKanBanS
     includeNone: true,
     isWorkspaceLevel: isWorkspaceLevel(storeType),
     isEpic: isEpic,
+    asSubGroup: true,
   });
 
   if (!groupByList || !subGroupByList) return null;

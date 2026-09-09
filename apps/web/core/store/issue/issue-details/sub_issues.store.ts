@@ -20,6 +20,7 @@ import type {
 // services
 import { IssueService } from "@/services/issue";
 // store
+import { getIssueIds, sortSubWorkItemsByHierarchyType } from "../helpers/base-issues-utils";
 import type { IIssueDetail } from "./root.store";
 import type { IWorkItemSubIssueFiltersStore } from "./sub_issues_filter.store";
 import { WorkItemSubIssueFiltersStore } from "./sub_issues_filter.store";
@@ -107,7 +108,13 @@ export class IssueSubIssuesStore implements IIssueSubIssuesStore {
     return this.subIssuesStateDistribution[issueId] ?? undefined;
   };
 
-  subIssuesByIssueId = computedFn((issueId: string) => this.subIssues[issueId]);
+  subIssuesByIssueId = computedFn((issueId: string) => {
+    const issueIds = this.subIssues[issueId];
+    if (!issueIds) return undefined;
+
+    const workItems = this.rootIssueDetailStore.rootIssueStore.issues.getIssuesByIds(issueIds, "un-archived");
+    return getIssueIds(sortSubWorkItemsByHierarchyType(workItems));
+  });
 
   subIssueHelpersByIssueId = (issueId: string) => ({
     preview_loader: this.subIssueHelpers?.[issueId]?.preview_loader || [],
@@ -186,10 +193,10 @@ export class IssueSubIssuesStore implements IIssueSubIssuesStore {
         });
       });
 
-      const issueIds = subIssues.map((issue) => issue.id);
+      const childIssueIds = subIssues.map((issue) => issue.id);
       update(this.subIssues, [parentIssueId], (issues) => {
-        if (!issues) return issueIds;
-        return concat(issues, issueIds);
+        if (!issues) return childIssueIds;
+        return concat(issues, childIssueIds);
       });
     });
 

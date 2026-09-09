@@ -12,6 +12,7 @@ import type {
   TWorkItemFilterExpression,
   TWorkItemFilterProperty,
 } from "@plane/types";
+import { sanitizeAndStabilizeExpression } from "@plane/utils";
 // local imports
 import { workItemFiltersAdapter } from "../store/work-item-filters/adapter";
 import { buildTempFilterExpressionFromConditions } from "./rich-filter.helper";
@@ -23,6 +24,25 @@ export type TWorkItemFilterCondition = TFilterConditionForBuild<TWorkItemFilterP
  * @param params.conditions - The conditions for building the filter expression.
  * @returns The work item filter expression.
  */
+/**
+ * Drops empty / blank filter values before API requests or persistence.
+ * Saved user properties can contain `state_id__in: ""` from cleared pinned filters.
+ */
+export const sanitizeWorkItemRichFiltersForApi = (
+  expression: TWorkItemFilterExpression | undefined
+): TWorkItemFilterExpression => {
+  if (!expression) return {};
+
+  try {
+    const internal = workItemFiltersAdapter.toInternal(expression);
+    const sanitized = sanitizeAndStabilizeExpression(internal);
+    if (!sanitized) return {};
+    return workItemFiltersAdapter.toExternal(sanitized);
+  } catch {
+    return {};
+  }
+};
+
 export const buildWorkItemFilterExpressionFromConditions = (
   params: Omit<
     TBuildFilterExpressionParams<TWorkItemFilterProperty, TFilterValue, TWorkItemFilterExpression>,

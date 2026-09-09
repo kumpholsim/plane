@@ -439,7 +439,7 @@
       "content": {
         "intro": "작업 항목 유형 {workItemTypeName}에 다음이 있습니다.",
         "parent_items": "{count, plural, other {#개 상위 링크가}} 제거됩니다.",
-        "child_items": "{count, plural, other {하위 작업 항목}}",
+        "child_items": "{count, plural, other {하위 작업}}",
         "parent_line_suffix_when_also_children": ", 그리고 ",
         "footer": "이 변경은 {workItemTypeName} 작업 항목 유형의 기존 작업 항목에서 상위·하위 관계를 제거합니다."
       },

@@ -7,6 +7,7 @@
 import { useParams } from "next/navigation";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { EIssuesStoreType, TIssue, TIssueGroupByOptions, TIssueOrderByOptions } from "@plane/types";
+import { filterIssueIdsByPinBand, getIssuePinLevel } from "@/components/issues/issue-layouts/list/epic-list-sections";
 import type { GroupDropLocation } from "@/components/issues/issue-layouts/utils";
 import { handleGroupDragDrop } from "@/components/issues/issue-layouts/utils";
 import { ISSUE_FILTER_DEFAULT_DATA } from "@/store/issue/helpers/base-issues.store";
@@ -40,7 +41,7 @@ export const useGroupIssuesDragNDrop = (
   } = useIssueDetail();
   const { updateIssue } = useIssuesActions(storeType);
   const {
-    issues: { getIssueIds, addCycleToIssue, removeCycleFromIssue, changeModulesInIssue },
+    issues: { getIssueIds, addCycleToIssue, removeCycleFromIssue },
   } = useIssues(storeType);
 
   /**
@@ -83,18 +84,19 @@ export const useGroupIssuesDragNDrop = (
       delete data[cycleKey];
     }
 
-    if (isModuleChanged && workspaceSlug && issueUpdates[moduleKey]) {
-      changeModulesInIssue(
-        workspaceSlug.toString(),
-        projectId,
-        issueId,
-        issueUpdates[moduleKey].ADD,
-        issueUpdates[moduleKey].REMOVE
-      ).catch(() => setToast(errorToastProps));
-      delete data[moduleKey];
+    // Group-by "module" is Epic (L2). Moving between epic columns updates parent_id,
+    // not classic IssueModule membership.
+    if (isModuleChanged) {
+      const addIds = issueUpdates[moduleKey]?.ADD ?? [];
+      const newEpicId = addIds.find((id) => id && id !== "None") ?? null;
+      data.parent_id = newEpicId;
+      // Keep module_ids as the epic id so client-side epic grouping stays in sync
+      data.module_ids = newEpicId ? [newEpicId] : [];
     }
 
-    updateIssue && updateIssue(projectId, issueId, data).catch(() => setToast(errorToastProps));
+    if (updateIssue) {
+      await updateIssue(projectId, issueId, data).catch(() => setToast(errorToastProps));
+    }
   };
 
   const handleOnDrop = async (source: GroupDropLocation, destination: GroupDropLocation) => {
@@ -106,11 +108,37 @@ export const useGroupIssuesDragNDrop = (
     )
       return;
 
+    const sourceIssue = source.id ? getIssueById(source.id) : undefined;
+    const destinationIssue = destination.id ? getIssueById(destination.id) : undefined;
+
+    // Epic list: reorder only within High Priority (pinned) or the unpinned band
+    if (groupBy === "module" && source.groupId === destination.groupId && sourceIssue) {
+      if (destinationIssue) {
+        const sourcePinned = getIssuePinLevel(sourceIssue) > 0;
+        const destinationPinned = getIssuePinLevel(destinationIssue) > 0;
+        if (sourcePinned !== destinationPinned) {
+          setToast({
+            type: TOAST_TYPE.WARNING,
+            title: "Cannot move work item",
+            message: "Use the pin controls to move items in or out of High Priority",
+          });
+          return;
+        }
+      }
+    }
+
+    const getPinAwareIssueIds = (groupId?: string, subGroupId?: string) => {
+      const ids = getIssueIds(groupId, subGroupId);
+      if (groupBy !== "module" || !sourceIssue || !ids) return ids;
+      if (source.groupId !== destination.groupId) return ids;
+      return filterIssueIdsByPinBand(ids, getIssuePinLevel(sourceIssue) > 0, getIssueById);
+    };
+
     await handleGroupDragDrop(
       source,
       destination,
       getIssueById,
-      getIssueIds,
+      getPinAwareIssueIds,
       updateIssueOnDrop,
       groupBy,
       subGroupBy,

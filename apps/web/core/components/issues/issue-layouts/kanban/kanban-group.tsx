@@ -25,7 +25,7 @@ import type {
   TIssueGroupByOptions,
   TIssueOrderByOptions,
 } from "@plane/types";
-import { EIssueLayoutTypes } from "@plane/types";
+import { EIssueLayoutTypes, EIssuesStoreType } from "@plane/types";
 import { cn } from "@plane/utils";
 import type { GroupDropLocation } from "@/components/issues/issue-layouts/utils";
 // components
@@ -40,7 +40,7 @@ import { useWorkFlowFDragNDrop } from "@/components/workflow";
 // hooks
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
-import { useIssuesStore } from "@/hooks/use-issue-layout-store";
+import { useIssueStoreType, useIssuesStore } from "@/hooks/use-issue-layout-store";
 // local imports
 import { GroupDragOverlay } from "../group-drag-overlay";
 import type { TRenderQuickActions } from "../list/list-view-types";
@@ -99,6 +99,8 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
   const { t } = useTranslation();
   // hooks
   const projectState = useProjectState();
+  const storeType = useIssueStoreType();
+  const isCompact = storeType === EIssuesStoreType.CYCLE;
 
   const {
     issues: { getGroupIssueCount, getPaginationData, getIssueLoader },
@@ -213,7 +215,7 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
       } else if (groupByKey === "cycle") {
         preloadedData = { ...preloadedData, cycle_id: groupValue };
       } else if (groupByKey === "module") {
-        preloadedData = { ...preloadedData, module_ids: [groupValue] };
+        preloadedData = { ...preloadedData, parent_id: groupValue };
       } else if (groupByKey === "labels" && groupValue != "None") {
         preloadedData = { ...preloadedData, label_ids: [groupValue] };
       } else if (groupByKey === "assignees" && groupValue != "None") {
@@ -233,7 +235,7 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
       } else if (subGroupByKey === "cycle") {
         preloadedData = { ...preloadedData, cycle_id: subGroupValue };
       } else if (subGroupByKey === "module") {
-        preloadedData = { ...preloadedData, module_ids: [subGroupValue] };
+        preloadedData = { ...preloadedData, parent_id: subGroupValue };
       } else if (subGroupByKey === "labels" && subGroupValue != "None") {
         preloadedData = { ...preloadedData, label_ids: [subGroupValue] };
       } else if (subGroupByKey === "assignees" && subGroupValue != "None") {
@@ -317,7 +319,7 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
         (isSubGroup ? (
           <>{loadMore}</>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className={cn("flex flex-col", isCompact ? "gap-1.5" : "gap-2")}>
             {Array.from({ length: 2 }).map((_, index) => (
               // oxlint-disable-next-line react/no-array-index-key
               <KanbanIssueBlockLoader key={index} />

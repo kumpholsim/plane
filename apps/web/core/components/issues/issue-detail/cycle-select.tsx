@@ -11,6 +11,11 @@ import { useTranslation } from "@plane/i18n";
 // components
 import { cn } from "@plane/utils";
 import { CycleDropdown } from "@/components/dropdowns/cycle";
+import {
+  canEditCycle,
+  getHierarchyLevel,
+  shouldShowCycleProperty,
+} from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // ui
 // helpers
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -37,27 +42,34 @@ export const IssueCycleSelect = observer(function IssueCycleSelect(props: TIssue
   } = useIssueDetail();
   // derived values
   const issue = getIssueById(issueId);
-  const disableSelect = disabled || isUpdating;
+  const level = getHierarchyLevel(issue);
+  const parent = issue?.parent_id ? getIssueById(issue.parent_id) : undefined;
+  // Prefer own cycle; fall back to parent when L4 has not been assigned yet
+  const cycleId = issue?.cycle_id ?? parent?.cycle_id ?? null;
+  const cycleEditable = canEditCycle(level) && !disabled;
+  const disableSelect = disabled || isUpdating || !cycleEditable;
 
-  const handleIssueCycleChange = async (cycleId: string | null) => {
-    if (!issue || issue.cycle_id === cycleId) return;
+  const handleIssueCycleChange = async (nextCycleId: string | null) => {
+    if (!issue || !cycleEditable || issue.cycle_id === nextCycleId) return;
     setIsUpdating(true);
-    if (cycleId) await issueOperations.addCycleToIssue?.(workspaceSlug, projectId, cycleId, issueId);
+    if (nextCycleId) await issueOperations.addCycleToIssue?.(workspaceSlug, projectId, nextCycleId, issueId);
     else await issueOperations.removeIssueFromCycle?.(workspaceSlug, projectId, issue.cycle_id ?? "", issueId);
     setIsUpdating(false);
   };
 
+  if (!shouldShowCycleProperty(level)) return null;
+
   return (
     <div className={cn("flex h-full items-center gap-1", className)}>
       <CycleDropdown
-        value={issue?.cycle_id ?? null}
+        value={cycleId}
         onChange={handleIssueCycleChange}
         projectId={projectId}
         disabled={disableSelect}
         buttonVariant="transparent-with-text"
         className="group w-full"
         buttonContainerClassName="w-full text-left h-7.5 rounded-sm"
-        buttonClassName={`text-body-xs-medium justify-between ${issue?.cycle_id ? "" : "text-placeholder"}`}
+        buttonClassName={`text-body-xs-medium justify-between ${cycleId ? "" : "text-placeholder"}`}
         placeholder={t("cycle.no_cycle")}
         hideIcon
         dropdownArrow

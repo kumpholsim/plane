@@ -130,11 +130,13 @@ class SubIssuesEndpoint(BaseAPIView):
             .annotate(state_group=F("state__group"))
         )
 
-        # Ordering
-        order_by_param = request.GET.get("order_by", "-created_at")
+        # Default: Design → Dev → QA (hierarchy type sort_order), then oldest→newest
+        order_by_param = request.GET.get("order_by", "hierarchy_type")
         group_by = request.GET.get("group_by", False)
 
-        if order_by_param:
+        if order_by_param in ("hierarchy_type", "created_at", ""):
+            sub_issues = sub_issues.order_by("hierarchy_type__sort_order", "created_at")
+        elif order_by_param:
             sub_issues, order_by_param = order_issue_queryset(sub_issues, order_by_param)
 
         sub_issues = list(
@@ -165,8 +167,16 @@ class SubIssuesEndpoint(BaseAPIView):
                 "is_draft",
                 "archived_at",
                 "state_group",
+                "hierarchy_type_id",
+                "hierarchy_level",
+                "progress_status",
+                "qa_outcome",
             )
         )
+
+        for sub_issue in sub_issues:
+            # Back-compat alias for L4 category chips
+            sub_issue["sub_work_item_category_id"] = sub_issue.get("hierarchy_type_id")
 
         # create's a dict with state group name with their respective issue id's
         result = defaultdict(list)
@@ -214,10 +224,31 @@ class SubIssuesEndpoint(BaseAPIView):
         # Scope to workspace to prevent cross-tenant IDOR
         sub_issues = Issue.issue_objects.filter(id__in=sub_issue_ids, workspace__slug=slug)
 
+        from plane.utils.issue_parent import (
+            SUB_TASK_DEPTH_ERROR,
+            get_hierarchy_level,
+            resolve_child_hierarchy_level,
+            would_exceed_sub_task_depth,
+        )
+
+        child_level = resolve_child_hierarchy_level(parent_issue)
+        if get_hierarchy_level(parent_issue) >= 4:
+            return Response({"error": SUB_TASK_DEPTH_ERROR}, status=status.HTTP_400_BAD_REQUEST)
+
+        for sub_issue in sub_issues:
+            if would_exceed_sub_task_depth(parent_issue, sub_issue.id):
+                return Response({"error": SUB_TASK_DEPTH_ERROR}, status=status.HTTP_400_BAD_REQUEST)
+
         for sub_issue in sub_issues:
             sub_issue.parent = parent_issue
+            sub_issue.hierarchy_level = child_level
 
-        _ = Issue.objects.bulk_update(sub_issues, ["parent"], batch_size=10)
+        _ = Issue.objects.bulk_update(sub_issues, ["parent", "hierarchy_level"], batch_size=10)
+
+        from plane.utils.issue_cycle import inherit_cycle_from_parent
+
+        for sub_issue in Issue.issue_objects.filter(id__in=sub_issue_ids):
+            inherit_cycle_from_parent(sub_issue, request.user.id)
 
         updated_sub_issues = Issue.issue_objects.filter(id__in=sub_issue_ids).annotate(state_group=F("state__group"))
 

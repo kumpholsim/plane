@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Agregar Módulo",
+    "add_module": "Añadir epic",
     "update_module": "Actualizar Módulo",
-    "create_module": "Crear Módulo",
+    "create_module": "Crear epic",
     "archive_module": "Archivar Módulo",
     "restore_module": "Restaurar Módulo",
     "delete_module": "Eliminar módulo",
     "empty_state": {
       "general": {
-        "title": "Mapea los hitos de tu proyecto a Módulos y rastrea el trabajo agregado fácilmente.",
-        "description": "Un grupo de elementos de trabajo que pertenecen a un padre lógico y jerárquico forman un módulo. Piensa en ellos como una forma de rastrear el trabajo por hitos del proyecto. Tienen sus propios períodos y fechas límite, así como análisis para ayudarte a ver qué tan cerca o lejos estás de un hito.",
+        "title": "Organiza epics bajo hitos y sigue el trabajo de entrega fácilmente.",
+        "description": "Los epics son elementos de trabajo L2 bajo hitos. Úsalos para agrupar historias, bugs y tareas.",
         "primary_button": {
-          "text": "Construye tu primer módulo",
+          "text": "Crea tu primer epic",
           "comic": {
-            "title": "Los módulos ayudan a agrupar el trabajo por jerarquía.",
-            "description": "Un módulo de carrito, un módulo de chasis y un módulo de almacén son buenos ejemplos de esta agrupación."
+            "title": "Los epics ayudan a agrupar el trabajo por jerarquía.",
+            "description": "Un epic de carrito, un epic de chasis y un epic de almacén son buenos ejemplos de este agrupamiento."
           }
         }
       },
       "no_issues": {
-        "title": "No hay elementos de trabajo en el módulo",
-        "description": "Crea o agrega elementos de trabajo que quieras lograr como parte de este módulo",
+        "title": "No hay elementos de trabajo en el epic",
+        "description": "Crea o añade elementos de trabajo que quieras completar como parte de este epic",
         "primary_button": {
           "text": "Crear nuevos elementos de trabajo"
         },

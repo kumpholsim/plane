@@ -55,6 +55,11 @@
         "error": "Error al actualizar la etiqueta"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Subtarea",
+      "heading": "Subtarea",
+      "description": "Organiza las subtareas por rol como Design, Dev y QA. Arrastra para reordenar o elimina categorías no usadas."
+    },
     "estimates": {
       "heading": "Estimaciones",
       "description": "Te ayudan a comunicar la complejidad y la carga de trabajo del equipo.",

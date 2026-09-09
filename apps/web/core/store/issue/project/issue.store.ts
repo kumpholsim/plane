@@ -83,7 +83,9 @@ export class ProjectIssues extends BaseIssuesStore implements IProjectIssues {
    * @param projectId
    */
   fetchParentStats = async (workspaceSlug: string, projectId?: string) => {
-    projectId && this.rootIssueStore.rootStore.projectRoot.project.fetchProjectDetails(workspaceSlug, projectId);
+    if (projectId) {
+      await this.rootIssueStore.rootStore.projectRoot.project.fetchProjectDetails(workspaceSlug, projectId);
+    }
   };
 
   /** */
@@ -111,8 +113,11 @@ export class ProjectIssues extends BaseIssuesStore implements IProjectIssues {
         this.clear(!isExistingPaginationOptions); // clear while fetching from server.
       });
 
-      // get params from pagination options
-      const params = this.issueFilterStore?.getFilterParams(options, projectId, undefined, undefined, undefined);
+      // get params from pagination options — team board shows L3 delivery items only
+      const params = {
+        ...this.issueFilterStore?.getFilterParams(options, projectId, undefined, undefined, undefined),
+        hierarchy_level: "3",
+      };
       // call the fetch issues API with the params
       const response = await this.issueService.getIssues(workspaceSlug, projectId, params, {
         signal: this.controller.signal,
@@ -146,14 +151,17 @@ export class ProjectIssues extends BaseIssuesStore implements IProjectIssues {
       // set Loader
       this.setLoader("pagination", groupId, subGroupId);
 
-      // get params from stored pagination options
-      const params = this.issueFilterStore?.getFilterParams(
-        this.paginationOptions,
-        projectId,
-        this.getNextCursor(groupId, subGroupId),
-        groupId,
-        subGroupId
-      );
+      // get params from stored pagination options — keep L3 delivery filter
+      const params = {
+        ...this.issueFilterStore?.getFilterParams(
+          this.paginationOptions,
+          projectId,
+          this.getNextCursor(groupId, subGroupId),
+          groupId,
+          subGroupId
+        ),
+        hierarchy_level: "3",
+      };
       // call the fetch issues API with the params for next page in issues
       const response = await this.issueService.getIssues(workspaceSlug, projectId, params);
 

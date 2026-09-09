@@ -221,7 +221,21 @@ export class ModuleIssuesFilter extends IssueFilterHelperStore implements IModul
 
       switch (type) {
         case EIssueFilterType.DISPLAY_FILTERS: {
-          const updatedDisplayFilters = filters as IIssueDisplayFilterOptions;
+          const updatedDisplayFilters = { ...(filters as IIssueDisplayFilterOptions) };
+          const nextLayout = updatedDisplayFilters.layout ?? _filters.displayFilters.layout;
+
+          // List / board layouts are locked — don't persist view tweaks into shared display filters
+          if (nextLayout === "list" || nextLayout === "kanban") {
+            const layoutOnlyUpdate = Object.keys(updatedDisplayFilters).every((key) => key === "layout");
+            if (!layoutOnlyUpdate) {
+              delete updatedDisplayFilters.group_by;
+              delete updatedDisplayFilters.order_by;
+              delete updatedDisplayFilters.sub_issue;
+              delete updatedDisplayFilters.show_empty_groups;
+              delete updatedDisplayFilters.sub_group_by;
+            }
+          }
+
           _filters.displayFilters = { ..._filters.displayFilters, ...updatedDisplayFilters };
 
           // set sub_group_by to null if group_by is set to null

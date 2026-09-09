@@ -55,6 +55,11 @@
         "error": "Erro ao atualizar a etiqueta"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Subtarefa",
+      "heading": "Subtarefa",
+      "description": "Organize subtarefas por função, como Design, Dev e QA. Arraste para reordenar ou exclua categorias não usadas."
+    },
     "estimates": {
       "heading": "Estimativas",
       "description": "Elas ajudam você a comunicar a complexidade e a carga de trabalho da equipe.",

@@ -42,6 +42,7 @@ from plane.db.models import (
     IssueDescriptionVersion,
     ProjectMember,
     EstimatePoint,
+    ProjectHierarchyType,
 )
 from plane.utils.content_validator import (
     validate_html_content,
@@ -87,6 +88,12 @@ class IssueCreateSerializer(BaseSerializer):
     parent_id = serializers.PrimaryKeyRelatedField(
         source="parent", queryset=Issue.objects.all(), required=False, allow_null=True
     )
+    hierarchy_type_id = serializers.PrimaryKeyRelatedField(
+        source="hierarchy_type",
+        queryset=ProjectHierarchyType.objects.all(),
+        required=False,
+        allow_null=True,
+    )
     label_ids = serializers.ListField(
         child=serializers.PrimaryKeyRelatedField(queryset=Label.objects.all()),
         write_only=True,
@@ -113,12 +120,21 @@ class IssueCreateSerializer(BaseSerializer):
             "completed_at",
         ]
 
+    def to_internal_value(self, data):
+        # Accept legacy sub_work_item_category_id as hierarchy_type_id
+        mutable = data.copy() if hasattr(data, "copy") else dict(data)
+        if "hierarchy_type_id" not in mutable and "sub_work_item_category_id" in mutable:
+            mutable["hierarchy_type_id"] = mutable.get("sub_work_item_category_id")
+        return super().to_internal_value(mutable)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         assignee_ids = self.initial_data.get("assignee_ids")
         data["assignee_ids"] = assignee_ids if assignee_ids else []
         label_ids = self.initial_data.get("label_ids")
         data["label_ids"] = label_ids if label_ids else []
+        # Back-compat for L4 clients
+        data["sub_work_item_category_id"] = getattr(instance, "hierarchy_type_id", None)
         return data
 
     def validate(self, attrs):
@@ -185,6 +201,92 @@ class IssueCreateSerializer(BaseSerializer):
         ):
             raise serializers.ValidationError("Parent is not valid issue_id please pass a valid issue_id")
 
+        # Limit nesting depth and enforce hierarchy level adjacency
+        from plane.utils.issue_parent import (
+            HIERARCHY_LEVEL_ADJACENCY_ERROR,
+            HIERARCHY_LEVEL_MILESTONE,
+            SUB_TASK_DEPTH_ERROR,
+            get_hierarchy_level,
+            resolve_child_hierarchy_level,
+            would_break_hierarchy_adjacency,
+            would_exceed_sub_task_depth,
+        )
+
+        parent = attrs.get("parent")
+        if parent is None and self.instance is not None and getattr(self.instance, "parent_id", None):
+            parent = getattr(self.instance, "parent", None)
+
+        # Resolve target hierarchy level early for milestone parent rules
+        resolved_level = None
+        if attrs.get("hierarchy_type") is not None:
+            resolved_level = attrs.get("hierarchy_type").level
+        elif attrs.get("hierarchy_level") is not None:
+            resolved_level = attrs.get("hierarchy_level")
+        elif self.instance is not None:
+            resolved_level = get_hierarchy_level(self.instance)
+
+        # Milestones (L1) are always roots — they cannot have a parent
+        if resolved_level == HIERARCHY_LEVEL_MILESTONE:
+            if attrs.get("parent") is not None:
+                raise serializers.ValidationError("Milestones cannot have a parent.")
+            attrs["parent"] = None
+
+        if (
+            parent is not None
+            and resolved_level != HIERARCHY_LEVEL_MILESTONE
+            and ("parent" in attrs or attrs.get("hierarchy_type") is not None or attrs.get("hierarchy_level") is not None)
+        ):
+            child_id = self.instance.pk if self.instance else None
+            if would_exceed_sub_task_depth(parent, child_id):
+                raise serializers.ValidationError(SUB_TASK_DEPTH_ERROR)
+
+            hierarchy_type = attrs.get("hierarchy_type")
+            if hierarchy_type is not None:
+                child_level = hierarchy_type.level
+                attrs["hierarchy_level"] = child_level
+            elif attrs.get("hierarchy_level") is not None:
+                child_level = attrs.get("hierarchy_level")
+            else:
+                child_level = resolve_child_hierarchy_level(parent)
+                attrs["hierarchy_level"] = child_level
+
+            if would_break_hierarchy_adjacency(parent, child_level):
+                raise serializers.ValidationError(HIERARCHY_LEVEL_ADJACENCY_ERROR)
+            if get_hierarchy_level(parent) >= 4:
+                raise serializers.ValidationError(SUB_TASK_DEPTH_ERROR)
+
+        if attrs.get("hierarchy_type") is not None:
+            hierarchy_type = attrs.get("hierarchy_type")
+            if not ProjectHierarchyType.objects.filter(
+                project_id=self.context.get("project_id"),
+                pk=hierarchy_type.id,
+                is_active=True,
+            ).exists():
+                raise serializers.ValidationError(
+                    "Hierarchy type is not valid please pass a valid hierarchy_type_id"
+                )
+            # Keep hierarchy_level in sync with type
+            attrs["hierarchy_level"] = hierarchy_type.level
+
+            # Existing children must remain adjacent to the new level
+            if self.instance is not None:
+                incompatible_children = (
+                    Issue.issue_objects.filter(parent_id=self.instance.pk)
+                    .exclude(hierarchy_level=hierarchy_type.level + 1)
+                    .exists()
+                )
+                if incompatible_children:
+                    raise serializers.ValidationError(
+                        "Cannot change type because existing child work items are not compatible with this level."
+                    )
+        elif (
+            attrs.get("hierarchy_level") is None
+            and self.instance is None
+            and attrs.get("parent") is None
+        ):
+            # Root creates default to delivery level (Story/Bug/Task)
+            attrs.setdefault("hierarchy_level", 3)
+
         if (
             attrs.get("estimate_point")
             and not EstimatePoint.objects.filter(
@@ -193,6 +295,67 @@ class IssueCreateSerializer(BaseSerializer):
             ).exists()
         ):
             raise serializers.ValidationError("Estimate point is not valid please pass a valid estimate_point_id")
+
+        # Hierarchy status fields
+        from plane.utils.hierarchy_status import (
+            BOARD_STATE_DONE,
+            L3_PROGRESS_VALUES,
+            PROGRESS_DESIGN_TODO,
+            QA_OUTCOME_VALUES,
+            allowed_board_keys_for_l4,
+            board_state_key,
+            is_qa_hierarchy_type,
+        )
+
+        level = attrs.get("hierarchy_level")
+        if level is None and self.instance is not None:
+            level = getattr(self.instance, "hierarchy_level", None)
+
+        hierarchy_type = attrs.get("hierarchy_type")
+        if hierarchy_type is None and self.instance is not None:
+            hierarchy_type = getattr(self.instance, "hierarchy_type", None)
+
+        if self.instance is None and level == 3:
+            attrs.setdefault("progress_status", PROGRESS_DESIGN_TODO)
+
+        progress_status = attrs.get("progress_status", serializers.empty)
+        if progress_status is not serializers.empty:
+            if progress_status in (None, ""):
+                attrs["progress_status"] = None
+            else:
+                if level != 3:
+                    raise serializers.ValidationError(
+                        {"progress_status": "Progress status is only valid for delivery (L3) work items."}
+                    )
+                if progress_status not in L3_PROGRESS_VALUES:
+                    raise serializers.ValidationError({"progress_status": "Invalid progress status."})
+
+        qa_outcome = attrs.get("qa_outcome", serializers.empty)
+        if qa_outcome is not serializers.empty:
+            if qa_outcome in (None, ""):
+                attrs["qa_outcome"] = None
+            else:
+                if level != 4 or not is_qa_hierarchy_type(hierarchy_type):
+                    raise serializers.ValidationError(
+                        {"qa_outcome": "QA outcome is only valid for QA sub-tasks (L4)."}
+                    )
+                if qa_outcome not in QA_OUTCOME_VALUES:
+                    raise serializers.ValidationError({"qa_outcome": "Invalid QA outcome."})
+
+        state = attrs.get("state")
+        if state is None and self.instance is not None and "state" not in attrs:
+            state = getattr(self.instance, "state", None)
+
+        if level == 4 and state is not None:
+            key = board_state_key(getattr(state, "external_id", None))
+            allowed = allowed_board_keys_for_l4(hierarchy_type)
+            if key is not None and key not in allowed:
+                raise serializers.ValidationError(
+                    {"state_id": "This status is not allowed for this sub-task type."}
+                )
+            # Clear qa_outcome when leaving Done; require outcome labels via field when Done+QA
+            if key != BOARD_STATE_DONE and "qa_outcome" not in attrs:
+                attrs["qa_outcome"] = None
 
         return attrs
 
@@ -384,6 +547,45 @@ class LabelSerializer(BaseSerializer):
             raise serializers.ValidationError(detail="LABEL_NAME_ALREADY_EXISTS")
 
         return value
+
+
+class ProjectHierarchyTypeSerializer(BaseSerializer):
+    class Meta:
+        model = ProjectHierarchyType
+        fields = [
+            "id",
+            "name",
+            "description",
+            "color",
+            "sort_order",
+            "is_active",
+            "is_default",
+            "level",
+            "project_id",
+            "workspace_id",
+        ]
+        read_only_fields = ["workspace", "project", "is_default"]
+
+    def validate_name(self, value):
+        project_id = self.context.get("project_id")
+        level = None
+        if self.initial_data and self.initial_data.get("level") is not None:
+            level = self.initial_data.get("level")
+        elif self.instance:
+            level = self.instance.level
+
+        qs = ProjectHierarchyType.objects.filter(project_id=project_id, name__iexact=value)
+        if level is not None:
+            qs = qs.filter(level=level)
+        if self.instance:
+            qs = qs.exclude(id=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(detail="HIERARCHY_TYPE_NAME_ALREADY_EXISTS")
+        return value
+
+
+# Back-compat alias
+SubWorkItemCategorySerializer = ProjectHierarchyTypeSerializer
 
 
 class LabelLiteSerializer(BaseSerializer):
@@ -780,6 +982,8 @@ class IssueSerializer(DynamicBaseSerializer):
     sub_issues_count = serializers.IntegerField(read_only=True)
     attachment_count = serializers.IntegerField(read_only=True)
     link_count = serializers.IntegerField(read_only=True)
+    # Back-compat alias
+    sub_work_item_category_id = serializers.UUIDField(source="hierarchy_type_id", read_only=True, allow_null=True)
 
     class Meta:
         model = Issue
@@ -809,6 +1013,12 @@ class IssueSerializer(DynamicBaseSerializer):
             "link_count",
             "is_draft",
             "archived_at",
+            "hierarchy_type_id",
+            "hierarchy_level",
+            "progress_status",
+            "qa_outcome",
+            "sub_work_item_category_id",
+            "pin_level",
         ]
         read_only_fields = fields
 
@@ -853,6 +1063,12 @@ class IssueListDetailSerializer(serializers.Serializer):
             "sequence_id": instance.sequence_id,
             "project_id": instance.project_id,
             "parent_id": instance.parent_id,
+            "sub_work_item_category_id": instance.hierarchy_type_id,
+            "hierarchy_type_id": instance.hierarchy_type_id,
+            "hierarchy_level": getattr(instance, "hierarchy_level", 3),
+            "progress_status": getattr(instance, "progress_status", None),
+            "qa_outcome": getattr(instance, "qa_outcome", None),
+            "pin_level": getattr(instance, "pin_level", 0),
             "created_at": instance.created_at,
             "updated_at": instance.updated_at,
             "created_by": instance.created_by_id,

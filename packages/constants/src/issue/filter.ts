@@ -38,6 +38,37 @@ export enum EIssueFilterType {
   KANBAN_FILTERS = "kanban_filters",
 }
 
+/**
+ * List layout view is locked — Epic grouping, manual order, no nested sub-tasks / empty groups.
+ * Other layouts keep their own display settings; list always resolves to these.
+ */
+export const LOCKED_LIST_LAYOUT_DISPLAY_FILTERS = {
+  group_by: "module" as const,
+  order_by: "sort_order" as const,
+  sub_issue: false,
+  show_empty_groups: false,
+  sub_group_by: null,
+};
+
+/**
+ * Board layout view is locked — State columns, Work item (L3) swimlanes, manual order.
+ * L4 cards are always included under those swimlanes.
+ */
+export const LOCKED_BOARD_LAYOUT_DISPLAY_FILTERS = {
+  group_by: "state" as const,
+  sub_group_by: "module" as const,
+  order_by: "sort_order" as const,
+  sub_issue: true,
+  // Always show all state columns (incl. empty) on board
+  show_empty_groups: true,
+};
+
+/** Always-visible filter chips on list / board filter bars. */
+export const PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES = ["state_id", "assignee_id"] as const;
+
+/** Stable empty list — avoid `[]` / spreads that break filter HOC memoization. */
+export const EMPTY_PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES: readonly string[] = [];
+
 export type TSupportedFilterTypeForUpdate =
   | EIssueFilterType.DISPLAY_FILTERS
   | EIssueFilterType.DISPLAY_PROPERTIES
@@ -283,7 +314,7 @@ export const ISSUE_DISPLAY_FILTERS_BY_PAGE: TIssueFiltersToDisplayByPageType = {
       list: {
         display_properties: SUB_ISSUES_DISPLAY_PROPERTIES_KEYS,
         display_filters: {
-          order_by: ["-created_at", "-updated_at", "start_date", "-priority"],
+          order_by: ["created_at", "-created_at", "-updated_at", "start_date", "-priority"],
           group_by: ["state", "priority", "assignees", null],
         },
         extra_options: {
@@ -353,9 +384,9 @@ export const filterActivityOnSelectedFilters = (
   activity: TIssueActivityComment[],
   filters: TActivityFilters[]
 ): TIssueActivityComment[] =>
-  activity.filter((activity) => {
-    if (activity.activity_type === EActivityFilterType.DEFAULT) return true;
-    return filters.includes(activity.activity_type as TActivityFilters);
+  activity.filter((activityItem) => {
+    if (activityItem.activity_type === EActivityFilterType.DEFAULT) return true;
+    return filters.includes(activityItem.activity_type as TActivityFilters);
   });
 
 export const ENABLE_ISSUE_DEPENDENCIES = false;

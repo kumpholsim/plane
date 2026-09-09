@@ -81,9 +81,12 @@ export const DEFAULT_FILTER_VISIBILITY_OPTIONS: TAutoVisibilityOptions = {
  * Filter options.
  * - expression: Filter expression options.
  * - config: Filter config options.
+ * - visibility: Visibility options.
+ * - pinnedProperties: Filter properties that always stay in the filter bar (empty until set).
  */
 export type TFilterOptions<E extends TExternalFilter> = {
   expression: Partial<TExpressionOptions<E>>;
   config: Partial<TConfigOptions>;
   visibility: TAutoVisibilityOptions;
+  pinnedProperties?: string[];
 };

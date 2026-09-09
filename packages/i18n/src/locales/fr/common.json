@@ -449,6 +449,8 @@
     "layout": "Disposition",
     "filters": "Filtres",
     "display": "Affichage",
+    "expand_all": "Tout développer",
+    "collapse_all": "Tout réduire",
     "load_more": "Charger plus",
     "activity": "Activité",
     "analytics": "Analyses",
@@ -464,7 +466,7 @@
     "epics": "Epics",
     "work_item": "Élément de travail",
     "work_items": "Éléments de travail",
-    "sub_work_item": "Sous-élément de travail",
+    "sub_work_item": "Sous-tâche",
     "views": "Vues",
     "pages": "Pages",
     "add": "Ajouter",
@@ -507,7 +509,7 @@
       "private": "Privé"
     },
     "done": "Terminé",
-    "sub_work_items": "Sous-éléments de travail",
+    "sub_work_items": "Sous-tâches",
     "comment": "Commentaire",
     "workspace_level": "Niveau espace de travail",
     "order_by": {

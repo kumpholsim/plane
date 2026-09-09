@@ -9,6 +9,7 @@ import { observer } from "mobx-react";
 import type { IWorkItemFilterInstance } from "@plane/shared-state";
 import type { TWorkItemFilterExpression, TWorkItemFilterProperty } from "@plane/types";
 // components
+import { GroupExpandCollapseControls } from "@/components/issues/issue-layouts/expand-collapse";
 import type { TFiltersRowProps } from "@/components/rich-filters/filters-row";
 import { FiltersRow } from "@/components/rich-filters/filters-row";
 
@@ -17,5 +18,14 @@ type TWorkItemFiltersRowProps = TFiltersRowProps<TWorkItemFilterProperty, TWorkI
 };
 
 export const WorkItemFiltersRow = observer(function WorkItemFiltersRow(props: TWorkItemFiltersRowProps) {
-  return <FiltersRow {...props} />;
+  const { filter, leadingControls, ...rest } = props;
+  const showExpandCollapse = filter.pinnedProperties.length > 0 && !leadingControls;
+
+  return (
+    <FiltersRow
+      {...rest}
+      filter={filter}
+      leadingControls={leadingControls ?? (showExpandCollapse ? <GroupExpandCollapseControls /> : undefined)}
+    />
+  );
 });

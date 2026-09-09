@@ -19,11 +19,13 @@
       "start_date": "開始日を追加",
       "due_date": "期限日を追加",
       "parent": "親作業項目を追加",
-      "sub_issue": "サブ作業項目を追加",
+      "sub_issue": "サブタスクを追加",
       "dependency": "依存関係を追加",
       "relation": "関連を追加",
       "link": "リンクを追加",
-      "existing": "既存の作業項目を追加"
+      "existing": "既存の作業項目を追加",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "作業項目を削除",
@@ -57,14 +59,14 @@
         "label": "表示プロパティ",
         "id": "ID",
         "issue_type": "作業項目タイプ",
-        "sub_issue_count": "サブ作業項目数",
+        "sub_issue_count": "サブタスク数",
         "attachment_count": "添付ファイル数",
         "created_on": "作成日",
-        "sub_issue": "サブ作業項目",
+        "sub_issue": "サブタスク",
         "work_item_count": "作業項目数"
       },
       "extra": {
-        "show_sub_issues": "サブ作業項目を表示",
+        "show_sub_issues": "サブタスクを表示",
         "show_empty_groups": "空のグループを表示"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "クリックして反対票を投じる",
       "click_to_view_upvotes": "クリックして賛成票を表示",
       "click_to_view_downvotes": "クリックして反対票を表示"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "サブ作業項目を更新しました",
-      "error": "サブ作業項目の更新中にエラーが発生しました"
+      "success": "サブタスクを更新しました",
+      "error": "サブタスクの更新中にエラーが発生しました"
     },
     "remove": {
-      "success": "サブ作業項目を削除しました",
-      "error": "サブ作業項目の削除中にエラーが発生しました"
+      "success": "サブタスクを削除しました",
+      "error": "サブタスクの削除中にエラーが発生しました"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "適用されたフィルターに一致するサブ作業項目がありません。",
-        "description": "すべてのサブ作業項目を表示するには、すべての適用されたフィルターをクリアしてください。",
+        "title": "適用したフィルターに一致するサブタスクはありません。",
+        "description": "すべてのサブタスクを表示するには、適用したフィルターをすべてクリアしてください。",
         "action": "フィルターをクリア"
       },
       "list_filters": {

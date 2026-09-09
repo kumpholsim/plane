@@ -55,3 +55,73 @@ class EstimatePoint(ProjectBaseModel):
         verbose_name_plural = "Estimate Points"
         db_table = "estimate_points"
         ordering = ("value",)
+
+
+# Matches ESTIMATE_SYSTEMS.points.templates.linear (web constants)
+DEFAULT_LINEAR_ESTIMATE_POINTS = (
+    (1, "1"),
+    (2, "2"),
+    (3, "3"),
+    (4, "4"),
+    (5, "5"),
+    (6, "6"),
+)
+
+
+def ensure_default_project_estimate(project, created_by=None, activate=True):
+    """
+    Ensure the project has a Points estimate (Linear 1–6) and optionally activate it.
+
+    Idempotent when ``project.estimate_id`` is already set. If estimates exist but
+    none are active, activates an existing Points estimate (or the oldest estimate).
+    Otherwise creates Points/Linear and activates it.
+    """
+    if project.estimate_id is not None:
+        return project.estimate
+
+    existing = (
+        Estimate.objects.filter(project_id=project.id, deleted_at__isnull=True)
+        .order_by(
+            models.Case(
+                models.When(type=EstimateType.POINTS, then=0),
+                default=1,
+            ),
+            "created_at",
+        )
+        .first()
+    )
+    if existing:
+        if activate:
+            project.estimate = existing
+            project.save(update_fields=["estimate", "updated_at"])
+        return existing
+
+    estimate = Estimate(
+        name="Points",
+        type=EstimateType.POINTS,
+        last_used=True,
+        project=project,
+        workspace_id=project.workspace_id,
+        created_by=created_by,
+    )
+    estimate.save(disable_auto_set_user=created_by is not None)
+
+    EstimatePoint.objects.bulk_create(
+        [
+            EstimatePoint(
+                estimate=estimate,
+                key=key,
+                value=value,
+                project_id=project.id,
+                workspace_id=project.workspace_id,
+                created_by=created_by,
+            )
+            for key, value in DEFAULT_LINEAR_ESTIMATE_POINTS
+        ]
+    )
+
+    if activate:
+        project.estimate = estimate
+        project.save(update_fields=["estimate", "updated_at"])
+
+    return estimate

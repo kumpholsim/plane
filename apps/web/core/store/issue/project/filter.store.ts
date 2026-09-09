@@ -138,7 +138,13 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
     const _filters = await this.projectService.getProjectUserProperties(workspaceSlug, projectId);
 
     const richFilters = _filters?.rich_filters;
-    const displayFilters = this.computedDisplayFilters(_filters?.display_filters);
+    const displayFilters = this.computedDisplayFilters(_filters?.display_filters, {
+      group_by: "module",
+      order_by: "sort_order",
+      layout: "list",
+      sub_issue: false,
+      show_empty_groups: false,
+    });
     const displayProperties = this.computedDisplayProperties(_filters?.display_properties);
 
     // fetching the kanban toggle helpers in the local storage
@@ -204,7 +210,21 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
 
       switch (type) {
         case EIssueFilterType.DISPLAY_FILTERS: {
-          const updatedDisplayFilters = filters as IIssueDisplayFilterOptions;
+          const updatedDisplayFilters = { ...(filters as IIssueDisplayFilterOptions) };
+          const nextLayout = updatedDisplayFilters.layout ?? _filters.displayFilters.layout;
+
+          // List / board layouts are locked — don't persist view tweaks into shared display filters
+          if (nextLayout === "list" || nextLayout === "kanban") {
+            const layoutOnlyUpdate = Object.keys(updatedDisplayFilters).every((key) => key === "layout");
+            if (!layoutOnlyUpdate) {
+              delete updatedDisplayFilters.group_by;
+              delete updatedDisplayFilters.order_by;
+              delete updatedDisplayFilters.sub_issue;
+              delete updatedDisplayFilters.show_empty_groups;
+              delete updatedDisplayFilters.sub_group_by;
+            }
+          }
+
           _filters.displayFilters = { ..._filters.displayFilters, ...updatedDisplayFilters };
 
           // set sub_group_by to null if group_by is set to null

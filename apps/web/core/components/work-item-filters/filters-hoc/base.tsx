@@ -58,6 +58,7 @@ const WorkItemFilterRoot = observer(function WorkItemFilterRoot(props: TWorkItem
     updateFilters,
     updateViewOptions,
     showOnMount,
+    pinnedProperties,
     ...entityConfigProps
   } = props;
   // store hooks
@@ -86,9 +87,10 @@ const WorkItemFilterRoot = observer(function WorkItemFilterRoot(props: TWorkItem
           updateViewOptions,
         },
         showOnMount,
+        pinnedProperties,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entityType, workItemEntityID, saveViewOptions, updateViewOptions, updateFilters]
+    [entityType, workItemEntityID, saveViewOptions, updateViewOptions, updateFilters, showOnMount, pinnedProperties]
   );
 
   // delete filter instance when component unmounts

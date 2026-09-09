@@ -449,6 +449,8 @@
     "layout": "Aspect",
     "filters": "Filtre",
     "display": "Afișare",
+    "expand_all": "Extinde tot",
+    "collapse_all": "Restrânge tot",
     "load_more": "Încarcă mai mult",
     "activity": "Activitate",
     "analytics": "Analitice",
@@ -464,7 +466,7 @@
     "epics": "Epice",
     "work_item": "Activitate",
     "work_items": "Activități",
-    "sub_work_item": "Sub-activitate",
+    "sub_work_item": "Subtask",
     "views": "Perspective",
     "pages": "Documentație",
     "add": "Adaugă",
@@ -507,7 +509,7 @@
       "private": "Privat"
     },
     "done": "Gata",
-    "sub_work_items": "Sub-activități",
+    "sub_work_items": "Subtask-uri",
     "comment": "Comentariu",
     "workspace_level": "La nivel de spațiu de lucru",
     "order_by": {

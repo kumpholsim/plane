@@ -36,6 +36,8 @@ from plane.db.models import (
     ProjectUserProperty,
     State,
     DEFAULT_STATES,
+    ensure_default_project_estimate,
+    ensure_default_project_hierarchy_types,
     Workspace,
     WorkspaceMember,
 )
@@ -288,10 +290,19 @@ class ProjectViewSet(BaseViewSet):
                         workspace=serializer.instance.workspace,
                         group=state["group"],
                         default=state.get("default", False),
+                        external_id=state.get("external_id"),
+                        is_triage=state["group"] == "triage",
                         created_by=request.user,
                     )
                     for state in DEFAULT_STATES
                 ]
+            )
+
+            ensure_default_project_hierarchy_types(
+                serializer.instance, created_by=request.user
+            )
+            ensure_default_project_estimate(
+                serializer.instance, created_by=request.user
             )
 
             project = self.get_queryset().filter(pk=serializer.data["id"]).first()

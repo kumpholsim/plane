@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Modül Ekle",
+    "add_module": "Epik ekle",
     "update_module": "Modülü Güncelle",
-    "create_module": "Modül Oluştur",
+    "create_module": "Epik oluştur",
     "archive_module": "Modülü Arşivle",
     "restore_module": "Modülü Geri Yükle",
     "delete_module": "Modülü sil",
     "empty_state": {
       "general": {
-        "title": "Proje kilometre taşlarınızı Modüllere eşleyin ve toplu işleri kolayca takip edin.",
-        "description": "Mantıksal bir üst öğeye ait iş öğeleri grubu bir modül oluşturur. Bunları bir kilometre taşını takip etmenin bir yolu olarak düşünün. Kendi dönemleri ve son teslim tarihleri ile birlikte, bir kilometre taşına ne kadar yakın veya uzak olduğunuzu görmenize yardımcı olacak analitiklere sahiptirler.",
+        "title": "Epikleri kilometre taşlarının altında düzenleyin ve teslimat işini kolayca takip edin.",
+        "description": "Epikler, kilometre taşları altındaki L2 iş öğeleridir. Story, bug ve task’ları gruplamak için kullanın.",
         "primary_button": {
-          "text": "İlk modülünüzü oluşturun",
+          "text": "İlk epiğinizi oluşturun",
           "comic": {
-            "title": "Modüller işleri hiyerarşiye göre gruplamaya yardımcı olur.",
-            "description": "Bir araba modülü, bir şasi modülü ve bir depo modülü bu gruplandırmanın iyi örnekleridir."
+            "title": "Epikler işi hiyerarşiye göre gruplamaya yardımcı olur.",
+            "description": "Bir sepet epiği, bir şasi epiği ve bir depo epiği bu gruplamanın iyi örnekleridir."
           }
         }
       },
       "no_issues": {
-        "title": "Modülde iş öğesi yok",
-        "description": "Bu modülün bir parçası olarak gerçekleştirmek istediğiniz iş öğelerini oluşturun veya ekleyin",
+        "title": "Epikte iş öğesi yok",
+        "description": "Bu epiğin parçası olarak tamamlamak istediğiniz iş öğelerini oluşturun veya ekleyin",
         "primary_button": {
           "text": "Yeni iş öğeleri oluştur"
         },

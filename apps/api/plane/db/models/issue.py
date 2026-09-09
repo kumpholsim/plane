@@ -60,11 +60,11 @@ def get_default_filters():
 
 def get_default_display_filters():
     return {
-        "group_by": None,
-        "order_by": "-created_at",
+        "group_by": "module",
+        "order_by": "sort_order",
         "type": None,
-        "sub_issue": True,
-        "show_empty_groups": True,
+        "sub_issue": False,
+        "show_empty_groups": False,
         "layout": "list",
         "calendar_date_range": "",
     }
@@ -156,6 +156,8 @@ class Issue(ChangeTrackerMixin, ProjectBaseModel):
     sequence_id = models.IntegerField(default=1, verbose_name="Issue Sequence ID")
     labels = models.ManyToManyField("db.Label", blank=True, related_name="labels", through="IssueLabel")
     sort_order = models.FloatField(default=65535)
+    # 0 = none, 1 = single-up, 2 = double-up (pins above type peers in cycle list)
+    pin_level = models.PositiveSmallIntegerField(default=0)
     completed_at = models.DateTimeField(null=True)
     archived_at = models.DateField(null=True)
     is_draft = models.BooleanField(default=False)
@@ -168,6 +170,18 @@ class Issue(ChangeTrackerMixin, ProjectBaseModel):
         null=True,
         blank=True,
     )
+    hierarchy_level = models.PositiveSmallIntegerField(default=3)
+    hierarchy_type = models.ForeignKey(
+        "db.ProjectHierarchyType",
+        on_delete=models.SET_NULL,
+        related_name="issues",
+        null=True,
+        blank=True,
+    )
+    # L3 delivery progress (not a board column) — see plane.utils.hierarchy_status.L3_PROGRESS_CHOICES
+    progress_status = models.CharField(max_length=32, null=True, blank=True)
+    # L4 QA terminal outcome when state is Done — pass | failed
+    qa_outcome = models.CharField(max_length=16, null=True, blank=True)
 
     issue_objects = IssueManager()
 
@@ -226,11 +240,63 @@ class Issue(ChangeTrackerMixin, ProjectBaseModel):
         return f"{self.name} <{self.project.name}>"
 
     def _ensure_default_state(self):
-        """Assign a default state when none is set."""
+        """Assign a default state when none is set.
+
+        Sub-work items (issues with a parent) default to Design/Dev To do / unstarted.
+        Top-level issues use the project default state.
+        """
         if self.state is not None:
             return
         try:
             from plane.db.models import State
+            from plane.utils.hierarchy_status import (
+                BOARD_STATE_DESIGN_DEV_TODO,
+                BOARD_STATE_EXTERNAL_PREFIX,
+                BOARD_STATE_QA_TODO,
+                is_qa_hierarchy_type,
+            )
+
+            has_parent = self.parent_id is not None
+            if has_parent:
+                prefer_qa = False
+                if self.hierarchy_type_id:
+                    prefer_qa = is_qa_hierarchy_type(self.hierarchy_type)
+                elif self.hierarchy_type is not None:
+                    prefer_qa = is_qa_hierarchy_type(self.hierarchy_type)
+
+                preferred_key = BOARD_STATE_QA_TODO if prefer_qa else BOARD_STATE_DESIGN_DEV_TODO
+                todo_state = State.objects.filter(
+                    ~models.Q(is_triage=True),
+                    project=self.project,
+                    external_id=f"{BOARD_STATE_EXTERNAL_PREFIX}{preferred_key}",
+                ).first()
+                if todo_state is None:
+                    todo_state = State.objects.filter(
+                        ~models.Q(is_triage=True),
+                        project=self.project,
+                        name__iexact="To Do" if not prefer_qa else "QA To Do",
+                    ).first()
+                if todo_state is None:
+                    todo_state = State.objects.filter(
+                        ~models.Q(is_triage=True),
+                        project=self.project,
+                        name__iexact="Design/Dev To do" if not prefer_qa else "QA To do",
+                    ).first()
+                if todo_state is None:
+                    todo_state = State.objects.filter(
+                        ~models.Q(is_triage=True),
+                        project=self.project,
+                        name__iexact="Todo",
+                    ).first()
+                if todo_state is None:
+                    todo_state = State.objects.filter(
+                        ~models.Q(is_triage=True),
+                        project=self.project,
+                        group=StateGroup.UNSTARTED.value,
+                    ).first()
+                if todo_state is not None:
+                    self.state = todo_state
+                    return
 
             default_state = State.objects.filter(~models.Q(is_triage=True), project=self.project, default=True).first()
             self.state = default_state or State.objects.filter(~models.Q(is_triage=True), project=self.project).first()

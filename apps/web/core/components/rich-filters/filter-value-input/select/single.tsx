@@ -22,13 +22,14 @@ type TSingleSelectFilterValueInputProps<P extends TFilterProperty> = {
   config: TSingleSelectFilterFieldConfig<string>;
   condition: TFilterConditionNodeForDisplay<P, string>;
   isDisabled?: boolean;
+  openOnEmpty?: boolean;
   onChange: (value: string | null) => void;
 };
 
 export const SingleSelectFilterValueInput = observer(function SingleSelectFilterValueInput<P extends TFilterProperty>(
   props: TSingleSelectFilterValueInputProps<P>
 ) {
-  const { config, condition, onChange, isDisabled } = props;
+  const { config, condition, onChange, isDisabled, openOnEmpty = true } = props;
   // states
   const [options, setOptions] = useState<IFilterOption<string>[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -58,7 +59,7 @@ export const SingleSelectFilterValueInput = observer(function SingleSelectFilter
       customButton={
         <SelectedOptionsDisplay<string> selectedValue={condition.value} options={options} displayCount={1} />
       }
-      defaultOpen={!condition.value}
+      defaultOpen={openOnEmpty && !condition.value}
     />
   );
 });

@@ -55,6 +55,11 @@
         "error": "Errore durante l'aggiornamento dell'etichetta"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Sotto-attività",
+      "heading": "Sotto-attività",
+      "description": "Organizza le sotto-attività per ruolo come Design, Dev e QA. Trascina per riordinare o elimina le categorie non usate."
+    },
     "estimates": {
       "heading": "Stime",
       "description": "Imposta sistemi di stima per tracciare e comunicare lo sforzo richiesto per ogni elemento di lavoro.",

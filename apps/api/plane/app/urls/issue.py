@@ -21,6 +21,8 @@ from plane.app.views import (
     ProjectUserDisplayPropertyEndpoint,
     IssueViewSet,
     LabelViewSet,
+    ProjectHierarchyTypeViewSet,
+    SubWorkItemCategoryViewSet,
     BulkArchiveIssuesEndpoint,
     DeletedIssuesListViewSet,
     IssuePaginatedViewSet,
@@ -84,6 +86,41 @@ urlpatterns = [
             }
         ),
         name="project-issue-labels",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/hierarchy-types/",
+        ProjectHierarchyTypeViewSet.as_view({"get": "list", "post": "create"}),
+        name="project-hierarchy-types",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/hierarchy-types/<uuid:pk>/",
+        ProjectHierarchyTypeViewSet.as_view(
+            {
+                "get": "retrieve",
+                "put": "update",
+                "patch": "partial_update",
+                "delete": "destroy",
+            }
+        ),
+        name="project-hierarchy-types",
+    ),
+    # Back-compat aliases for L4-only clients
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/sub-work-item-categories/",
+        SubWorkItemCategoryViewSet.as_view({"get": "list", "post": "create"}),
+        name="project-sub-work-item-categories",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/sub-work-item-categories/<uuid:pk>/",
+        SubWorkItemCategoryViewSet.as_view(
+            {
+                "get": "retrieve",
+                "put": "update",
+                "patch": "partial_update",
+                "delete": "destroy",
+            }
+        ),
+        name="project-sub-work-item-categories",
     ),
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/bulk-create-labels/",

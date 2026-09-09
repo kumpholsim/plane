@@ -439,7 +439,7 @@
       "content": {
         "intro": "工作项类型 {workItemTypeName} 包含：",
         "parent_items": "{count, plural, other {将清除 # 个父级链接}}。",
-        "child_items": "{count, plural, other {个子工作项}}",
+        "child_items": "{count, plural, other {子任务}}",
         "parent_line_suffix_when_also_children": "，以及 ",
         "footer": "此变更将从 {workItemTypeName} 工作项类型的现有工作项中移除父子关系。"
       },

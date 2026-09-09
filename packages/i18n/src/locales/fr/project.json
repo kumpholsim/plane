@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Ajouter un module",
+    "add_module": "Ajouter un epic",
     "update_module": "Mettre à jour le module",
-    "create_module": "Créer un module",
+    "create_module": "Créer un epic",
     "archive_module": "Archiver le module",
     "restore_module": "Restaurer le module",
     "delete_module": "Supprimer le module",
     "empty_state": {
       "general": {
-        "title": "Associez vos jalons de projet aux Modules et suivez facilement le travail agrégé.",
-        "description": "Un groupe d’éléments de travail qui appartiennent à un parent logique et hiérarchique forme un module. Considérez-les comme un moyen de suivre le travail par étapes clés du projet. Ils ont leurs propres périodes et délais ainsi que des analyses pour vous aider à voir à quel point vous êtes proche ou pas d’atteindre une étape clé.",
+        "title": "Organisez les epics sous des jalons et suivez facilement le travail de livraison.",
+        "description": "Les epics sont des éléments de travail L2 sous les jalons. Utilisez-les pour regrouper stories, bugs et tâches.",
         "primary_button": {
-          "text": "Construisez votre premier module",
+          "text": "Créer votre premier epic",
           "comic": {
-            "title": "Les modules aident à regrouper le travail par étapes clés.",
-            "description": "Un module « panier », un module « châssis » et un module « entrepôt » sont tous de bons exemples de ce regroupement."
+            "title": "Les epics aident à regrouper le travail par hiérarchie.",
+            "description": "Un epic panier, un epic châssis et un epic entrepôt sont de bons exemples de ce regroupement."
           }
         }
       },
       "no_issues": {
-        "title": "Aucun élément de travail dans le module",
-        "description": "Créez ou ajoutez des éléments de travail que vous souhaitez accomplir dans le cadre de ce module",
+        "title": "Aucun élément de travail dans l’epic",
+        "description": "Créez ou ajoutez des éléments de travail à accomplir dans cet epic",
         "primary_button": {
           "text": "Créer de nouveaux éléments de travail"
         },

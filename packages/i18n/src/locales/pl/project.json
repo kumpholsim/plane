@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Dodaj moduł",
+    "add_module": "Dodaj epik",
     "update_module": "Zaktualizuj moduł",
-    "create_module": "Utwórz moduł",
+    "create_module": "Utwórz epik",
     "archive_module": "Archiwizuj moduł",
     "restore_module": "Przywróć moduł",
     "delete_module": "Usuń moduł",
     "empty_state": {
       "general": {
-        "title": "Grupuj etapy w moduły.",
-        "description": "Moduły grupują elementy pod wspólnym nadrzędnym celem. Śledź terminy i postępy.",
+        "title": "Organizuj epiki pod kamieniami milowymi i łatwo śledź pracę dostarczaną.",
+        "description": "Epiki to elementy pracy L2 pod kamieniami milowymi. Używaj ich do grupowania historii, błędów i zadań.",
         "primary_button": {
-          "text": "Utwórz pierwszy moduł",
+          "text": "Utwórz swój pierwszy epik",
           "comic": {
-            "title": "Moduły grupują elementy hierarchicznie.",
-            "description": "Przykłady: moduł koszyka, podwozia, magazynu."
+            "title": "Epiki pomagają grupować pracę według hierarchii.",
+            "description": "Epik koszyka, epik podwozia i epik magazynu to dobre przykłady takiego grupowania."
           }
         }
       },
       "no_issues": {
-        "title": "Brak elementów w module",
-        "description": "Dodaj elementy do modułu.",
+        "title": "Brak elementów pracy w epiku",
+        "description": "Utwórz lub dodaj elementy pracy, które chcesz zrealizować w ramach tego epiku",
         "primary_button": {
           "text": "Utwórz elementy"
         },

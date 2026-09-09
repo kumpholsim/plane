@@ -55,6 +55,11 @@
         "error": "Błąd podczas aktualizacji etykiety"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Podzadanie",
+      "heading": "Podzadanie",
+      "description": "Organizuj podzadania według ról, np. Design, Dev i QA. Przeciągaj, aby zmienić kolejność, lub usuwaj nieużywane kategorie."
+    },
     "estimates": {
       "heading": "Szacunki",
       "description": "Skonfiguruj systemy szacowania, aby śledzić i komunikować nakład pracy wymagany dla każdego elementu pracy.",

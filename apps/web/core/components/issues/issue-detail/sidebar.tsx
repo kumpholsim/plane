@@ -5,13 +5,11 @@
  */
 
 import { observer } from "mobx-react";
-// i18n
+import { QA_OUTCOME_OPTIONS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
-// ui
 import {
   CycleIcon,
   StatePropertyIcon,
-  ModuleIcon,
   MembersPropertyIcon,
   PriorityPropertyIcon,
   StartDatePropertyIcon,
@@ -21,6 +19,8 @@ import {
   EstimatePropertyIcon,
   ParentPropertyIcon,
 } from "@plane/propel/icons";
+import type { TDeliveryProgressStatus, TQAOutcome } from "@plane/types";
+import { HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 import { cn, getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from "@plane/utils";
 // components
 import { DateDropdown } from "@/components/dropdowns/date";
@@ -28,19 +28,26 @@ import { EstimateDropdown } from "@/components/dropdowns/estimate";
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
+import { ProgressStatusDropdown } from "@/components/dropdowns/progress-status";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
 import { useProject } from "@/hooks/store/use-project";
+import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import { useProjectState } from "@/hooks/store/use-project-state";
 // components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
+import {
+  canHaveParent,
+  getHierarchyLevel,
+  shouldShowCycleProperty,
+} from "@/components/issues/issue-detail-widgets/sub-issues/depth";
+import { filterStateIdsForL4, isDoneBoardState, isQaHierarchyTypeName } from "@/components/issues/hierarchy-status";
 import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
-import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
 
 type Props = {
@@ -61,7 +68,8 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     issue: { getIssueById },
   } = useIssueDetail();
   const { getUserDetails } = useMember();
-  const { getStateById } = useProjectState();
+  const { getStateById, getProjectStateIds } = useProjectState();
+  const { getCategoryById } = useProjectHierarchyType();
   const issue = getIssueById(issueId);
   if (!issue) return <></>;
 
@@ -70,6 +78,16 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // derived values
   const projectDetails = getProjectById(issue.project_id);
   const stateDetails = getStateById(issue.state_id);
+  const hierarchyLevel = getHierarchyLevel(issue);
+  const hierarchyType = getCategoryById(issue.hierarchy_type_id ?? "");
+  const showCycle = projectDetails?.cycle_view && shouldShowCycleProperty(hierarchyLevel);
+  const showParent = canHaveParent(issue);
+  const isL3 = hierarchyLevel === HIERARCHY_LEVEL_DELIVERY;
+  const isL4 = hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
+  const isQaL4 = isL4 && isQaHierarchyTypeName(hierarchyType?.name);
+  const projectStateIds = getProjectStateIds(projectId) ?? [];
+  const l4StateIds = isL4 ? filterStateIdsForL4(projectStateIds, getStateById, hierarchyType?.name) : projectStateIds;
+  const showQaOutcome = isQaL4 && isDoneBoardState(stateDetails);
 
   const minDate = issue.start_date ? getDate(issue.start_date) : null;
   minDate?.setDate(minDate.getDate());
@@ -83,20 +101,68 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
         <div className="h-full w-full overflow-y-auto px-6">
           <h5 className="mt-5 text-body-xs-medium">{t("common.properties")}</h5>
           <div className={`mt-4 mb-2 space-y-2.5 truncate ${!isEditable ? "opacity-60" : ""}`}>
-            <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
-              <StateDropdown
-                value={issue?.state_id}
-                onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { state_id: val })}
-                projectId={projectId?.toString() ?? ""}
-                disabled={!isEditable}
-                buttonVariant="transparent-with-text"
-                className="group w-full grow"
-                buttonContainerClassName="w-full text-left h-7.5"
-                buttonClassName="text-body-xs-regular"
-                dropdownArrow
-                dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
-              />
-            </SidebarPropertyListItem>
+            {isL3 ? (
+              <SidebarPropertyListItem icon={StatePropertyIcon} label="Progress">
+                <ProgressStatusDropdown
+                  value={issue.progress_status}
+                  onChange={(val: TDeliveryProgressStatus) =>
+                    issueOperations.update(workspaceSlug, projectId, issueId, { progress_status: val })
+                  }
+                  projectId={projectId}
+                  disabled={!isEditable}
+                  buttonVariant="transparent-with-text"
+                  className="group w-full grow"
+                  buttonContainerClassName="w-full text-left h-7.5"
+                  buttonClassName="text-body-xs-regular"
+                  dropdownArrow
+                  dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
+                />
+              </SidebarPropertyListItem>
+            ) : (
+              <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
+                <StateDropdown
+                  value={issue?.state_id}
+                  onChange={(val) => {
+                    const nextState = getStateById(val);
+                    const payload: { state_id: string; qa_outcome?: TQAOutcome | null } = { state_id: val };
+                    if (isQaL4) {
+                      payload.qa_outcome = isDoneBoardState(nextState) ? (issue.qa_outcome ?? "pass") : null;
+                    }
+                    issueOperations.update(workspaceSlug, projectId, issueId, payload);
+                  }}
+                  projectId={projectId?.toString() ?? ""}
+                  disabled={!isEditable}
+                  buttonVariant="transparent-with-text"
+                  className="group w-full grow"
+                  buttonContainerClassName="w-full text-left h-7.5"
+                  buttonClassName="text-body-xs-regular"
+                  dropdownArrow
+                  dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
+                  stateIds={isL4 ? l4StateIds : undefined}
+                />
+              </SidebarPropertyListItem>
+            )}
+
+            {showQaOutcome && (
+              <SidebarPropertyListItem icon={StatePropertyIcon} label="QA result">
+                <select
+                  className="h-7.5 w-full truncate rounded border-none bg-transparent px-2 text-left text-body-xs-regular outline-none"
+                  disabled={!isEditable}
+                  value={issue.qa_outcome ?? "pass"}
+                  onChange={(e) =>
+                    issueOperations.update(workspaceSlug, projectId, issueId, {
+                      qa_outcome: e.target.value as TQAOutcome,
+                    })
+                  }
+                >
+                  {QA_OUTCOME_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </SidebarPropertyListItem>
+            )}
 
             <SidebarPropertyListItem icon={MembersPropertyIcon} label={t("common.assignees")}>
               <MemberDropdown
@@ -203,20 +269,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               </SidebarPropertyListItem>
             )}
 
-            {projectDetails?.module_view && (
-              <SidebarPropertyListItem icon={ModuleIcon} label={t("common.modules")}>
-                <IssueModuleSelect
-                  className="w-full grow"
-                  workspaceSlug={workspaceSlug}
-                  projectId={projectId}
-                  issueId={issueId}
-                  issueOperations={issueOperations}
-                  disabled={!isEditable}
-                />
-              </SidebarPropertyListItem>
-            )}
-
-            {projectDetails?.cycle_view && (
+            {showCycle && (
               <SidebarPropertyListItem icon={CycleIcon} label={t("common.cycle")} appendElement={null}>
                 <IssueCycleSelect
                   className="h-7.5 w-full grow"
@@ -229,16 +282,18 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               </SidebarPropertyListItem>
             )}
 
-            <SidebarPropertyListItem icon={ParentPropertyIcon} label={t("common.parent")}>
-              <IssueParentSelectRoot
-                className="h-7.5 w-full grow"
-                workspaceSlug={workspaceSlug}
-                projectId={projectId}
-                issueId={issueId}
-                issueOperations={issueOperations}
-                disabled={!isEditable}
-              />
-            </SidebarPropertyListItem>
+            {showParent && (
+              <SidebarPropertyListItem icon={ParentPropertyIcon} label={t("common.parent")}>
+                <IssueParentSelectRoot
+                  className="h-7.5 w-full grow"
+                  workspaceSlug={workspaceSlug}
+                  projectId={projectId}
+                  issueId={issueId}
+                  issueOperations={issueOperations}
+                  disabled={!isEditable}
+                />
+              </SidebarPropertyListItem>
+            )}
 
             <SidebarPropertyListItem icon={LabelPropertyIcon} label={t("common.labels")}>
               <IssueLabel

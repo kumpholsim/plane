@@ -17,6 +17,8 @@ export interface IState {
   sequence: number;
   workspace_id: string;
   order: number;
+  /** Hierarchy board column key prefix hierarchy_board:* */
+  external_id?: string | null;
 }
 
 export interface IStateLite {

@@ -55,6 +55,11 @@
         "error": "Etiket güncellenirken hata oluştu"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Alt görev",
+      "heading": "Alt görev",
+      "description": "Alt görevleri Design, Dev ve QA gibi rollere göre düzenleyin. Sıralamak için sürükleyin veya kullanılmayan kategorileri silin."
+    },
     "estimates": {
       "heading": "Tahminler",
       "description": "Takımınızın karmaşıklık ve iş yükünü iletişim kurmanıza yardımcı olurlar.",

@@ -10,7 +10,13 @@ import Link from "next/link";
 import { MoveDiagonal, MoveRight } from "lucide-react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
-import { CenterPanelIcon, CopyLinkIcon, FullScreenPanelIcon, SidePanelIcon } from "@plane/propel/icons";
+import {
+  ChevronLeftIcon,
+  CenterPanelIcon,
+  CopyLinkIcon,
+  FullScreenPanelIcon,
+  SidePanelIcon,
+} from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TNameDescriptionLoader } from "@plane/types";
@@ -96,6 +102,8 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
     removeIssue,
     archiveIssue,
     getIsIssuePeeked,
+    canPeekBack,
+    peekBack,
   } = useIssueDetail();
   const { isMobile } = usePlatformOS();
   const { getProjectIdentifierById } = useProject();
@@ -125,6 +133,7 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
         title: t("common.link_copied"),
         message: t("common.link_copied_to_clipboard"),
       });
+      return undefined;
     });
   };
 
@@ -134,6 +143,7 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
 
       return deleteIssue(workspaceSlug, projectId, issueId).then(() => {
         setPeekIssue(undefined);
+        return undefined;
       });
     } catch (_error) {
       setToast({
@@ -159,11 +169,13 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
       }`}
     >
       <div className="flex items-center gap-4">
-        <Tooltip tooltipContent={t("common.close_peek_view")} isMobile={isMobile}>
-          <button onClick={removeRoutePeekId}>
-            <MoveRight className="h-4 w-4 text-tertiary hover:text-secondary" />
-          </button>
-        </Tooltip>
+        {canPeekBack && (
+          <Tooltip tooltipContent={t("common.go_back")} isMobile={isMobile}>
+            <button type="button" onClick={() => peekBack()}>
+              <ChevronLeftIcon className="h-4 w-4 text-tertiary hover:text-secondary" />
+            </button>
+          </Tooltip>
+        )}
 
         <Tooltip tooltipContent={t("issue.open_in_full_screen")} isMobile={isMobile}>
           <Link href={workItemLink} onClick={() => removeRoutePeekId()}>
@@ -223,6 +235,11 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
               isPeekMode
             />
           )}
+          <Tooltip tooltipContent={t("common.close_peek_view")} isMobile={isMobile}>
+            <button type="button" onClick={removeRoutePeekId}>
+              <MoveRight className="h-4 w-4 text-tertiary hover:text-secondary" />
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>

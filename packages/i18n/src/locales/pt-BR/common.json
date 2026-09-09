@@ -449,6 +449,8 @@
     "layout": "Layout",
     "filters": "Filtros",
     "display": "Exibir",
+    "expand_all": "Expandir tudo",
+    "collapse_all": "Recolher tudo",
     "load_more": "Carregar mais",
     "activity": "Atividade",
     "analytics": "Análises",
@@ -464,7 +466,7 @@
     "epics": "Épicos",
     "work_item": "Item de trabalho",
     "work_items": "Itens de trabalho",
-    "sub_work_item": "Sub-item de trabalho",
+    "sub_work_item": "Subtarefa",
     "views": "Visualizações",
     "pages": "Páginas",
     "add": "Adicionar",
@@ -507,7 +509,7 @@
       "private": "Privado"
     },
     "done": "Concluído",
-    "sub_work_items": "Sub-itens de trabalho",
+    "sub_work_items": "Subtarefas",
     "comment": "Comentário",
     "workspace_level": "Nível do espaço de trabalho",
     "order_by": {

@@ -44,6 +44,7 @@ import {
   highlightIssueOnDrop,
 } from "../utils";
 import { IssueBlocksList } from "./blocks-list";
+import { buildEpicListBands } from "./epic-list-sections";
 import { HeaderGroupByCard } from "./headers/group-by-card";
 import type { TRenderQuickActions } from "./list-view-types";
 
@@ -111,6 +112,9 @@ export const ListGroup = observer(function ListGroup(props: Props) {
     issues: { getGroupIssueCount, getPaginationData, getIssueLoader },
   } = useIssuesStore();
 
+  // Under Epic grouping: optional High Priority band for pins, then the rest (no type subsections)
+  const epicListBands = group_by === "module" ? buildEpicListBands(groupIssueIds, issuesMap) : null;
+
   const [intersectionElement, setIntersectionElement] = useState<HTMLDivElement | null>(null);
 
   const { workflowDisabledSource, isWorkflowDropDisabled, handleWorkFlowState, getIsWorkflowWorkItemCreationDisabled } =
@@ -165,7 +169,7 @@ export const ListGroup = observer(function ListGroup(props: Props) {
       } else if (groupByKey === "cycle" && value != "None") {
         preloadedData = { ...preloadedData, cycle_id: value };
       } else if (groupByKey === "module" && value != "None") {
-        preloadedData = { ...preloadedData, module_ids: [value] };
+        preloadedData = { ...preloadedData, parent_id: value };
       } else if (groupByKey === "created_by") {
         preloadedData = { ...preloadedData };
       } else {
@@ -297,22 +301,54 @@ export const ListGroup = observer(function ListGroup(props: Props) {
             isDraggingOverColumn={isDraggingOverColumn}
             isEpic={isEpic}
           />
-          {groupIssueIds && (
-            <IssueBlocksList
-              issueIds={groupIssueIds}
-              groupId={group.id}
-              issuesMap={issuesMap}
-              updateIssue={updateIssue}
-              quickActions={quickActions}
-              displayProperties={displayProperties}
-              canEditProperties={canEditProperties}
-              containerRef={containerRef}
-              isDragAllowed={isDragAllowed}
-              canDropOverIssue={!canOverlayBeVisible}
-              selectionHelpers={selectionHelpers}
-              isEpic={isEpic}
-            />
-          )}
+          {epicListBands
+            ? epicListBands.map((band) => (
+                <div
+                  key={band.key}
+                  className={cn("relative", {
+                    "border-b-2 border-danger-subtle": band.key === "high-priority" && band.issueIds.length > 0,
+                  })}
+                >
+                  {band.label && (
+                    <div className="flex h-7 items-center border-b border-subtle bg-surface-2 px-8 text-11 font-medium tracking-wide text-danger-primary uppercase">
+                      {band.label}
+                    </div>
+                  )}
+                  {band.issueIds.length > 0 && (
+                    <IssueBlocksList
+                      issueIds={band.issueIds}
+                      groupId={group.id}
+                      issuesMap={issuesMap}
+                      updateIssue={updateIssue}
+                      quickActions={quickActions}
+                      displayProperties={displayProperties}
+                      canEditProperties={canEditProperties}
+                      containerRef={containerRef}
+                      isDragAllowed={isDragAllowed}
+                      canDropOverIssue={!canOverlayBeVisible}
+                      selectionHelpers={selectionHelpers}
+                      isEpic={isEpic}
+                      showPinControls
+                    />
+                  )}
+                </div>
+              ))
+            : groupIssueIds && (
+                <IssueBlocksList
+                  issueIds={groupIssueIds}
+                  groupId={group.id}
+                  issuesMap={issuesMap}
+                  updateIssue={updateIssue}
+                  quickActions={quickActions}
+                  displayProperties={displayProperties}
+                  canEditProperties={canEditProperties}
+                  containerRef={containerRef}
+                  isDragAllowed={isDragAllowed}
+                  canDropOverIssue={!canOverlayBeVisible}
+                  selectionHelpers={selectionHelpers}
+                  isEpic={isEpic}
+                />
+              )}
 
           {shouldLoadMore &&
             (group_by ? (

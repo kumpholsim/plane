@@ -449,6 +449,8 @@
     "layout": "Układ",
     "filters": "Filtry",
     "display": "Wyświetlanie",
+    "expand_all": "Rozwiń wszystko",
+    "collapse_all": "Zwiń wszystko",
     "load_more": "Załaduj więcej",
     "activity": "Aktywność",
     "analytics": "Analizy",
@@ -464,7 +466,7 @@
     "epics": "Epiki",
     "work_item": "Element pracy",
     "work_items": "Elementy pracy",
-    "sub_work_item": "Podrzędny element pracy",
+    "sub_work_item": "Podzadanie",
     "views": "Widoki",
     "pages": "Strony",
     "add": "Dodaj",
@@ -507,7 +509,7 @@
       "private": "Prywatny"
     },
     "done": "Gotowe",
-    "sub_work_items": "Podrzędne elementy pracy",
+    "sub_work_items": "Podzadania",
     "comment": "Komentarz",
     "workspace_level": "Poziom przestrzeni roboczej",
     "order_by": {

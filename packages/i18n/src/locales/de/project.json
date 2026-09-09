@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Modul hinzufügen",
+    "add_module": "Epic hinzufügen",
     "update_module": "Modul aktualisieren",
-    "create_module": "Modul erstellen",
+    "create_module": "Epic erstellen",
     "archive_module": "Modul archivieren",
     "restore_module": "Modul wiederherstellen",
     "delete_module": "Modul löschen",
     "empty_state": {
       "general": {
-        "title": "Gruppieren Sie Meilensteine in Modulen.",
-        "description": "Module fassen Elemente unter einer logischen Einheit zusammen. Verfolgen Sie Fristen und Fortschritt.",
+        "title": "Organisieren Sie Epics unter Meilensteinen und verfolgen Sie die Lieferarbeit einfach.",
+        "description": "Epics sind L2-Arbeitselemente unter Meilensteinen. Nutzen Sie sie, um Stories, Bugs und Tasks zu gruppieren.",
         "primary_button": {
-          "text": "Erstes Modul erstellen",
+          "text": "Erstellen Sie Ihr erstes Epic",
           "comic": {
-            "title": "Module gruppieren hierarchisch.",
-            "description": "Beispiele: Warenkorbmodul, Chassis, Lager."
+            "title": "Epics helfen, Arbeit hierarchisch zu gruppieren.",
+            "description": "Ein Cart-Epic, ein Chassis-Epic und ein Warehouse-Epic sind gute Beispiele für diese Gruppierung."
           }
         }
       },
       "no_issues": {
-        "title": "Keine Elemente im Modul",
-        "description": "Fügen Sie dem Modul Elemente hinzu.",
+        "title": "Keine Arbeitselemente im Epic",
+        "description": "Erstellen oder fügen Sie Arbeitselemente hinzu, die Sie als Teil dieses Epics erledigen möchten",
         "primary_button": {
           "text": "Elemente erstellen"
         },

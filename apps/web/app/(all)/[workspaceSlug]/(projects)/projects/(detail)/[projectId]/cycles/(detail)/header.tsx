@@ -211,25 +211,29 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
                 activeLayout={activeLayout}
               />
             </div>
-            <WorkItemFiltersToggle entityType={EIssuesStoreType.CYCLE} entityId={cycleId} />
-            <FiltersDropdown
-              title={t("common.display")}
-              placement="bottom-end"
-              miniIcon={<SlidersHorizontal className="size-3.5" />}
-            >
-              <DisplayFiltersSelection
-                layoutDisplayFiltersOptions={
-                  activeLayout ? ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.layoutOptions[activeLayout] : undefined
-                }
-                displayFilters={issueFilters?.displayFilters ?? {}}
-                handleDisplayFiltersUpdate={handleDisplayFilters}
-                displayProperties={issueFilters?.displayProperties ?? {}}
-                handleDisplayPropertiesUpdate={handleDisplayProperties}
-                ignoreGroupedFilters={["cycle"]}
-                cycleViewDisabled={!currentProjectDetails?.cycle_view}
-                moduleViewDisabled={!currentProjectDetails?.module_view}
-              />
-            </FiltersDropdown>
+            {activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
+              <WorkItemFiltersToggle entityType={EIssuesStoreType.CYCLE} entityId={cycleId} />
+            )}
+            {activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
+              <FiltersDropdown
+                title={t("common.display")}
+                placement="bottom-end"
+                miniIcon={<SlidersHorizontal className="size-3.5" />}
+              >
+                <DisplayFiltersSelection
+                  layoutDisplayFiltersOptions={
+                    activeLayout ? ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.layoutOptions[activeLayout] : undefined
+                  }
+                  displayFilters={issueFilters?.displayFilters ?? {}}
+                  handleDisplayFiltersUpdate={handleDisplayFilters}
+                  displayProperties={issueFilters?.displayProperties ?? {}}
+                  handleDisplayPropertiesUpdate={handleDisplayProperties}
+                  ignoreGroupedFilters={["cycle"]}
+                  cycleViewDisabled={!currentProjectDetails?.cycle_view}
+                  moduleViewDisabled={!currentProjectDetails?.module_view}
+                />
+              </FiltersDropdown>
+            )}
 
             {canUserCreateIssue && (
               <>

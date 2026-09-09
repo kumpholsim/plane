@@ -55,6 +55,11 @@
         "error": "更新標籤時發生錯誤"
       }
     },
+    "sub_work_item_categories": {
+      "label": "子任務",
+      "heading": "子任務",
+      "description": "依 Design、Dev、QA 等角色組織子任務。可拖曳排序或刪除不再使用的類別。"
+    },
     "estimates": {
       "heading": "評估",
       "description": "幫助你傳達團隊的複雜性和工作負荷。",

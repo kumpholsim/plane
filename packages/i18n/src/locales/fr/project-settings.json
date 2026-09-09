@@ -55,6 +55,11 @@
         "error": "Erreur lors de la mise à jour de l’étiquette"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Sous-tâche",
+      "heading": "Sous-tâche",
+      "description": "Organisez les sous-tâches par rôle (Design, Dev, QA). Faites glisser pour réordonner ou supprimer les catégories inutilisées."
+    },
     "estimates": {
       "heading": "Estimations",
       "description": "Elles vous aident à communiquer la complexité et la charge de travail de l’équipe.",

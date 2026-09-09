@@ -9,6 +9,7 @@ export * from "./date";
 export * from "./label";
 export * from "./module";
 export * from "./priority";
+export * from "./progress-status";
 export * from "./project";
 export * from "./state";
 export * from "./user";

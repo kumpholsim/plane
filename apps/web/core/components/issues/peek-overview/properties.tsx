@@ -11,7 +11,6 @@ import { useTranslation } from "@plane/i18n";
 import {
   CycleIcon,
   StatePropertyIcon,
-  ModuleIcon,
   MembersPropertyIcon,
   PriorityPropertyIcon,
   StartDatePropertyIcon,
@@ -29,18 +28,28 @@ import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { ProgressStatusDropdown } from "@/components/dropdowns/progress-status";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
 // helpers
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 // plane web components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
+import {
+  canHaveParent,
+  getHierarchyLevel,
+  shouldShowCycleProperty,
+} from "@/components/issues/issue-detail-widgets/sub-issues/depth";
+import { filterStateIdsForL4, isDoneBoardState, isQaHierarchyTypeName } from "@/components/issues/hierarchy-status";
+import { QA_OUTCOME_OPTIONS } from "@plane/constants";
+import type { TDeliveryProgressStatus, TQAOutcome } from "@plane/types";
+import { HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
-import { IssueModuleSelect } from "../issue-detail/module-select";
 
 interface IPeekOverviewProperties {
   workspaceSlug: string;
@@ -58,7 +67,8 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const {
     issue: { getIssueById },
   } = useIssueDetail();
-  const { getStateById } = useProjectState();
+  const { getStateById, getProjectStateIds } = useProjectState();
+  const { getCategoryById } = useProjectHierarchyType();
   const { getUserDetails } = useMember();
   // derived values
   const issue = getIssueById(issueId);
@@ -67,6 +77,16 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const projectDetails = getProjectById(issue.project_id);
   const isEstimateEnabled = projectDetails?.estimate;
   const stateDetails = getStateById(issue.state_id);
+  const hierarchyLevel = getHierarchyLevel(issue);
+  const hierarchyType = getCategoryById(issue.hierarchy_type_id ?? "");
+  const showCycle = projectDetails?.cycle_view && shouldShowCycleProperty(hierarchyLevel);
+  const showParent = canHaveParent(issue);
+  const isL3 = hierarchyLevel === HIERARCHY_LEVEL_DELIVERY;
+  const isL4 = hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
+  const isQaL4 = isL4 && isQaHierarchyTypeName(hierarchyType?.name);
+  const projectStateIds = getProjectStateIds(projectId) ?? [];
+  const l4StateIds = isL4 ? filterStateIdsForL4(projectStateIds, getStateById, hierarchyType?.name) : projectStateIds;
+  const showQaOutcome = isQaL4 && isDoneBoardState(stateDetails);
 
   const minDate = getDate(issue.start_date);
   minDate?.setDate(minDate.getDate());
@@ -78,20 +98,68 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     <div>
       <h6 className="text-body-xs-medium">{t("common.properties")}</h6>
       <div className={`mt-3 w-full space-y-3 ${disabled ? "opacity-60" : ""}`}>
-        <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
-          <StateDropdown
-            value={issue?.state_id}
-            onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { state_id: val })}
-            projectId={projectId}
-            disabled={disabled}
-            buttonVariant="transparent-with-text"
-            className="group w-full grow"
-            buttonContainerClassName="w-full text-left h-7.5"
-            buttonClassName={`text-body-xs-medium ${issue?.state_id ? "" : "text-placeholder"}`}
-            dropdownArrow
-            dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
-          />
-        </SidebarPropertyListItem>
+        {isL3 ? (
+          <SidebarPropertyListItem icon={StatePropertyIcon} label="Progress">
+            <ProgressStatusDropdown
+              value={issue.progress_status}
+              onChange={(val: TDeliveryProgressStatus) =>
+                issueOperations.update(workspaceSlug, projectId, issueId, { progress_status: val })
+              }
+              projectId={projectId}
+              disabled={disabled}
+              buttonVariant="transparent-with-text"
+              className="group w-full grow"
+              buttonContainerClassName="w-full text-left h-7.5"
+              buttonClassName={`text-body-xs-medium ${issue?.progress_status ? "" : "text-placeholder"}`}
+              dropdownArrow
+              dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
+            />
+          </SidebarPropertyListItem>
+        ) : (
+          <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
+            <StateDropdown
+              value={issue?.state_id}
+              onChange={(val) => {
+                const nextState = getStateById(val);
+                const payload: { state_id: string; qa_outcome?: TQAOutcome | null } = { state_id: val };
+                if (isQaL4) {
+                  payload.qa_outcome = isDoneBoardState(nextState) ? (issue.qa_outcome ?? "pass") : null;
+                }
+                issueOperations.update(workspaceSlug, projectId, issueId, payload);
+              }}
+              projectId={projectId}
+              disabled={disabled}
+              buttonVariant="transparent-with-text"
+              className="group w-full grow"
+              buttonContainerClassName="w-full text-left h-7.5"
+              buttonClassName={`text-body-xs-medium ${issue?.state_id ? "" : "text-placeholder"}`}
+              dropdownArrow
+              dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
+              stateIds={isL4 ? l4StateIds : undefined}
+            />
+          </SidebarPropertyListItem>
+        )}
+
+        {showQaOutcome && (
+          <SidebarPropertyListItem icon={StatePropertyIcon} label="QA result">
+            <select
+              className="h-7.5 w-full truncate rounded border-none bg-transparent px-2 text-left text-body-xs-medium outline-none"
+              disabled={disabled}
+              value={issue.qa_outcome ?? "pass"}
+              onChange={(e) =>
+                issueOperations.update(workspaceSlug, projectId, issueId, {
+                  qa_outcome: e.target.value as TQAOutcome,
+                })
+              }
+            >
+              {QA_OUTCOME_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </SidebarPropertyListItem>
+        )}
 
         <SidebarPropertyListItem icon={MembersPropertyIcon} label={t("common.assignees")}>
           <MemberDropdown
@@ -203,20 +271,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           </SidebarPropertyListItem>
         )}
 
-        {projectDetails?.module_view && (
-          <SidebarPropertyListItem icon={ModuleIcon} label={t("common.modules")}>
-            <IssueModuleSelect
-              className="w-full grow"
-              workspaceSlug={workspaceSlug}
-              projectId={projectId}
-              issueId={issueId}
-              issueOperations={issueOperations}
-              disabled={disabled}
-            />
-          </SidebarPropertyListItem>
-        )}
-
-        {projectDetails?.cycle_view && (
+        {showCycle && (
           <SidebarPropertyListItem icon={CycleIcon} label={t("common.cycle")} appendElement={null}>
             <IssueCycleSelect
               className="h-7.5 w-full grow"
@@ -229,16 +284,18 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           </SidebarPropertyListItem>
         )}
 
-        <SidebarPropertyListItem icon={ParentPropertyIcon} label={t("common.parent")}>
-          <IssueParentSelectRoot
-            className="h-7.5 w-full grow"
-            disabled={disabled}
-            issueId={issueId}
-            issueOperations={issueOperations}
-            projectId={projectId}
-            workspaceSlug={workspaceSlug}
-          />
-        </SidebarPropertyListItem>
+        {showParent && (
+          <SidebarPropertyListItem icon={ParentPropertyIcon} label={t("common.parent")}>
+            <IssueParentSelectRoot
+              className="h-7.5 w-full grow"
+              disabled={disabled}
+              issueId={issueId}
+              issueOperations={issueOperations}
+              projectId={projectId}
+              workspaceSlug={workspaceSlug}
+            />
+          </SidebarPropertyListItem>
+        )}
 
         <SidebarPropertyListItem icon={LabelPropertyIcon} label={t("common.labels")}>
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />

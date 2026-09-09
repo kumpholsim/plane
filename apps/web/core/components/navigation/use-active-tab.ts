@@ -7,6 +7,7 @@
 import { useCallback, useMemo } from "react";
 import type { TIssue } from "@plane/types";
 import type { TNavigationItem } from "@/components/navigation/tab-navigation-root";
+import { isEpicWorkItem, isModulesTabWorkItem } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 
 type UseActiveTabProps = {
   navigationItems: TNavigationItem[];
@@ -20,17 +21,17 @@ export const useActiveTab = ({ navigationItems, pathname, workItemId, workItem, 
   // Check if a navigation item is active
   const isActive = useCallback(
     (item: TNavigationItem) => {
-      // Work item condition
-      const workItemCondition = workItemId && workItem && !workItem?.is_epic && workItem?.project_id === projectId;
-      // Epic condition
-      const epicCondition = workItemId && workItem && workItem?.is_epic && workItem?.project_id === projectId;
-      // Is active
-      const isWorkItemActive = item.key === "work_items" && workItemCondition;
-      const isEpicActive = item.key === "epics" && epicCondition;
+      const belongsToProject = Boolean(workItemId && workItem && workItem.project_id === projectId);
+      const isModulesItem = belongsToProject && isModulesTabWorkItem(workItem);
+      const isEpicItem = belongsToProject && isEpicWorkItem(workItem);
+      // Delivery / sub-task detail → Work items; Milestone / Epic → Modules (or Epics if present)
+      const isWorkItemActive = item.key === "work_items" && belongsToProject && !isModulesItem;
+      const isEpicActive = item.key === "epics" && isEpicItem;
+      const isModuleActive = item.key === "modules" && isModulesItem;
       // Pathname condition - use exact match or startsWith for better accuracy
       const isPathnameActive = pathname === item.href || pathname.startsWith(item.href + "/");
       // Return
-      return isWorkItemActive || isEpicActive || isPathnameActive;
+      return isWorkItemActive || isEpicActive || isModuleActive || isPathnameActive;
     },
     [pathname, workItem, workItemId, projectId]
   );

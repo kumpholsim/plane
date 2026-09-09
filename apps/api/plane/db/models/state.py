@@ -20,43 +20,55 @@ class StateGroup(models.TextChoices):
     TRIAGE = "triage", "Triage"
 
 
-# Default states
+# Default states — L4 board columns only (6) + Triage
 DEFAULT_STATES = [
     {
-        "name": "Backlog",
+        "name": "To Do",
         "color": "#60646C",
         "sequence": 15000,
-        "group": StateGroup.BACKLOG.value,
-        "default": True,
-    },
-    {
-        "name": "Todo",
-        "color": "#60646C",
-        "sequence": 25000,
         "group": StateGroup.UNSTARTED.value,
+        "default": True,
+        "external_id": "hierarchy_board:design_dev_todo",
     },
     {
         "name": "In Progress",
         "color": "#F59E0B",
+        "sequence": 25000,
+        "group": StateGroup.STARTED.value,
+        "external_id": "hierarchy_board:design_dev_in_progress",
+    },
+    {
+        "name": "Under Review",
+        "color": "#3B82F6",
         "sequence": 35000,
         "group": StateGroup.STARTED.value,
+        "external_id": "hierarchy_board:design_dev_under_review",
+    },
+    {
+        "name": "QA To Do",
+        "color": "#60646C",
+        "sequence": 45000,
+        "group": StateGroup.STARTED.value,
+        "external_id": "hierarchy_board:qa_todo",
+    },
+    {
+        "name": "QA In Progress",
+        "color": "#F59E0B",
+        "sequence": 55000,
+        "group": StateGroup.STARTED.value,
+        "external_id": "hierarchy_board:qa_in_progress",
     },
     {
         "name": "Done",
         "color": "#46A758",
-        "sequence": 45000,
+        "sequence": 65000,
         "group": StateGroup.COMPLETED.value,
-    },
-    {
-        "name": "Cancelled",
-        "color": "#9AA4BC",
-        "sequence": 55000,
-        "group": StateGroup.CANCELLED.value,
+        "external_id": "hierarchy_board:done",
     },
     {
         "name": "Triage",
         "color": "#4E5355",
-        "sequence": 65000,
+        "sequence": 75000,
         "group": StateGroup.TRIAGE.value,
     },
 ]

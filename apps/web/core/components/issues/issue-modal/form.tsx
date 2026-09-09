@@ -10,7 +10,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, Controller } from "react-hook-form";
 // editor
 import { ETabIndices, DEFAULT_WORK_ITEM_FORM_VALUES } from "@plane/constants";
 import type { EditorRefApi } from "@plane/editor";
@@ -41,6 +41,7 @@ import {
 import { useIssueModal } from "@/hooks/context/use-issue-modal";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProject } from "@/hooks/store/use-project";
+import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useWorkspaceDraftIssues } from "@/hooks/store/workspace-draft";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -130,6 +131,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   } = useIssueDetail();
   const { fetchCycles } = useProjectIssueProperties();
   const { getStateById } = useProjectState();
+  const { fetchProjectTypes, fetchedMap, getActiveProjectTypes } = useProjectHierarchyType();
 
   // form info
   const methods = useForm<TIssue>({
@@ -196,6 +198,29 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, projectId]);
+
+  // Default L3 Story hierarchy type for root work items when creating
+  useEffect(() => {
+    if (data?.id || !projectId || !workspaceSlug) return;
+    const existingType = watch("hierarchy_type_id");
+    const parentId = watch("parent_id");
+    if (existingType || parentId) return;
+
+    const ensureDefaultStory = async () => {
+      if (!fetchedMap[projectId]) {
+        await fetchProjectTypes(workspaceSlug.toString(), projectId);
+      }
+      const deliveryTypes = getActiveProjectTypes(projectId, 3) ?? [];
+      const story = deliveryTypes.find((t) => t.name.toLowerCase() === "story") ?? deliveryTypes[0];
+      if (story) {
+        setValue("hierarchy_type_id", story.id, { shouldDirty: false });
+        setValue("hierarchy_level", 3, { shouldDirty: false });
+        setValue("sub_work_item_category_id", story.id, { shouldDirty: false });
+      }
+    };
+    void ensureDefaultStory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.id, projectId, workspaceSlug, fetchedMap]);
 
   useEffect(() => {
     if (workItemTemplateId && editorRef.current) {
@@ -380,6 +405,41 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   />
                 </div>
               )}
+              <Controller
+                control={control}
+                name="hierarchy_type_id"
+                render={({ field }) => (
+                  <input
+                    type="hidden"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                )}
+              />
+              <Controller
+                control={control}
+                name="hierarchy_level"
+                render={({ field: { value, onChange } }) => (
+                  <input type="hidden" value={value ?? 3} onChange={(e) => onChange(Number(e.target.value) || 3)} />
+                )}
+              />
+              <Controller
+                control={control}
+                name="sub_work_item_category_id"
+                render={({ field }) => (
+                  <input
+                    type="hidden"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                )}
+              />
               <div className="space-y-1">
                 <IssueTitleInput
                   control={control}

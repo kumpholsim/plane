@@ -191,12 +191,12 @@
     "empty_state": {
       "no_issues": {
         "title": "Create a work item and assign it to someone, even yourself",
-        "description": "Think of work items as jobs, tasks, work, or JTBD. Which we like. A work item and its sub-work items are usually time-based actionables assigned to members of your team. Your team creates, assigns, and completes work items to move your project towards its goal.",
+        "description": "Think of work items as jobs, tasks, work, or JTBD. Which we like. A work item and its sub-tasks are usually time-based actionables assigned to members of your team. Your team creates, assigns, and completes work items to move your project towards its goal.",
         "primary_button": {
           "text": "Create your first work item",
           "comic": {
             "title": "Work items are building blocks in Plane.",
-            "description": "Redesign the Plane UI, Rebrand the company, or Launch the new fuel injection system are examples of work items that likely have sub-work items."
+            "description": "Redesign the Plane UI, Rebrand the company, or Launch the new fuel injection system are examples of work items that likely have sub-tasks."
           }
         }
       },
@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Add Module",
+    "add_module": "Add epic",
     "update_module": "Update Module",
-    "create_module": "Create Module",
+    "create_module": "Create epic",
     "archive_module": "Archive Module",
     "restore_module": "Restore Module",
     "delete_module": "Delete module",
     "empty_state": {
       "general": {
-        "title": "Map your project milestones to Modules and track aggregated work easily.",
-        "description": "A group of work items that belong to a logical, hierarchical parent form a module. Think of them as a way to track work by project milestones. They have their own periods and deadlines as well as analytics to help you see how close or far you are from a milestone.",
+        "title": "Organize epics under milestones and track delivery work easily.",
+        "description": "Epics are L2 work items under milestones. Use them to group stories, bugs, and tasks, with their own periods and deadlines.",
         "primary_button": {
-          "text": "Build your first module",
+          "text": "Create your first epic",
           "comic": {
-            "title": "Modules help group work by hierarchy.",
-            "description": "A cart module, a chassis module, and a warehouse module are all good example of this grouping."
+            "title": "Epics help group work by hierarchy.",
+            "description": "A cart epic, a chassis epic, and a warehouse epic are all good examples of this grouping."
           }
         }
       },
       "no_issues": {
-        "title": "No work items in the module",
-        "description": "Create or add work items which you want to accomplish as part of this module",
+        "title": "No work items in the epic",
+        "description": "Create or add work items which you want to accomplish as part of this epic",
         "primary_button": {
           "text": "Create new work items"
         },

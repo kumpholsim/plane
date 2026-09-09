@@ -439,7 +439,7 @@
       "content": {
         "intro": "作業アイテムタイプ「{workItemTypeName}」には次が含まれます。",
         "parent_items": "{count, plural, other {親リンク # 件が解除されます。}}",
-        "child_items": "{count, plural, other {子の作業アイテム}}",
+        "child_items": "{count, plural, other {サブタスク}}",
         "parent_line_suffix_when_also_children": "、および ",
         "footer": "この変更により、{workItemTypeName} 作業アイテムタイプの既存の作業アイテムから親子関係が削除されます。"
       },

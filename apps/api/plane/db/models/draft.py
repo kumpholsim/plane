@@ -64,6 +64,7 @@ class DraftIssue(WorkspaceBaseModel):
     )
     labels = models.ManyToManyField("db.Label", blank=True, related_name="draft_labels", through="DraftIssueLabel")
     sort_order = models.FloatField(default=65535)
+    pin_level = models.PositiveSmallIntegerField(default=0)
     completed_at = models.DateTimeField(null=True)
     external_source = models.CharField(max_length=255, null=True, blank=True)
     external_id = models.CharField(max_length=255, blank=True, null=True)

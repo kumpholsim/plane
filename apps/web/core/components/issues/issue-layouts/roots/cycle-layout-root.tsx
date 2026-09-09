@@ -10,13 +10,19 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 // plane constants
-import { ISSUE_DISPLAY_FILTERS_BY_PAGE, PROJECT_VIEW_TRACKER_ELEMENTS } from "@plane/constants";
+import {
+  ISSUE_DISPLAY_FILTERS_BY_PAGE,
+  PROJECT_VIEW_TRACKER_ELEMENTS,
+  PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES,
+} from "@plane/constants";
+import type { TWorkItemFilterProperty } from "@plane/types";
 import { EIssuesStoreType, EIssueLayoutTypes } from "@plane/types";
 // components
 import { TransferIssues } from "@/components/cycles/transfer-issues";
 import { TransferIssuesModal } from "@/components/cycles/transfer-issues-modal";
 // hooks
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
+import { WorkItemPinnedFilters } from "@/components/work-item-filters/pinned-filters";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
 import { useCycle } from "@/hooks/store/use-cycle";
 import { useIssues } from "@/hooks/store/use-issues";
@@ -63,6 +69,16 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
   // derived values
   const workItemFilters = cycleId ? issuesFilter?.getIssueFilters(cycleId) : undefined;
   const activeLayout = workItemFilters?.displayFilters?.layout;
+  const isPinnedFilterLayout = activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN;
+  const filtersToShowByLayout: TWorkItemFilterProperty[] = isPinnedFilterLayout
+    ? [
+        ...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters.filter(
+          (property): property is TWorkItemFilterProperty => !["state_id", "assignee_id"].includes(property as string)
+        ),
+        "progress_status",
+      ]
+    : [...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters];
+  const suppressedProperties: TWorkItemFilterProperty[] = ["state_id", "progress_status", "assignee_id"];
 
   useSWR(
     workspaceSlug && projectId && cycleId ? `CYCLE_ISSUES_${workspaceSlug}_${projectId}_${cycleId}` : null,
@@ -90,11 +106,12 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
         enableSaveView
         entityType={EIssuesStoreType.CYCLE}
         entityId={cycleId}
-        filtersToShowByLayout={ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters}
+        filtersToShowByLayout={filtersToShowByLayout}
         initialWorkItemFilters={workItemFilters}
         updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId, cycleId)}
         projectId={projectId}
         workspaceSlug={workspaceSlug}
+        pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
       >
         {({ filter: cycleWorkItemsFilter }) => (
           <>
@@ -114,6 +131,12 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
               {cycleWorkItemsFilter && (
                 <WorkItemFiltersRow
                   filter={cycleWorkItemsFilter}
+                  leadingControls={
+                    isPinnedFilterLayout ? (
+                      <WorkItemPinnedFilters filter={cycleWorkItemsFilter} projectId={projectId} />
+                    ) : undefined
+                  }
+                  suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
                   trackerElements={{
                     saveView: PROJECT_VIEW_TRACKER_ELEMENTS.CYCLE_HEADER_SAVE_AS_VIEW_BUTTON,
                   }}

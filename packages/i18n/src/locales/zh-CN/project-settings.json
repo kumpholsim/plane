@@ -55,6 +55,11 @@
         "error": "更新标签时出错"
       }
     },
+    "sub_work_item_categories": {
+      "label": "子任务",
+      "heading": "子任务",
+      "description": "按 Design、Dev、QA 等角色组织子任务。可拖动排序或删除不再使用的类别。"
+    },
     "estimates": {
       "heading": "估算",
       "description": "设置估算系统以跟踪和传达每个工作项所需的工作量。",

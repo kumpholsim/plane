@@ -55,6 +55,11 @@
         "error": "Đã xảy ra lỗi khi cập nhật nhãn"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Công việc phụ",
+      "heading": "Công việc phụ",
+      "description": "Sắp xếp công việc phụ theo vai trò như Design, Dev và QA. Kéo để sắp xếp lại hoặc xóa danh mục không còn dùng."
+    },
     "estimates": {
       "heading": "Ước tính",
       "description": "Thiết lập hệ thống ước tính để theo dõi và truyền đạt nỗ lực cần thiết cho mỗi mục công việc.",

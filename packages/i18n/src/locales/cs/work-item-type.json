@@ -439,7 +439,7 @@
       "content": {
         "intro": "Typ pracovní položky {workItemTypeName} obsahuje:",
         "parent_items": "{count, plural, one {Bude odstraněna # nadřazená vazba} few {Budou odstraněny # nadřazené vazby} other {Bude odstraněno # nadřazených vazeb}}.",
-        "child_items": "{count, plural, one {podřazenou pracovní položku} few {podřazené pracovní položky} other {podřazených pracovních položek}}",
+        "child_items": "{count, plural, one {dílčí úkol} few {dílčí úkoly} many {dílčích úkolů} other {dílčích úkolů}}",
         "parent_line_suffix_when_also_children": ", a ",
         "footer": "Tato změna odstraní nadřazené a podřazené vztahy u stávajících pracovních položek typu {workItemTypeName}."
       },

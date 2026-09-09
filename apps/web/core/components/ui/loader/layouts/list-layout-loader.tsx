@@ -7,9 +7,11 @@
 import { Fragment, forwardRef } from "react";
 import { range } from "lodash-es";
 // plane ui
+import { EIssuesStoreType } from "@plane/types";
 import { Row } from "@plane/ui";
 // plane utils
 import { cn } from "@plane/utils";
+import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { getRandomInt, getRandomLength } from "../utils";
 
 export const ListLoaderItemRow = forwardRef(function ListLoaderItemRow(
@@ -20,10 +22,15 @@ export const ListLoaderItemRow = forwardRef(function ListLoaderItemRow(
   }: { shouldAnimate?: boolean; renderForPlaceHolder?: boolean; defaultPropertyCount?: number },
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
+  const storeType = useIssueStoreType();
+  const isCompactList = storeType === EIssuesStoreType.CYCLE;
+
   return (
     <Row
       ref={ref}
-      className={cn("flex h-11 items-center justify-between py-3", {
+      className={cn("flex items-center justify-between", {
+        "h-7 py-1.5": isCompactList,
+        "h-11 py-3": !isCompactList,
         "bg-surface-1": renderForPlaceHolder,
         "border-t border-subtle": !renderForPlaceHolder,
       })}
@@ -94,8 +101,8 @@ function ListSection({ itemCount }: { itemCount: number }) {
 export function ListLayoutLoader() {
   return (
     <div className="flex flex-shrink-0 flex-col">
-      {[6, 5, 2].map((itemCount, index) => (
-        <ListSection key={index} itemCount={itemCount} />
+      {[6, 5, 2].map((itemCount) => (
+        <ListSection key={`section-${itemCount}`} itemCount={itemCount} />
       ))}
     </div>
   );

@@ -141,6 +141,9 @@ from .issue.attachment import (
 from .issue.comment import IssueCommentViewSet, CommentReactionViewSet
 
 from .issue.label import LabelViewSet, BulkCreateIssueLabelsEndpoint
+from .issue.project_hierarchy_type import ProjectHierarchyTypeViewSet
+# Back-compat alias
+SubWorkItemCategoryViewSet = ProjectHierarchyTypeViewSet
 
 from .issue.link import IssueLinkViewSet
 

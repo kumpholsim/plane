@@ -55,6 +55,11 @@
         "error": "Fehler beim Aktualisieren des Labels"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Unteraufgabe",
+      "heading": "Unteraufgabe",
+      "description": "Organisieren Sie Unteraufgaben nach Rolle wie Design, Dev und QA. Zum Neuordnen ziehen oder ungenutzte Kategorien löschen."
+    },
     "estimates": {
       "heading": "Schätzungen",
       "description": "Sie helfen Ihnen, die Komplexität und Arbeitsbelastung des Teams zu kommunizieren.",

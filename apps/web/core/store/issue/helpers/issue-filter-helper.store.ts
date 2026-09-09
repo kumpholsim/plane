@@ -27,7 +27,8 @@ import type {
 } from "@plane/types";
 import { EIssueLayoutTypes } from "@plane/types";
 // helpers
-import { getComputedDisplayFilters, getComputedDisplayProperties } from "@plane/utils";
+import { sanitizeWorkItemRichFiltersForApi } from "@plane/shared-state";
+import { getComputedDisplayFilters, getComputedDisplayProperties, resolveDisplayFiltersForLayout } from "@plane/utils";
 // lib
 import { storage } from "@/lib/local-storage";
 
@@ -76,7 +77,7 @@ export class IssueFilterHelperStore implements IIssueFilterHelperStore {
    * @returns {IIssueFilters}
    */
   computedIssueFilters = (filters: IIssueFilters): IIssueFilters => ({
-    richFilters: isEmpty(filters?.richFilters) ? {} : filters?.richFilters,
+    richFilters: isEmpty(filters?.richFilters) ? {} : sanitizeWorkItemRichFiltersForApi(filters?.richFilters),
     displayFilters: isEmpty(filters?.displayFilters) ? undefined : filters?.displayFilters,
     displayProperties: isEmpty(filters?.displayProperties) ? undefined : filters?.displayProperties,
     kanbanFilters: isEmpty(filters?.kanbanFilters) ? undefined : filters?.kanbanFilters,
@@ -94,13 +95,16 @@ export class IssueFilterHelperStore implements IIssueFilterHelperStore {
     displayFilters: IIssueDisplayFilterOptions | undefined,
     acceptableParamsByLayout: TIssueParams[]
   ): Partial<Record<TIssueParams, string | boolean>> => {
+    const effectiveDisplayFilters = resolveDisplayFiltersForLayout(displayFilters);
     const computedDisplayFilters: Partial<Record<TIssueParams, undefined | string[] | boolean | string>> = {
-      group_by: displayFilters?.group_by ? EIssueGroupByToServerOptions[displayFilters.group_by] : undefined,
-      sub_group_by: displayFilters?.sub_group_by
-        ? EIssueGroupByToServerOptions[displayFilters.sub_group_by]
+      group_by: effectiveDisplayFilters?.group_by
+        ? EIssueGroupByToServerOptions[effectiveDisplayFilters.group_by]
         : undefined,
-      order_by: displayFilters?.order_by || undefined,
-      sub_issue: displayFilters?.sub_issue ?? true,
+      sub_group_by: effectiveDisplayFilters?.sub_group_by
+        ? EIssueGroupByToServerOptions[effectiveDisplayFilters.sub_group_by]
+        : undefined,
+      order_by: effectiveDisplayFilters?.order_by || undefined,
+      sub_issue: effectiveDisplayFilters?.sub_issue ?? true,
     };
 
     const issueFiltersParams: Partial<Record<TIssueParams, boolean | string>> = {};
@@ -114,8 +118,11 @@ export class IssueFilterHelperStore implements IIssueFilterHelperStore {
           : nonEmptyArrayValue;
     });
 
-    // work item filters
-    if (richFilters) issueFiltersParams.filters = JSON.stringify(richFilters);
+    // work item filters — strip empty pinned values (e.g. state_id__in: "") before querying
+    const sanitizedRichFilters = sanitizeWorkItemRichFiltersForApi(richFilters);
+    if (sanitizedRichFilters && Object.keys(sanitizedRichFilters).length > 0) {
+      issueFiltersParams.filters = JSON.stringify(sanitizedRichFilters);
+    }
 
     if (displayFilters?.layout) issueFiltersParams.layout = displayFilters?.layout;
 

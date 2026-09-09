@@ -449,6 +449,8 @@
     "layout": "레이아웃",
     "filters": "필터",
     "display": "디스플레이",
+    "expand_all": "모두 펼치기",
+    "collapse_all": "모두 접기",
     "load_more": "더 보기",
     "activity": "활동",
     "analytics": "분석",
@@ -464,7 +466,7 @@
     "epics": "에픽스",
     "work_item": "작업 항목",
     "work_items": "작업 항목",
-    "sub_work_item": "하위 작업 항목",
+    "sub_work_item": "하위 작업",
     "views": "보기",
     "pages": "페이지",
     "add": "추가",
@@ -507,7 +509,7 @@
       "private": "비공개"
     },
     "done": "완료",
-    "sub_work_items": "하위 작업 항목",
+    "sub_work_items": "하위 작업",
     "comment": "댓글",
     "workspace_level": "작업 공간 수준",
     "order_by": {

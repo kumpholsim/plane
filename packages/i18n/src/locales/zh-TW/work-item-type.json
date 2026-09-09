@@ -439,7 +439,7 @@
       "content": {
         "intro": "工作項目類型 {workItemTypeName} 包含：",
         "parent_items": "{count, plural, other {將清除 # 個父層連結}}。",
-        "child_items": "{count, plural, other {個子工作項目}}",
+        "child_items": "{count, plural, other {子任務}}",
         "parent_line_suffix_when_also_children": "，以及 ",
         "footer": "此變更將從 {workItemTypeName} 工作項目類型的現有工作項目中移除父子關係。"
       },

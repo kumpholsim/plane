@@ -11,6 +11,11 @@ import { useParams } from "next/navigation";
 import type { TIssue } from "@plane/types";
 // components
 import { CycleDropdown } from "@/components/dropdowns/cycle";
+import {
+  canEditCycle,
+  getHierarchyLevel,
+  shouldShowCycleProperty,
+} from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { useIssuesStore } from "@/hooks/use-issue-layout-store";
 
@@ -29,14 +34,22 @@ export const SpreadsheetCycleColumn = observer(function SpreadsheetCycleColumn(p
     issues: { addCycleToIssue, removeCycleFromIssue },
   } = useIssuesStore();
 
+  const level = getHierarchyLevel(issue);
+  const showCycle = shouldShowCycleProperty(level);
+  const cycleEditable = canEditCycle(level) && !disabled;
+
   const handleCycle = useCallback(
     async (cycleId: string | null) => {
-      if (!workspaceSlug || !issue || !issue.project_id || issue.cycle_id === cycleId) return;
+      if (!workspaceSlug || !issue || !issue.project_id || !cycleEditable || issue.cycle_id === cycleId) return;
       if (cycleId) await addCycleToIssue(workspaceSlug.toString(), issue.project_id, cycleId, issue.id);
       else await removeCycleFromIssue(workspaceSlug.toString(), issue.project_id, issue.id);
     },
-    [workspaceSlug, issue, addCycleToIssue, removeCycleFromIssue]
+    [workspaceSlug, issue, addCycleToIssue, removeCycleFromIssue, cycleEditable]
   );
+
+  if (!showCycle) {
+    return <div className="h-11 border-b-[0.5px] border-subtle" />;
+  }
 
   return (
     <div className="h-11 border-b-[0.5px] border-subtle">
@@ -44,7 +57,7 @@ export const SpreadsheetCycleColumn = observer(function SpreadsheetCycleColumn(p
         projectId={issue.project_id ?? undefined}
         value={issue.cycle_id}
         onChange={handleCycle}
-        disabled={disabled}
+        disabled={!cycleEditable}
         placeholder="Select cycle"
         buttonVariant="transparent-with-text"
         buttonContainerClassName="w-full relative flex items-center p-2 group-[.selected-issue-row]:bg-accent-primary/5 group-[.selected-issue-row]:hover:bg-accent-primary/10 px-page-x"

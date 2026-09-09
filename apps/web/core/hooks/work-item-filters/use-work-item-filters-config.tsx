@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AtSign, Briefcase } from "lucide-react";
 // plane imports
 import { Logo } from "@plane/propel/emoji-icon-picker";
@@ -29,8 +29,9 @@ import type {
   IUserLite,
   TFilterConfig,
   IIssueLabel,
-  IModule,
   IProject,
+  TIssue,
+  TIssuesResponse,
   TWorkItemFilterProperty,
 } from "@plane/types";
 import { Avatar } from "@plane/ui";
@@ -44,6 +45,7 @@ import {
   getMentionFilterConfig,
   getModuleFilterConfig,
   getPriorityFilterConfig,
+  getProgressStatusFilterConfig,
   getProjectFilterConfig,
   getStartDateFilterConfig,
   getStateFilterConfig,
@@ -53,21 +55,42 @@ import {
   getUpdatedAtFilterConfig,
   isLoaderReady,
 } from "@plane/utils";
+import type { TEpicFilterOption } from "@plane/utils";
 // store hooks
 import { useCycle } from "@/hooks/store/use-cycle";
 import { useLabel } from "@/hooks/store/use-label";
 import { useMember } from "@/hooks/store/use-member";
-import { useModule } from "@/hooks/store/use-module";
 import { useProject } from "@/hooks/store/use-project";
+import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import { useProjectState } from "@/hooks/store/use-project-state";
 // plane web imports
 import { useFiltersOperatorConfigs } from "@/hooks/rich-filters/use-filters-operator-configs";
+import { store } from "@/lib/store-context";
+import { IssueService } from "@/services/issue";
+import { getL3ProgressStatusColor } from "@/components/issues/hierarchy-status";
+import { L3_PROGRESS_PHASE_FALLBACK_COLORS, L3_PROGRESS_STATUS_OPTIONS } from "@plane/constants";
+
+const issueService = new IssueService();
+
+const normalizeIssueList = (response: TIssuesResponse | undefined): TIssue[] => {
+  const results = response?.results;
+  if (!results) return [];
+  if (Array.isArray(results)) return results;
+  const list: TIssue[] = [];
+  for (const groupId in results) {
+    const group = results[groupId];
+    if (Array.isArray(group?.results)) list.push(...group.results);
+    else if (Array.isArray(group)) list.push(...(group as TIssue[]));
+  }
+  return list;
+};
 
 export type TWorkItemFiltersEntityProps = {
   workspaceSlug: string;
   cycleIds?: string[];
   labelIds?: string[];
   memberIds?: string[];
+  /** @deprecated Classic module ids — epic options are fetched by hierarchy_level=2. */
   moduleIds?: string[];
   projectId?: string;
   projectIds?: string[];
@@ -89,14 +112,13 @@ export type TWorkItemFiltersConfig = {
 };
 
 export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps): TWorkItemFiltersConfig => {
-  const { allowedFilters, cycleIds, labelIds, memberIds, moduleIds, projectId, projectIds, stateIds, workspaceSlug } =
-    props;
+  const { allowedFilters, cycleIds, labelIds, memberIds, projectId, projectIds, stateIds, workspaceSlug } = props;
   // store hooks
   const { loader: projectLoader, getProjectById } = useProject();
   const { getCycleById } = useCycle();
   const { getLabelById } = useLabel();
-  const { getModuleById } = useModule();
   const { getStateById } = useProjectState();
+  const { getActiveProjectTypes } = useProjectHierarchyType();
   const { getUserDetails } = useMember();
   // derived values
   const operatorConfigs = useFiltersOperatorConfigs({ workspaceSlug });
@@ -125,19 +147,32 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
     () => (cycleIds ? (cycleIds.map((cycleId) => getCycleById(cycleId)).filter((cycle) => cycle) as ICycle[]) : []),
     [cycleIds, getCycleById]
   );
-  const modules = useMemo(
-    () =>
-      moduleIds ? (moduleIds.map((moduleId) => getModuleById(moduleId)).filter((module) => module) as IModule[]) : [],
-    [moduleIds, getModuleById]
-  );
+  const [epics, setEpics] = useState<TEpicFilterOption[] | undefined>(undefined);
+  const projectTypes = useMemo(() => getActiveProjectTypes(projectId, 4) ?? [], [getActiveProjectTypes, projectId]);
   const projects = useMemo(
     () =>
       projectIds
-        ? (projectIds.map((projectId) => getProjectById(projectId)).filter((project) => project) as IProject[])
+        ? (projectIds.map((id) => getProjectById(id)).filter((projectOption) => projectOption) as IProject[])
         : [],
     [projectIds, getProjectById]
   );
   const areAllConfigsInitialized = useMemo(() => isLoaderReady(projectLoader), [projectLoader]);
+  const progressPhaseColors = useMemo(() => {
+    const colors = {
+      design: L3_PROGRESS_PHASE_FALLBACK_COLORS.design ?? "#F97316",
+      dev: L3_PROGRESS_PHASE_FALLBACK_COLORS.dev ?? "#3B82F6",
+      qa: L3_PROGRESS_PHASE_FALLBACK_COLORS.qa ?? "#22C55E",
+    };
+
+    for (const type of projectTypes) {
+      const key = (type.name ?? "").trim().toLowerCase();
+      if (key === "design" || key === "dev" || key === "qa") {
+        colors[key] = type.color || colors[key];
+      }
+    }
+
+    return colors;
+  }, [projectTypes]);
 
   /**
    * Checks if a filter is enabled based on the filters to show.
@@ -146,6 +181,33 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
    * @returns True if the filter is enabled, false otherwise.
    */
   const isFilterEnabled = useCallback((key: TWorkItemFilterProperty) => filtersToShow.has(key), [filtersToShow]);
+
+  // Load L2 epics for the (legacy module_id) filter options
+  useEffect(() => {
+    if (!workspaceSlug || !projectId || !isFilterEnabled("module_id") || project?.module_view !== true) {
+      setEpics([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await issueService.getIssues(workspaceSlug, projectId, {
+          hierarchy_level: "2",
+          sub_issue: true,
+          per_page: "100",
+        });
+        const issues = normalizeIssueList(response as TIssuesResponse);
+        if (cancelled) return;
+        store.issue.issues.addIssue(issues);
+        setEpics(issues.map((issue) => ({ id: issue.id, name: issue.name })));
+      } catch {
+        if (!cancelled) setEpics([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceSlug, projectId, project?.module_view, isFilterEnabled]);
 
   // state group filter config
   const stateGroupFilterConfig = useMemo(
@@ -170,6 +232,24 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         ...operatorConfigs,
       }),
     [isFilterEnabled, workItemStates, operatorConfigs]
+  );
+
+  const progressStatusFilterConfig = useMemo(
+    () =>
+      getProgressStatusFilterConfig<TWorkItemFilterProperty>("progress_status")({
+        isEnabled: isFilterEnabled("progress_status") && projectId !== undefined,
+        filterIcon: StatePropertyIcon,
+        options: L3_PROGRESS_STATUS_OPTIONS.map((option) => ({
+          value: option.value,
+          label: option.label,
+          color: getL3ProgressStatusColor(option.value, progressPhaseColors),
+        })),
+        getOptionIcon: (option) => (
+          <span className="flex size-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: option.color }} />
+        ),
+        ...operatorConfigs,
+      }),
+    [isFilterEnabled, projectId, operatorConfigs, progressPhaseColors]
   );
 
   // label filter config
@@ -200,17 +280,17 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
     [isFilterEnabled, project?.cycle_view, cycles, operatorConfigs]
   );
 
-  // module filter config
+  // epic filter config (property key remains module_id)
   const moduleFilterConfig = useMemo(
     () =>
       getModuleFilterConfig<TWorkItemFilterProperty>("module_id")({
-        isEnabled: isFilterEnabled("module_id") && project?.module_view === true && modules !== undefined,
+        isEnabled: isFilterEnabled("module_id") && project?.module_view === true && epics !== undefined,
         filterIcon: ModuleIcon,
         getOptionIcon: () => <ModuleIcon className="h-3 w-3 flex-shrink-0" />,
-        modules: modules ?? [],
+        epics: epics ?? [],
         ...operatorConfigs,
       }),
-    [isFilterEnabled, project?.module_view, modules, operatorConfigs]
+    [isFilterEnabled, project?.module_view, epics, operatorConfigs]
   );
 
   // assignee filter config
@@ -356,7 +436,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         isEnabled: isFilterEnabled("project_id") && projects !== undefined,
         filterIcon: Briefcase,
         projects: projects,
-        getOptionIcon: (project) => <Logo logo={project.logo_props} size={12} />,
+        getOptionIcon: (projectOption) => <Logo logo={projectOption.logo_props} size={12} />,
         ...operatorConfigs,
       }),
     [isFilterEnabled, projects, operatorConfigs]
@@ -366,6 +446,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
     areAllConfigsInitialized,
     configs: [
       stateFilterConfig,
+      progressStatusFilterConfig,
       stateGroupFilterConfig,
       assigneeFilterConfig,
       priorityFilterConfig,
@@ -385,6 +466,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       project_id: projectFilterConfig,
       state_group: stateGroupFilterConfig,
       state_id: stateFilterConfig,
+      progress_status: progressStatusFilterConfig,
       label_id: labelFilterConfig,
       cycle_id: cycleFilterConfig,
       module_id: moduleFilterConfig,

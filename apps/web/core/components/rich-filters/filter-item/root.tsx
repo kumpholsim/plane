@@ -39,6 +39,7 @@ export const FilterItem = observer(function FilterItem<P extends TFilterProperty
 ) {
   const { condition, filter, isDisabled = false, showTransition = true } = props;
   // derived values
+  const isPinned = Boolean(condition.property && filter.isPropertyPinned(condition.property));
   const filterConfig = condition?.property ? filter.configManager.getConfigByProperty(condition.property) : undefined;
   const operatorOptions = filterConfig
     ?.getAllDisplayOperatorOptionsByValue(condition.value as TFilterValue)
@@ -122,11 +123,12 @@ export const FilterItem = observer(function FilterItem<P extends TFilterProperty
           condition={condition}
           onChange={handleValueChange}
           isDisabled={isDisabled}
+          openOnEmpty={!isPinned}
         />
       )}
 
-      {/* Remove button */}
-      {!isDisabled && <FilterItemCloseButton conditionId={condition.id} filter={filter} />}
+      {/* Remove button — pinned header filters stay on the bar */}
+      {!isDisabled && !isPinned && <FilterItemCloseButton conditionId={condition.id} filter={filter} />}
     </FilterItemContainer>
   );
 });

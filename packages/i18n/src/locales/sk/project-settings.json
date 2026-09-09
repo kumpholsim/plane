@@ -55,6 +55,11 @@
         "error": "Chyba pri aktualizácii štítka"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Čiastková úloha",
+      "heading": "Čiastková úloha",
+      "description": "Organizujte čiastkové úlohy podľa rolí ako Design, Dev a QA. Presunutím zmeníte poradie alebo odstránite nepoužívané kategórie."
+    },
     "estimates": {
       "heading": "Odhady",
       "description": "Pomáhajú vám komunikovať zložitosť a pracovné zaťaženie tímu.",

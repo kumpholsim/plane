@@ -439,7 +439,7 @@
       "content": {
         "intro": "El tipo de elemento de trabajo {workItemTypeName} tiene:",
         "parent_items": "{count, plural, one {Se eliminará # enlace principal} other {Se eliminarán # enlaces principales}}.",
-        "child_items": "{count, plural, one {subelemento de trabajo} other {subelementos de trabajo}}",
+        "child_items": "{count, plural, one {subtarea} other {subtareas}}",
         "parent_line_suffix_when_also_children": ", y ",
         "footer": "Este cambio eliminará las relaciones padre-hijo de los elementos de trabajo existentes del tipo {workItemTypeName}."
       },

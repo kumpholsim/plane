@@ -144,6 +144,29 @@ def filter_parent(params, issue_filter, method, prefix=""):
     return issue_filter
 
 
+def filter_hierarchy_level(params, issue_filter, method, prefix=""):
+    if method == "GET":
+        levels = [item for item in params.get("hierarchy_level").split(",") if item != "null" and item != ""]
+        try:
+            levels = [int(level) for level in levels]
+        except (TypeError, ValueError):
+            levels = []
+        if levels:
+            issue_filter[f"{prefix}hierarchy_level__in"] = levels
+    else:
+        raw = params.get("hierarchy_level", None)
+        if raw is not None and raw != "null":
+            if isinstance(raw, list):
+                levels = raw
+            else:
+                levels = [raw]
+            try:
+                issue_filter[f"{prefix}hierarchy_level__in"] = [int(level) for level in levels]
+            except (TypeError, ValueError):
+                pass
+    return issue_filter
+
+
 def filter_labels(params, issue_filter, method, prefix=""):
     if method == "GET":
         labels = [item for item in params.get("labels").split(",") if item != "null"]
@@ -333,17 +356,52 @@ def filter_cycle(params, issue_filter, method, prefix=""):
 
 
 def filter_module(params, issue_filter, method, prefix=""):
+    """Filter by epic (legacy ``module`` param): epic itself or L3/L4 under it.
+
+    Uses ``id__in`` so the result stays a flat ORM lookup dict for ``filter(**filters)``.
+    """
+    from django.db.models import Q
+
+    from plane.db.models import Issue
+    from plane.utils.issue_parent import (
+        HIERARCHY_LEVEL_EPIC,
+        epic_membership_q,
+    )
+
+    include_none = False
+    epic_ids = []
     if method == "GET":
-        modules = [item for item in params.get("module").split(",") if item != "null"]
-        if "None" in modules:
-            issue_filter[f"{prefix}issue_module__module_id__isnull"] = True
-        modules = filter_valid_uuids(modules)
-        if len(modules) and "" not in modules:
-            issue_filter[f"{prefix}issue_module__module_id__in"] = modules
+        raw = [item for item in params.get("module").split(",") if item != "null"]
+        include_none = "None" in raw
+        epic_ids = filter_valid_uuids([item for item in raw if item != "None"])
     else:
-        if params.get("module", None) and len(params.get("module")) and params.get("module") != "null":
-            issue_filter[f"{prefix}issue_module__module_id__in"] = params.get("module")
-    issue_filter[f"{prefix}issue_module__deleted_at__isnull"] = True
+        raw = params.get("module", None)
+        if raw and len(raw) and raw != "null":
+            if isinstance(raw, list):
+                include_none = "None" in raw or None in raw
+                epic_ids = filter_valid_uuids([str(item) for item in raw if item not in ("None", None)])
+            else:
+                epic_ids = filter_valid_uuids([str(raw)])
+
+    membership_q = Q()
+    if epic_ids:
+        membership_q |= epic_membership_q(epic_ids)
+    if include_none:
+        # No epic ancestor and not an epic itself
+        membership_q |= ~(
+            Q(hierarchy_level=HIERARCHY_LEVEL_EPIC)
+            | Q(parent__hierarchy_level=HIERARCHY_LEVEL_EPIC)
+            | Q(parent__parent__hierarchy_level=HIERARCHY_LEVEL_EPIC)
+        )
+
+    if membership_q:
+        matching_qs = Issue.issue_objects.filter(membership_q)
+        if prefix:
+            # Intake etc. use ``issue__`` prefix — match on related issue id
+            matching_ids = list(matching_qs.values_list("id", flat=True))
+            issue_filter[f"{prefix}id__in"] = matching_ids
+        else:
+            issue_filter["id__in"] = list(matching_qs.values_list("id", flat=True))
     return issue_filter
 
 
@@ -378,14 +436,17 @@ def filter_inbox_status(params, issue_filter, method, prefix=""):
 
 
 def filter_sub_issue_toggle(params, issue_filter, method, prefix=""):
+    """When off, hide level-4 sub-tasks only — not L2/L3 children of milestones/epics."""
+    from plane.utils.issue_parent import HIERARCHY_LEVEL_SUB_TASK
+
     if method == "GET":
         sub_issue = params.get("sub_issue", "false")
         if sub_issue == "false":
-            issue_filter[f"{prefix}parent__isnull"] = True
+            issue_filter[f"{prefix}hierarchy_level__lt"] = HIERARCHY_LEVEL_SUB_TASK
     else:
         sub_issue = params.get("sub_issue", "false")
         if sub_issue == "false":
-            issue_filter[f"{prefix}parent__isnull"] = True
+            issue_filter[f"{prefix}hierarchy_level__lt"] = HIERARCHY_LEVEL_SUB_TASK
     return issue_filter
 
 
@@ -434,6 +495,7 @@ def issue_filters(query_params, method, prefix=""):
         "estimate_point": filter_estimate_point,
         "priority": filter_priority,
         "parent": filter_parent,
+        "hierarchy_level": filter_hierarchy_level,
         "labels": filter_labels,
         "assignees": filter_assignees,
         "mentions": filter_mentions,

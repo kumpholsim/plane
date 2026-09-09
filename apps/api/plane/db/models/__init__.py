@@ -15,7 +15,12 @@ from .draft import (
     DraftIssueModule,
     DraftIssueCycle,
 )
-from .estimate import Estimate, EstimatePoint
+from .estimate import (
+    Estimate,
+    EstimatePoint,
+    DEFAULT_LINEAR_ESTIMATE_POINTS,
+    ensure_default_project_estimate,
+)
 from .exporter import ExporterHistory
 from .importer import Importer
 from .intake import Intake, IntakeIssue
@@ -84,6 +89,17 @@ from .issue_type import IssueType
 from .recent_visit import UserRecentVisit
 
 from .label import Label
+
+from .project_hierarchy_type import (
+    ProjectHierarchyType,
+    DEFAULT_PROJECT_HIERARCHY_TYPES,
+    DEFAULT_SUB_WORK_ITEM_CATEGORIES,
+    ensure_default_project_hierarchy_types,
+    HIERARCHY_LEVEL_MILESTONE,
+    HIERARCHY_LEVEL_EPIC,
+    HIERARCHY_LEVEL_DELIVERY,
+    HIERARCHY_LEVEL_SUB_TASK,
+)
 
 from .device import Device, DeviceSession
 

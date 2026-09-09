@@ -19,11 +19,13 @@
       "start_date": "Adaugă data de început",
       "due_date": "Adaugă termenul limită",
       "parent": "Adaugă activitate părinte",
-      "sub_issue": "Adaugă sub-activitate",
+      "sub_issue": "Adaugă subtask",
       "dependency": "Adaugă dependență",
       "relation": "Adaugă relație",
       "link": "Adaugă link",
-      "existing": "Adaugă activitate existentă"
+      "existing": "Adaugă activitate existentă",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Elimină activitatea",
@@ -57,14 +59,14 @@
         "label": "Afișează proprietățile",
         "id": "ID",
         "issue_type": "Tipul activității",
-        "sub_issue_count": "Număr de sub-activități",
+        "sub_issue_count": "Număr de subtask-uri",
         "attachment_count": "Număr de atașamente",
         "created_on": "Creată la",
-        "sub_issue": "Sub-activitate",
+        "sub_issue": "Subtask",
         "work_item_count": "Număr de activități"
       },
       "extra": {
-        "show_sub_issues": "Afișează sub-activitățile",
+        "show_sub_issues": "Afișează subtask-uri",
         "show_empty_groups": "Afișează grupurile goale"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Clic pentru a vota negativ",
       "click_to_view_upvotes": "Clic pentru a vedea voturile pozitive",
       "click_to_view_downvotes": "Clic pentru a vedea voturile negative"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Sub-activitatea a fost actualizată cu succes",
-      "error": "Eroare la actualizarea sub-activității"
+      "success": "Subtask actualizat cu succes",
+      "error": "Eroare la actualizarea subtask-ului"
     },
     "remove": {
-      "success": "Sub-activitatea a fost eliminată cu succes",
-      "error": "Eroare la eliminarea sub-activității"
+      "success": "Subtask eliminat cu succes",
+      "error": "Eroare la eliminarea subtask-ului"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Nu ai sub-elemente de lucru care corespund filtrelor pe care le-ai aplicat.",
-        "description": "Pentru a vedea toate sub-elementele de lucru, șterge toate filtrele aplicate.",
+        "title": "Nu există subtask-uri care să corespundă filtrelor aplicate.",
+        "description": "Pentru a vedea toate subtask-urile, șterge toate filtrele aplicate.",
         "action": "Șterge filtrele"
       },
       "list_filters": {

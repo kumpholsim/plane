@@ -216,6 +216,11 @@ export const coreRoutes: RouteConfigEntry[] = [
               "./(all)/[workspaceSlug]/(projects)/projects/(detail)/[projectId]/intake/page.tsx"
             ),
           ]),
+          // Hierarchy overview
+          route(
+            ":workspaceSlug/projects/:projectId/hierarchy",
+            "./(all)/[workspaceSlug]/(projects)/projects/(detail)/[projectId]/hierarchy/page.tsx"
+          ),
         ]),
 
         // Project Archives - Issues, Cycles, Modules
@@ -332,6 +337,16 @@ export const coreRoutes: RouteConfigEntry[] = [
             route(
               ":workspaceSlug/settings/projects/:projectId/labels",
               "./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/labels/page.tsx"
+            ),
+            // Project Hierarchy
+            route(
+              ":workspaceSlug/settings/projects/:projectId/hierarchy",
+              "./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/hierarchy/page.tsx"
+            ),
+            // Legacy Sub-task categories → redirect to hierarchy
+            route(
+              ":workspaceSlug/settings/projects/:projectId/sub-work-item-categories",
+              "./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/sub-work-item-categories/page.tsx"
             ),
             // Project Estimates
             route(

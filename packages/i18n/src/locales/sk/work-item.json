@@ -19,11 +19,13 @@
       "start_date": "Pridať dátum začiatku",
       "due_date": "Pridať termín",
       "parent": "Pridať nadradenú pracovnú položku",
-      "sub_issue": "Pridať podriadenú pracovnú položku",
+      "sub_issue": "Pridať čiastkovú úlohu",
       "dependency": "Pridať závislosť",
       "relation": "Pridať vzťah",
       "link": "Pridať odkaz",
-      "existing": "Pridať existujúcu pracovnú položku"
+      "existing": "Pridať existujúcu pracovnú položku",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Odstrániť pracovnú položku",
@@ -57,14 +59,14 @@
         "label": "Zobrazované vlastnosti",
         "id": "ID",
         "issue_type": "Typ pracovnej položky",
-        "sub_issue_count": "Počet podriadených položiek",
+        "sub_issue_count": "Počet čiastkových úloh",
         "attachment_count": "Počet príloh",
         "created_on": "Vytvorené dňa",
-        "sub_issue": "Podriadená položka",
+        "sub_issue": "Čiastková úloha",
         "work_item_count": "Počet pracovných položiek"
       },
       "extra": {
-        "show_sub_issues": "Zobraziť podriadené položky",
+        "show_sub_issues": "Zobraziť čiastkové úlohy",
         "show_empty_groups": "Zobraziť prázdne skupiny"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Kliknite pre hlasovanie dole",
       "click_to_view_upvotes": "Kliknite pre zobrazenie hlasov hore",
       "click_to_view_downvotes": "Kliknite pre zobrazenie hlasov dole"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Podriadená pracovná položka bola úspešne aktualizovaná",
-      "error": "Chyba pri aktualizácii podriadenej položky"
+      "success": "Čiastková úloha bola úspešne aktualizovaná",
+      "error": "Chyba pri aktualizácii čiastkovej úlohy"
     },
     "remove": {
-      "success": "Podriadená pracovná položka bola úspešne odstránená",
-      "error": "Chyba pri odstraňovaní podriadenej položky"
+      "success": "Čiastková úloha bola úspešne odstránená",
+      "error": "Chyba pri odstraňovaní čiastkovej úlohy"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Nemáte podriadené pracovné položky, ktoré zodpovedajú použitým filtrom.",
-        "description": "Pre zobrazenie všetkých podriadených pracovných položiek vymažte všetky použité filtre.",
+        "title": "Žiadne čiastkové úlohy nezodpovedajú použitým filtrom.",
+        "description": "Ak chcete zobraziť všetky čiastkové úlohy, vymažte všetky použité filtre.",
         "action": "Vymazať filtre"
       },
       "list_filters": {

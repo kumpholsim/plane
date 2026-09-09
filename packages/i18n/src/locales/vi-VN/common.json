@@ -449,6 +449,8 @@
     "layout": "Bố cục",
     "filters": "Bộ lọc",
     "display": "Hiển thị",
+    "expand_all": "Mở rộng tất cả",
+    "collapse_all": "Thu gọn tất cả",
     "load_more": "Tải thêm",
     "activity": "Hoạt động",
     "analytics": "Phân tích",
@@ -464,7 +466,7 @@
     "epics": "Epics",
     "work_item": "Mục công việc",
     "work_items": "Mục công việc",
-    "sub_work_item": "Mục công việc con",
+    "sub_work_item": "Công việc phụ",
     "views": "Chế độ xem",
     "pages": "Trang",
     "add": "Thêm",
@@ -507,7 +509,7 @@
       "private": "Riêng tư"
     },
     "done": "Hoàn thành",
-    "sub_work_items": "Mục công việc con",
+    "sub_work_items": "Công việc phụ",
     "comment": "Bình luận",
     "workspace_level": "Cấp không gian làm việc",
     "order_by": {

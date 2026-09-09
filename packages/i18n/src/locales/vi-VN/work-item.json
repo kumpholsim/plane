@@ -19,11 +19,13 @@
       "start_date": "Thêm ngày bắt đầu",
       "due_date": "Thêm ngày hết hạn",
       "parent": "Thêm mục công việc cha",
-      "sub_issue": "Thêm mục công việc con",
+      "sub_issue": "Thêm công việc phụ",
       "dependency": "Thêm phụ thuộc",
       "relation": "Thêm mối quan hệ",
       "link": "Thêm liên kết",
-      "existing": "Thêm mục công việc hiện có"
+      "existing": "Thêm mục công việc hiện có",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Xóa mục công việc",
@@ -57,14 +59,14 @@
         "label": "Hiển thị thuộc tính",
         "id": "ID",
         "issue_type": "Loại mục công việc",
-        "sub_issue_count": "Số lượng mục công việc con",
+        "sub_issue_count": "Số công việc phụ",
         "attachment_count": "Số lượng tệp đính kèm",
         "created_on": "Được tạo vào",
-        "sub_issue": "Mục công việc con",
+        "sub_issue": "Công việc phụ",
         "work_item_count": "Số lượng mục công việc"
       },
       "extra": {
-        "show_sub_issues": "Hiển thị mục công việc con",
+        "show_sub_issues": "Hiển thị công việc phụ",
         "show_empty_groups": "Hiển thị nhóm trống"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Nhấp để bỏ phiếu chống",
       "click_to_view_upvotes": "Nhấp để xem phiếu thuận",
       "click_to_view_downvotes": "Nhấp để xem phiếu chống"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Đã cập nhật mục công việc con thành công",
-      "error": "Đã xảy ra lỗi khi cập nhật mục công việc con"
+      "success": "Đã cập nhật công việc phụ thành công",
+      "error": "Lỗi khi cập nhật công việc phụ"
     },
     "remove": {
-      "success": "Đã xóa mục công việc con thành công",
-      "error": "Đã xảy ra lỗi khi xóa mục công việc con"
+      "success": "Đã xóa công việc phụ thành công",
+      "error": "Lỗi khi xóa công việc phụ"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Bạn không có mục công việc con nào phù hợp với các bộ lọc mà bạn đã áp dụng.",
-        "description": "Để xem tất cả các mục công việc con, hãy xóa tất cả các bộ lọc đã áp dụng.",
+        "title": "Không có công việc phụ nào khớp với bộ lọc đã áp dụng.",
+        "description": "Để xem tất cả công việc phụ, hãy xóa tất cả bộ lọc đã áp dụng.",
         "action": "Xóa bộ lọc"
       },
       "list_filters": {

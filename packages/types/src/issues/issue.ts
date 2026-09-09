@@ -26,6 +26,23 @@ export enum EIssueServiceType {
   WORK_ITEMS = "work-items",
 }
 
+/** L3 progress status values (not board columns) */
+export type TDeliveryProgressStatus =
+  | "design_todo"
+  | "design_in_progress"
+  | "design_under_review"
+  | "design_done_no_dev"
+  | "dev_todo"
+  | "dev_in_progress"
+  | "dev_under_review"
+  | "dev_done_no_qa"
+  | "qa_todo"
+  | "qa_in_progress"
+  | "qa_done";
+
+/** L4 QA terminal outcome when board state is Done */
+export type TQAOutcome = "pass" | "failed";
+
 export enum EIssuesStoreType {
   GLOBAL = "GLOBAL",
   PROFILE = "PROFILE",
@@ -63,6 +80,16 @@ export type TBaseIssue = {
   cycle_id: string | null;
   module_ids: string[] | null;
   type_id: string | null;
+  hierarchy_type_id?: string | null;
+  hierarchy_level?: number | null;
+  /** L3 delivery progress (not a board column) */
+  progress_status?: TDeliveryProgressStatus | null;
+  /** L4 QA Done pass/failed when state is Done */
+  qa_outcome?: TQAOutcome | null;
+  /** 0 = none, 1 = single-up pin, 2 = double-up pin (above peers in type section) */
+  pin_level?: number | null;
+  /** @deprecated Use hierarchy_type_id */
+  sub_work_item_category_id?: string | null;
 
   created_at: string;
   updated_at: string;

@@ -15,6 +15,7 @@ export type TSharedWorkItemFiltersProps = {
   updateFilters: (updatedFilters: TWorkItemFilterExpression) => void;
   isTemporary?: boolean;
   showOnMount?: boolean;
+  pinnedProperties?: readonly TWorkItemFilterProperty[];
 } & ({ isTemporary: true; entityId?: string } | { isTemporary?: false; entityId: string }); // entity id (project_id, cycle_id, workspace_id, etc)
 
 export type TSharedWorkItemFiltersHOCProps = TSharedWorkItemFiltersProps & {

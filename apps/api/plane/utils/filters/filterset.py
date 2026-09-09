@@ -162,6 +162,9 @@ class IssueFilterSet(BaseFilterSet):
     state_id = filters.UUIDFilter(field_name="state_id")
     state_id__in = UUIDInFilter(field_name="state_id", lookup_expr="in")
 
+    progress_status = filters.CharFilter(field_name="progress_status")
+    progress_status__in = CharInFilter(field_name="progress_status", lookup_expr="in")
+
     project_id = filters.UUIDFilter(field_name="project_id")
     project_id__in = UUIDInFilter(field_name="project_id", lookup_expr="in")
 
@@ -241,18 +244,16 @@ class IssueFilterSet(BaseFilterSet):
         )
 
     def filter_module_id(self, queryset, name, value):
-        """Filter by module ID, excluding soft deleted modules"""
-        return Q(
-            issue_module__module_id=value,
-            issue_module__deleted_at__isnull=True,
-        )
+        """Filter by epic ID (legacy module_id key): epic itself or descendants under it."""
+        from plane.utils.issue_parent import epic_membership_q
+
+        return epic_membership_q([value])
 
     def filter_module_id_in(self, queryset, name, value):
-        """Filter by module IDs (in), excluding soft deleted modules"""
-        return Q(
-            issue_module__module_id__in=value,
-            issue_module__deleted_at__isnull=True,
-        )
+        """Filter by epic IDs (legacy module_id key): epics themselves or descendants under them."""
+        from plane.utils.issue_parent import epic_membership_q
+
+        return epic_membership_q(value)
 
     def filter_mention_id(self, queryset, name, value):
         """Filter by mention ID, excluding soft deleted users"""

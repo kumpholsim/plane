@@ -439,7 +439,7 @@
       "content": {
         "intro": "{workItemTypeName} iş öğesi türünde şunlar var:",
         "parent_items": "{count, plural, one {# üst bağlantı kaldırılacak} other {# üst bağlantı kaldırılacak}}.",
-        "child_items": "{count, plural, one {alt iş öğesi} other {alt iş öğeleri}}",
+        "child_items": "{count, plural, one {alt görev} other {alt görevler}}",
         "parent_line_suffix_when_also_children": ", ve ",
         "footer": "Bu değişiklik, {workItemTypeName} iş öğesi türündeki mevcut iş öğelerinden üst-alt ilişkilerini kaldıracaktır."
       },

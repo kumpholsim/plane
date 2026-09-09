@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "新增模組",
+    "add_module": "新增史詩",
     "update_module": "更新模組",
-    "create_module": "建立模組",
+    "create_module": "建立史詩",
     "archive_module": "封存模組",
     "restore_module": "還原模組",
     "delete_module": "刪除模組",
     "empty_state": {
       "general": {
-        "title": "將您的專案里程碑對應到模組並輕鬆追蹤彙總工作。",
-        "description": "屬於邏輯、階層式上層的一組工作事項形成一個模組。將其視為一種依專案里程碑追蹤工作的方式。它們有自己的期間和截止日期以及分析，可協助您了解您距離里程碑有多近或多遠。",
+        "title": "在里程碑下組織史詩，輕鬆追蹤交付工作。",
+        "description": "史詩是里程碑下的 L2 工作項。用它們對故事、缺陷和任務進行分組。",
         "primary_button": {
-          "text": "建立您的第一個模組",
+          "text": "建立第一個史詩",
           "comic": {
-            "title": "模組協助依階層結構分組工作。",
-            "description": "購物車模組、底盤模組和倉庫模組都是這種分組的好例子。"
+            "title": "史詩有助於依層級組織工作。",
+            "description": "購物車史詩、底盤史詩和倉庫史詩都是這種分組的好例子。"
           }
         }
       },
       "no_issues": {
-        "title": "模組中沒有工作事項",
-        "description": "建立或新增您想要作為此模組一部分完成的工作事項",
+        "title": "史詩中沒有工作項",
+        "description": "建立或新增要作為此史詩一部分完成的工作項",
         "primary_button": {
           "text": "建立新工作事項"
         },

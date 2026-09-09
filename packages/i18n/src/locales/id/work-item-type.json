@@ -439,7 +439,7 @@
       "content": {
         "intro": "Jenis item pekerjaan {workItemTypeName} memiliki:",
         "parent_items": "{count, plural, other {# tautan induk akan dihapus}}.",
-        "child_items": "{count, plural, other {sub-item pekerjaan}}",
+        "child_items": "{count, plural, other {sub-tugas}}",
         "parent_line_suffix_when_also_children": ", dan ",
         "footer": "Perubahan ini akan menghapus hubungan induk-anak dari item pekerjaan yang ada dengan jenis {workItemTypeName}."
       },

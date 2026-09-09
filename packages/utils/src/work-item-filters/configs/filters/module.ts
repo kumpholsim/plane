@@ -5,32 +5,39 @@
  */
 
 // plane imports
-import type { IModule, TFilterProperty } from "@plane/types";
+import type { TFilterProperty } from "@plane/types";
 import { EQUALITY_OPERATOR, COLLECTION_OPERATOR } from "@plane/types";
 // local imports
 import type { TCreateFilterConfigParams, IFilterIconConfig, TCreateFilterConfig } from "../../../rich-filters";
 import { createFilterConfig, getMultiSelectConfig, createOperatorConfigEntry } from "../../../rich-filters";
 
+/** Minimal epic shape for the (legacy module_id) filter options. */
+export type TEpicFilterOption = {
+  id: string;
+  name: string;
+};
+
 /**
- * Module filter specific params
+ * Epic filter specific params (property key remains ``module_id`` for saved views).
  */
 export type TCreateModuleFilterParams = TCreateFilterConfigParams &
   IFilterIconConfig<undefined> & {
-    modules: IModule[];
+    /** @deprecated Use `epics` — kept for call-site compatibility during rename. */
+    modules?: TEpicFilterOption[];
+    epics?: TEpicFilterOption[];
   };
 
 /**
- * Helper to get the module multi select config
- * @param params - The filter params
- * @returns The module multi select config
+ * Helper to get the epic multi select config
  */
-export const getModuleMultiSelectConfig = (params: TCreateModuleFilterParams) =>
-  getMultiSelectConfig<IModule, string, undefined>(
+export const getModuleMultiSelectConfig = (params: TCreateModuleFilterParams) => {
+  const epics = params.epics ?? params.modules ?? [];
+  return getMultiSelectConfig<TEpicFilterOption, string, undefined>(
     {
-      items: params.modules,
-      getId: (module) => module.id,
-      getLabel: (module) => module.name,
-      getValue: (module) => module.id,
+      items: epics,
+      getId: (epic) => epic.id,
+      getLabel: (epic) => epic.name,
+      getValue: (epic) => epic.id,
       getIconData: () => undefined,
     },
     {
@@ -41,19 +48,17 @@ export const getModuleMultiSelectConfig = (params: TCreateModuleFilterParams) =>
       ...params,
     }
   );
+};
 
 /**
- * Get the module filter config
- * @template K - The filter key
- * @param key - The filter key to use
- * @returns A function that takes parameters and returns the module filter config
+ * Get the epic filter config (UI label "Epic"; property key still module_id).
  */
 export const getModuleFilterConfig =
   <P extends TFilterProperty>(key: P): TCreateFilterConfig<P, TCreateModuleFilterParams> =>
   (params: TCreateModuleFilterParams) =>
     createFilterConfig<P>({
       id: key,
-      label: "Module",
+      label: "Epic",
       ...params,
       icon: params.filterIcon,
       supportedOperatorConfigsMap: new Map([

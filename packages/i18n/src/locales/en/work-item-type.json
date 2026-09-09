@@ -439,7 +439,7 @@
       "content": {
         "intro": "Work item type {workItemTypeName} has:",
         "parent_items": "{count, plural, one {parent work item} other {parent work items}}",
-        "child_items": "{count, plural, one {sub-work item} other {sub-work items}}",
+        "child_items": "{count, plural, one {sub-task} other {sub-tasks}}",
         "parent_line_suffix_when_also_children": ", and ",
         "footer": "This change will remove parent and child relationships from existing work items of {workItemTypeName} work item type."
       },

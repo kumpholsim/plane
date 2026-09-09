@@ -13,6 +13,7 @@ import {
   EstimatePropertyIcon,
   IntakeIcon,
   LabelPropertyIcon,
+  LayersIcon,
   ModuleIcon,
   PageIcon,
   StatePropertyIcon,
@@ -32,6 +33,8 @@ export const PROJECT_SETTINGS_ICONS: Record<TProjectSettingsTabs, LucideIcon | R
   features_intake: IntakeIcon,
   states: StatePropertyIcon,
   labels: LabelPropertyIcon,
+  hierarchy: LayersIcon,
+  sub_work_item_categories: LabelPropertyIcon,
   estimates: EstimatePropertyIcon,
   automations: Zap,
 };

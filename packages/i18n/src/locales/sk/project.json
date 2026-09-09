@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Pridať modul",
+    "add_module": "Pridať epik",
     "update_module": "Aktualizovať modul",
-    "create_module": "Vytvoriť modul",
+    "create_module": "Vytvoriť epik",
     "archive_module": "Archivovať modul",
     "restore_module": "Obnoviť modul",
     "delete_module": "Zmazať modul",
     "empty_state": {
       "general": {
-        "title": "Zoskupujte míľniky do modulov.",
-        "description": "Moduly zoskupujú položky pod logického nadradeného. Sledujte termíny a pokrok.",
+        "title": "Organizujte epiky pod míľnikmi a jednoducho sledujte doručovanú prácu.",
+        "description": "Epiky sú pracovné položky L2 pod míľnikmi. Použite ich na zoskupenie stories, bugov a úloh.",
         "primary_button": {
-          "text": "Vytvorte prvý modul",
+          "text": "Vytvorte svoj prvý epik",
           "comic": {
-            "title": "Moduly zoskupujú hierarchicky.",
-            "description": "Príklady: Modul košíka, podvozku, skladu."
+            "title": "Epiky pomáhajú zoskupovať prácu podľa hierarchie.",
+            "description": "Epik košíka, epik podvozku a epik skladu sú dobré príklady tohto zoskupenia."
           }
         }
       },
       "no_issues": {
-        "title": "Žiadne položky v module",
-        "description": "Pridajte položky do modulu.",
+        "title": "Žiadne pracovné položky v epiku",
+        "description": "Vytvorte alebo pridajte pracovné položky, ktoré chcete dokončiť ako súčasť tohto epiku",
         "primary_button": {
           "text": "Vytvoriť položky"
         },

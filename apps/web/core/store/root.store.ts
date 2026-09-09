@@ -44,6 +44,8 @@ import type { IIssueRootStore } from "./issue/root.store";
 import { IssueRootStore } from "./issue/root.store";
 import type { ILabelStore } from "./label.store";
 import { LabelStore } from "./label.store";
+import type { IProjectHierarchyTypeStore, ISubWorkItemCategoryStore } from "./sub-work-item-category.store";
+import { ProjectHierarchyTypeStore } from "./sub-work-item-category.store";
 import type { IMemberRootStore } from "./member";
 import { MemberRootStore } from "./member";
 import type { IModuleStore } from "./module.store";
@@ -85,6 +87,9 @@ export class CoreRootStore {
   issue: IIssueRootStore;
   state: IStateStore;
   label: ILabelStore;
+  projectHierarchyType: IProjectHierarchyTypeStore;
+  /** @deprecated Use projectHierarchyType */
+  subWorkItemCategory: ISubWorkItemCategoryStore;
   dashboard: IDashboardStore;
   analytics: IAnalyticsStore;
   projectPages: IProjectPageStore;
@@ -122,6 +127,8 @@ export class CoreRootStore {
     this.issue = new IssueRootStore(this);
     this.state = new StateStore(this);
     this.label = new LabelStore(this);
+    this.projectHierarchyType = new ProjectHierarchyTypeStore(this);
+    this.subWorkItemCategory = this.projectHierarchyType;
     this.dashboard = new DashboardStore(this);
     this.multipleSelect = new MultipleSelectStore();
     this.projectInbox = new ProjectInboxStore(this);
@@ -157,6 +164,8 @@ export class CoreRootStore {
     this.issue = new IssueRootStore(this);
     this.state = new StateStore(this);
     this.label = new LabelStore(this);
+    this.projectHierarchyType = new ProjectHierarchyTypeStore(this);
+    this.subWorkItemCategory = this.projectHierarchyType;
     this.dashboard = new DashboardStore(this);
     this.projectInbox = new ProjectInboxStore(this);
     this.projectPages = new ProjectPageStore(this);

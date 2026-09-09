@@ -30,6 +30,10 @@ type Props = {
   setActiveProject: React.Dispatch<React.SetStateAction<string | null>>;
   data?: IModule;
   isMobile?: boolean;
+  /** Override entity name in the form title (e.g. "epic") */
+  entityLabel?: string;
+  /** Static hierarchy type chip shown in the header (e.g. Epic / Milestone) */
+  typeBadge?: { name: string; color: string };
 };
 
 const defaultValues: Partial<IModule> = {
@@ -41,7 +45,17 @@ const defaultValues: Partial<IModule> = {
 };
 
 export function ModuleForm(props: Props) {
-  const { handleFormSubmit, handleClose, status, projectId, setActiveProject, data, isMobile = false } = props;
+  const {
+    handleFormSubmit,
+    handleClose,
+    status,
+    projectId,
+    setActiveProject,
+    data,
+    isMobile = false,
+    entityLabel,
+    typeBadge,
+  } = props;
   // store hooks
   const { projectsWithCreatePermissions } = useUser();
   // form info
@@ -64,6 +78,7 @@ export function ModuleForm(props: Props) {
   const { getIndex } = getTabIndex(ETabIndices.PROJECT_MODULE, isMobile);
 
   const { t } = useTranslation();
+  const entityName = entityLabel ?? t("common.module").toLowerCase();
 
   const handleCreateUpdateModule = async (formData: Partial<IModule>) => {
     await handleFormSubmit(formData, dirtyFields);
@@ -100,16 +115,25 @@ export function ModuleForm(props: Props) {
                     }}
                     multiple={false}
                     buttonVariant="border-with-text"
-                    renderCondition={(projectId) => !!projectsWithCreatePermissions?.[projectId]}
+                    renderCondition={(id) => !!projectsWithCreatePermissions?.[id]}
                     tabIndex={getIndex("cover_image")}
                   />
                 </div>
               )}
             />
           )}
-          <h3 className="text-18 font-medium text-secondary">
-            {status ? t("common.update") : t("common.create")} {t("common.module").toLowerCase()}
-          </h3>
+          {typeBadge ? (
+            <span
+              className="inline-flex max-w-40 flex-shrink-0 items-center truncate rounded-sm px-1.5 py-0.5 text-11 font-medium text-white"
+              style={{ backgroundColor: typeBadge.color }}
+            >
+              {typeBadge.name}
+            </span>
+          ) : (
+            <h3 className="text-18 font-medium text-secondary">
+              {status ? t("common.update") : t("common.create")} {entityName}
+            </h3>
+          )}
         </div>
         <div className="space-y-3">
           <div className="space-y-1">
@@ -134,7 +158,6 @@ export function ModuleForm(props: Props) {
                   placeholder={t("title")}
                   className="w-full text-14"
                   tabIndex={getIndex("name")}
-                  autoFocus
                 />
               )}
             />
@@ -240,10 +263,18 @@ export function ModuleForm(props: Props) {
           {status
             ? isSubmitting
               ? t("updating")
-              : t("project_module.update_module")
+              : typeBadge
+                ? t("common.update")
+                : entityLabel
+                  ? `Update ${entityLabel}`
+                  : t("project_module.update_module")
             : isSubmitting
               ? t("creating")
-              : t("project_module.create_module")}
+              : typeBadge
+                ? t("common.create")
+                : entityLabel
+                  ? `Create ${entityLabel}`
+                  : t("project_module.create_module")}
         </Button>
       </div>
     </form>

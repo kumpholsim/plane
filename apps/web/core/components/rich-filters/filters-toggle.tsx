@@ -25,12 +25,13 @@ export const FiltersToggle = observer(function FiltersToggle<P extends TFilterPr
   props: TFiltersToggleProps<P, E>
 ) {
   const { filter } = props;
-  // derived values
-  const hasAnyConditions = (filter?.allConditionsForDisplay.length ?? 0) > 0;
+  // derived values — ignore empty pinned chips when deciding if filters are "applied"
+  const hasActiveFilters = filter?.hasActiveFilters ?? false;
   const isFilterRowVisible = filter?.isVisible ?? false;
   const hasUpdates = filter?.canUpdateView === true && filter?.hasChanges === true;
-  const showFilterRowChangesPill = hasUpdates || hasAnyConditions === true;
-  const showAddFilterButton = !hasAnyConditions && !isFilterRowVisible && !hasUpdates;
+  const showFilterRowChangesPill = hasUpdates || hasActiveFilters;
+  const showAddFilterButton =
+    !hasActiveFilters && (filter?.pinnedProperties.length ?? 0) === 0 && !isFilterRowVisible && !hasUpdates;
 
   const handleToggleFilter = () => {
     if (!filter) {

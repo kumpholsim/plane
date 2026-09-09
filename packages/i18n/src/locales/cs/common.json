@@ -449,6 +449,8 @@
     "layout": "Rozložení",
     "filters": "Filtry",
     "display": "Zobrazení",
+    "expand_all": "Rozbalit vše",
+    "collapse_all": "Sbalit vše",
     "load_more": "Načíst více",
     "activity": "Aktivita",
     "analytics": "Analytika",
@@ -464,7 +466,7 @@
     "epics": "Epiky",
     "work_item": "Pracovní položka",
     "work_items": "Pracovní položky",
-    "sub_work_item": "Podřízená pracovní položka",
+    "sub_work_item": "Dílčí úkol",
     "views": "Pohledy",
     "pages": "Stránky",
     "add": "Přidat",
@@ -507,7 +509,7 @@
       "private": "Soukromý"
     },
     "done": "Hotovo",
-    "sub_work_items": "Podřízené pracovní položky",
+    "sub_work_items": "Dílčí úkoly",
     "comment": "Komentář",
     "workspace_level": "Úroveň pracovního prostoru",
     "order_by": {

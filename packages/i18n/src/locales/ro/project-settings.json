@@ -55,6 +55,11 @@
         "error": "Eroare la actualizarea etichetei"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Subtask",
+      "heading": "Subtask",
+      "description": "Organizează subtask-urile pe roluri precum Design, Dev și QA. Trage pentru a reordona sau șterge categoriile nefolosite."
+    },
     "estimates": {
       "heading": "Estimări",
       "description": "Te ajută să comunici complexitatea și volumul de muncă al echipei.",

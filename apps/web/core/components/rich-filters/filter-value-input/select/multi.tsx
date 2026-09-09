@@ -24,13 +24,14 @@ type TMultiSelectFilterValueInputProps<P extends TFilterProperty> = {
   config: TMultiSelectFilterFieldConfig<string>;
   condition: TFilterConditionNodeForDisplay<P, string>;
   isDisabled?: boolean;
+  openOnEmpty?: boolean;
   onChange: (values: SingleOrArray<string>) => void;
 };
 
 export const MultiSelectFilterValueInput = observer(function MultiSelectFilterValueInput<P extends TFilterProperty>(
   props: TMultiSelectFilterValueInputProps<P>
 ) {
-  const { config, condition, isDisabled, onChange } = props;
+  const { config, condition, isDisabled, openOnEmpty = true, onChange } = props;
   // states
   const [options, setOptions] = useState<IFilterOption<string>[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -54,7 +55,7 @@ export const MultiSelectFilterValueInput = observer(function MultiSelectFilterVa
       multiple
       disabled={loading || isDisabled}
       customButton={<SelectedOptionsDisplay<string> selectedValue={condition.value} options={options} />}
-      defaultOpen={getFilterValueLength(condition.value) === 0}
+      defaultOpen={openOnEmpty && getFilterValueLength(condition.value) === 0}
     />
   );
 });

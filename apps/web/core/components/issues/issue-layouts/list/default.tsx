@@ -94,6 +94,17 @@ export const List = observer(function List(props: IList) {
     isEpic: isEpic,
   });
 
+  // Epic (legacy module) grouping: never show epics with no work items in this view
+  const visibleGroups =
+    group_by === "module" && groups
+      ? groups.filter((group) => {
+          const ids = groupedIssueIds?.[group.id];
+          if (Array.isArray(ids)) return ids.length > 0;
+          // While grouped payload is still loading, fall back to presence of a non-empty map key
+          return false;
+        })
+      : groups;
+
   // Enable Auto Scroll for Main Kanban
   useEffect(() => {
     const element = containerRef.current;
@@ -107,14 +118,14 @@ export const List = observer(function List(props: IList) {
     );
   }, [containerRef]);
 
-  if (!groups) return null;
+  if (!visibleGroups) return null;
 
-  const getGroupIndex = (groupId: string | undefined) => groups.findIndex(({ id }) => id === groupId);
+  const getGroupIndex = (groupId: string | undefined) => visibleGroups.findIndex(({ id }) => id === groupId);
 
-  const is_list = group_by === null ? true : false;
+  const is_list = group_by === null;
 
   // create groupIds array and entities object for bulk ops
-  const groupIds = groups.map((g) => g.id);
+  const groupIds = visibleGroups.map((g) => g.id);
   const orderedGroups: Record<string, string[]> = {};
   groupIds.forEach((gID) => {
     orderedGroups[gID] = [];
@@ -130,7 +141,7 @@ export const List = observer(function List(props: IList) {
   }
   return (
     <div className="relative flex size-full flex-col">
-      {groups && (
+      {visibleGroups && (
         <MultipleSelectGroup
           containerRef={containerRef}
           entities={entities}
@@ -142,7 +153,7 @@ export const List = observer(function List(props: IList) {
                 ref={containerRef}
                 className="vertical-scrollbar relative scrollbar-lg size-full overflow-auto bg-surface-1"
               >
-                {groups.map((group: IGroupByColumn) => (
+                {visibleGroups.map((group: IGroupByColumn) => (
                   <ListGroup
                     key={group.id}
                     groupIssueIds={groupedIssueIds?.[group.id]}
@@ -156,7 +167,7 @@ export const List = observer(function List(props: IList) {
                     handleOnDrop={handleOnDrop}
                     displayProperties={displayProperties}
                     enableIssueQuickAdd={enableIssueQuickAdd}
-                    showEmptyGroup={showEmptyGroup}
+                    showEmptyGroup={group_by === "module" ? false : showEmptyGroup}
                     canEditProperties={canEditProperties}
                     quickAddCallback={quickAddCallback}
                     disableIssueCreation={disableIssueCreation}

@@ -19,11 +19,13 @@
       "start_date": "Agregar fecha de inicio",
       "due_date": "Agregar fecha de vencimiento",
       "parent": "Agregar elemento de trabajo padre",
-      "sub_issue": "Agregar sub-elemento de trabajo",
+      "sub_issue": "Añadir subtarea",
       "dependency": "Agregar dependencia",
       "relation": "Agregar relación",
       "link": "Agregar enlace",
-      "existing": "Agregar elemento de trabajo existente"
+      "existing": "Agregar elemento de trabajo existente",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Eliminar elemento de trabajo",
@@ -57,14 +59,14 @@
         "label": "Mostrar propiedades",
         "id": "ID",
         "issue_type": "Tipo de elemento de trabajo",
-        "sub_issue_count": "Cantidad de sub-elementos",
+        "sub_issue_count": "Cantidad de subtareas",
         "attachment_count": "Cantidad de archivos adjuntos",
         "created_on": "Creado el",
-        "sub_issue": "Sub-elemento de trabajo",
+        "sub_issue": "Subtarea",
         "work_item_count": "Recuento de elementos de trabajo"
       },
       "extra": {
-        "show_sub_issues": "Mostrar sub-elementos",
+        "show_sub_issues": "Mostrar subtareas",
         "show_empty_groups": "Mostrar grupos vacíos"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Haz clic para votar en contra",
       "click_to_view_upvotes": "Haz clic para ver los votos a favor",
       "click_to_view_downvotes": "Haz clic para ver los votos en contra"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Sub-elemento actualizado correctamente",
-      "error": "Error al actualizar el sub-elemento"
+      "success": "Subtarea actualizada correctamente",
+      "error": "Error al actualizar la subtarea"
     },
     "remove": {
-      "success": "Sub-elemento eliminado correctamente",
-      "error": "Error al eliminar el sub-elemento"
+      "success": "Subtarea eliminada correctamente",
+      "error": "Error al eliminar la subtarea"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "No tienes sub-elementos de trabajo que coincidan con los filtros que has aplicado.",
-        "description": "Para ver todos los sub-elementos de trabajo, elimina todos los filtros aplicados.",
+        "title": "No hay subtareas que coincidan con los filtros aplicados.",
+        "description": "Para ver todas las subtareas, borra todos los filtros aplicados.",
         "action": "Eliminar filtros"
       },
       "list_filters": {

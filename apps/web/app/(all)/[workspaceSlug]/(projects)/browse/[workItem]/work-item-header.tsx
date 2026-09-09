@@ -8,22 +8,24 @@ import React from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane ui
-import { WorkItemsIcon } from "@plane/propel/icons";
+import { useTranslation } from "@plane/i18n";
+import { ModuleIcon, WorkItemsIcon } from "@plane/propel/icons";
 import { Breadcrumbs, Header } from "@plane/ui";
 // components
+import { CommonProjectBreadcrumbs } from "@/components/breadcrumbs/common";
 import { BreadcrumbLink } from "@/components/common/breadcrumb-link";
+import { isModulesTabWorkItem } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 import { IssueDetailQuickActions } from "@/components/issues/issue-detail/issue-detail-quick-actions";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useAppRouter } from "@/hooks/use-app-router";
-// plane web imports
-import { CommonProjectBreadcrumbs } from "@/components/breadcrumbs/common";
 
 export const WorkItemDetailsHeader = observer(function WorkItemDetailsHeader() {
   // router
   const router = useAppRouter();
   const { workspaceSlug, workItem } = useParams();
+  const { t } = useTranslation();
   // store hooks
   const { getProjectById, loader } = useProject();
   const {
@@ -34,6 +36,12 @@ export const WorkItemDetailsHeader = observer(function WorkItemDetailsHeader() {
   const issueDetails = issueId ? getIssueById(issueId.toString()) : undefined;
   const projectId = issueDetails ? issueDetails?.project_id : undefined;
   const projectDetails = projectId ? getProjectById(projectId?.toString()) : undefined;
+  const isModulesItem = isModulesTabWorkItem(issueDetails);
+  const sectionHref = isModulesItem
+    ? `/${workspaceSlug}/projects/${projectId}/modules/`
+    : `/${workspaceSlug}/projects/${projectId}/issues/`;
+  const sectionLabel = isModulesItem ? t("sidebar.modules") : t("sidebar.work_items");
+  const SectionIcon = isModulesItem ? ModuleIcon : WorkItemsIcon;
 
   if (!workspaceSlug || !projectId || !issueId) return null;
   return (
@@ -44,9 +52,9 @@ export const WorkItemDetailsHeader = observer(function WorkItemDetailsHeader() {
           <Breadcrumbs.Item
             component={
               <BreadcrumbLink
-                label="Work Items"
-                href={`/${workspaceSlug}/projects/${projectId}/issues/`}
-                icon={<WorkItemsIcon className="h-4 w-4 text-tertiary" />}
+                label={sectionLabel}
+                href={sectionHref}
+                icon={<SectionIcon className="h-4 w-4 text-tertiary" />}
               />
             }
           />

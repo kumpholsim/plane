@@ -69,6 +69,42 @@ export interface IIssueLabel {
   sort_order: number;
 }
 
+export interface IProjectHierarchyType {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+  is_default: boolean;
+  level: 1 | 2 | 3 | 4;
+  project_id: string;
+  workspace_id: string;
+}
+
+/** @deprecated Use IProjectHierarchyType */
+export type ISubWorkItemCategory = IProjectHierarchyType;
+
+export const HIERARCHY_LEVEL_MILESTONE = 1 as const;
+export const HIERARCHY_LEVEL_EPIC = 2 as const;
+export const HIERARCHY_LEVEL_DELIVERY = 3 as const;
+export const HIERARCHY_LEVEL_SUB_TASK = 4 as const;
+
+export const HIERARCHY_LEVEL_LABELS: Record<1 | 2 | 3 | 4, string> = {
+  1: "Milestone",
+  2: "Epic",
+  3: "Story / Bug / Task",
+  4: "Sub-task",
+};
+
+/** Short labels for compact card badges when a specific type is not set */
+export const HIERARCHY_LEVEL_SHORT_LABELS: Record<1 | 2 | 3 | 4, string> = {
+  1: "Milestone",
+  2: "Epic",
+  3: "Work item",
+  4: "Sub-task",
+};
+
 export interface IIssueLabelTree extends IIssueLabel {
   children: IIssueLabel[] | undefined;
 }

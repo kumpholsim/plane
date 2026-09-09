@@ -6,6 +6,7 @@
 
 import { observer } from "mobx-react";
 import { Link as Loader } from "lucide-react";
+import { MAX_SUB_TASK_DEPTH } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { LinkIcon, EditIcon, TrashIcon, CloseIcon, ChevronRightIcon } from "@plane/propel/icons";
 // plane imports
@@ -16,6 +17,7 @@ import { ControlLink, CustomMenu } from "@plane/ui";
 import { cn, generateWorkItemLink } from "@plane/utils";
 // helpers
 import { useSubIssueOperations } from "@/components/issues/issue-detail-widgets/sub-issues/helper";
+import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 import { WithDisplayPropertiesHOC } from "@/components/issues/issue-layouts/properties/with-display-properties-HOC";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -25,6 +27,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 // components
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 // local components
+import { getHierarchyLevel, getIssueDepth } from "../depth";
 import { SubIssuesListItemProperties } from "./properties";
 import { SubIssuesListRoot } from "./root";
 
@@ -82,13 +85,17 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
 
   const subIssueHelpers = subIssueHelpersByIssueId(parentIssueId);
   const subIssueCount = issue?.sub_issues_count ?? 0;
+  const issueDepth = getIssueDepth(issue, getIssueById);
+  const issueLevel = getHierarchyLevel(issue);
+  const canExpandNestedSubTasks = issueDepth < MAX_SUB_TASK_DEPTH && issueLevel < 4;
 
   // derived values
   const subIssueFilters = getSubIssueFilters(parentIssueId);
   const displayProperties = subIssueFilters?.displayProperties ?? {};
 
   //
-  const handleIssuePeekOverview = (issue: TIssue) => handleRedirection(workspaceSlug, issue, isMobile);
+  const handleIssuePeekOverview = (childIssue: TIssue) =>
+    handleRedirection(workspaceSlug, childIssue, isMobile, undefined, { fromSubWork: true });
 
   if (!issue) return <></>;
 
@@ -117,15 +124,16 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
             style={{ paddingLeft: `${spacingLeft}px` }}
           >
             <div className="flex size-5 flex-shrink-0 items-center justify-center">
-              {/* disable the chevron when current issue is also the root issue*/}
-              {subIssueCount > 0 && !isCurrentIssueRoot && (
+              {/* disable the chevron when current issue is also the root issue or at max depth */}
+              {subIssueCount > 0 && !isCurrentIssueRoot && canExpandNestedSubTasks && (
                 <>
                   {subIssueHelpers.preview_loader.includes(issue.id) ? (
                     <div className="flex h-full w-full cursor-not-allowed items-center justify-center rounded-xs bg-layer-1 transition-all">
                       <Loader width={14} strokeWidth={2} className="animate-spin" />
                     </div>
                   ) : (
-                    <div
+                    <button
+                      type="button"
                       className="flex h-full w-full cursor-pointer items-center justify-center text-placeholder hover:text-tertiary"
                       onClick={async (e) => {
                         e.preventDefault();
@@ -144,7 +152,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                         })}
                         strokeWidth={2.5}
                       />
-                    </div>
+                    </button>
                   )}
                 </>
               )}
@@ -165,11 +173,13 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                   )}
                 </div>
               </WithDisplayPropertiesHOC>
+              <HierarchyTypeBadge issue={issue} disabled={!canEdit} />
               <Tooltip tooltipContent={issue.name} isMobile={isMobile}>
                 <span className="w-0 flex-1 truncate text-13 text-primary">{issue.name}</span>
               </Tooltip>
             </div>
 
+            {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
             <div
               className="flex-shrink-0 text-13"
               onClick={(e) => {
@@ -250,11 +260,12 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
         )}
       </ControlLink>
 
-      {/* should not expand the current issue if it is also the root issue*/}
+      {/* should not expand the current issue if it is also the root issue or at max depth */}
       {subIssueHelpers.issue_visibility.includes(issueId) &&
         issue.project_id &&
         subIssueCount > 0 &&
-        !isCurrentIssueRoot && (
+        !isCurrentIssueRoot &&
+        canExpandNestedSubTasks && (
           <SubIssuesListRoot
             storeType={storeType}
             workspaceSlug={workspaceSlug}

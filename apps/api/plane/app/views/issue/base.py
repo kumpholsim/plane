@@ -69,6 +69,7 @@ from plane.utils.grouper import (
     issue_queryset_grouper,
 )
 from plane.utils.host import base_host
+from plane.utils.issue_cycle import inherit_cycle_from_parent
 from plane.utils.issue_filters import issue_filters
 from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
@@ -199,6 +200,11 @@ class IssueListEndpoint(BaseAPIView):
                 "is_draft",
                 "archived_at",
                 "deleted_at",
+                "type_id",
+                "hierarchy_type_id",
+                "hierarchy_level",
+                "progress_status",
+                "qa_outcome",
             )
             datetime_fields = ["created_at", "updated_at"]
             issues = user_timezone_converter(issues, datetime_fields, request.user.user_timezone)
@@ -352,6 +358,7 @@ class IssueViewSet(BaseViewSet):
                             project_id=project_id,
                             filters=filters,
                             queryset=filtered_issue_queryset,
+                            for_subgroup=True,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,
@@ -417,6 +424,9 @@ class IssueViewSet(BaseViewSet):
         if serializer.is_valid():
             serializer.save()
 
+            # L4 sub-tasks inherit cycle from their L3 parent
+            inherit_cycle_from_parent(serializer.instance, request.user.id)
+
             # Track the issue
             issue_activity.delay(
                 type="issue.activity.created",
@@ -464,6 +474,11 @@ class IssueViewSet(BaseViewSet):
                     "is_draft",
                     "archived_at",
                     "deleted_at",
+                    "type_id",
+                    "hierarchy_type_id",
+                    "hierarchy_level",
+                    "progress_status",
+                    "qa_outcome",
                 )
                 .first()
             )
@@ -680,6 +695,9 @@ class IssueViewSet(BaseViewSet):
         serializer = IssueCreateSerializer(issue, data=request.data, partial=True, context={"project_id": project_id})
         if serializer.is_valid():
             serializer.save()
+            # Re-sync L4 cycle when parent changes (or when creating as L4 via update)
+            if "parent_id" in request.data or "hierarchy_level" in request.data:
+                inherit_cycle_from_parent(serializer.instance, request.user.id)
             # Check if the update is a migration description update
             is_migration_description_update = skip_activity and is_description_update
             # Log all the updates
@@ -895,6 +913,11 @@ class IssuePaginatedViewSet(BaseViewSet):
             "link_count",
             "attachment_count",
             "sub_issues_count",
+            "type_id",
+            "hierarchy_type_id",
+            "hierarchy_level",
+            "progress_status",
+            "qa_outcome",
         ]
 
         if str(is_description_required).lower() == "true":

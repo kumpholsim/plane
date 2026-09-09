@@ -33,6 +33,8 @@ type Props = TDropdownProps & {
   canRemoveCycle?: boolean;
   renderByDefault?: boolean;
   currentCycleId?: string;
+  /** When set, truncates the displayed cycle name to this many characters. */
+  nameMaxLength?: number;
 };
 
 export const CycleDropdown = observer(function CycleDropdown(props: Props) {
@@ -57,6 +59,7 @@ export const CycleDropdown = observer(function CycleDropdown(props: Props) {
     canRemoveCycle = true,
     renderByDefault = true,
     currentCycleId,
+    nameMaxLength,
   } = props;
   // i18n
   const { t } = useTranslation();
@@ -70,6 +73,8 @@ export const CycleDropdown = observer(function CycleDropdown(props: Props) {
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
 
   const selectedName = value ? getCycleNameById(value) : null;
+  const displayName =
+    selectedName && nameMaxLength != null && nameMaxLength > 0 ? selectedName.slice(0, nameMaxLength) : selectedName;
 
   const { handleClose, handleKeyDown, handleOnClick } = useDropdown({
     dropdownRef,
@@ -122,8 +127,12 @@ export const CycleDropdown = observer(function CycleDropdown(props: Props) {
             renderToolTipByDefault={renderByDefault}
           >
             {!hideIcon && <CycleIcon className="h-3 w-3 flex-shrink-0" />}
-            {BUTTON_VARIANTS_WITH_TEXT.includes(buttonVariant) && (!!selectedName || !!placeholder) && (
-              <span className="max-w-40 truncate">{selectedName ?? placeholder}</span>
+            {BUTTON_VARIANTS_WITH_TEXT.includes(buttonVariant) && (!!displayName || !!placeholder) && (
+              <span className="max-w-40 truncate">{displayName ?? placeholder}</span>
+            )}
+            {/* Icon-only variants still show a short name when a cycle is selected */}
+            {!BUTTON_VARIANTS_WITH_TEXT.includes(buttonVariant) && !!displayName && nameMaxLength != null && (
+              <span className="max-w-20 truncate text-11">{displayName}</span>
             )}
             {dropdownArrow && (
               <ChevronDownIcon className={cn("h-2.5 w-2.5 flex-shrink-0", dropdownArrowClassName)} aria-hidden="true" />
@@ -135,6 +144,7 @@ export const CycleDropdown = observer(function CycleDropdown(props: Props) {
   );
 
   return (
+    // oxlint-disable-next-line jsx_a11y/no-static-element-interactions
     <ComboDropDown
       as="div"
       ref={dropdownRef}

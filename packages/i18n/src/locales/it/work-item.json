@@ -19,11 +19,13 @@
       "start_date": "Aggiungi data di inizio",
       "due_date": "Aggiungi scadenza",
       "parent": "Aggiungi elemento di lavoro principale",
-      "sub_issue": "Aggiungi sotto-elemento di lavoro",
+      "sub_issue": "Aggiungi sotto-attività",
       "dependency": "Aggiungi dipendenza",
       "relation": "Aggiungi relazione",
       "link": "Aggiungi link",
-      "existing": "Aggiungi elemento di lavoro esistente"
+      "existing": "Aggiungi elemento di lavoro esistente",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Rimuovi elemento di lavoro",
@@ -57,14 +59,14 @@
         "label": "Visualizza proprietà",
         "id": "ID",
         "issue_type": "Tipo di elemento di lavoro",
-        "sub_issue_count": "Numero di sotto-elementi di lavoro",
+        "sub_issue_count": "Conteggio sotto-attività",
         "attachment_count": "Numero di allegati",
         "created_on": "Creato il",
-        "sub_issue": "Sotto-elemento di lavoro",
+        "sub_issue": "Sotto-attività",
         "work_item_count": "Conteggio degli elementi di lavoro"
       },
       "extra": {
-        "show_sub_issues": "Mostra sotto-elementi di lavoro",
+        "show_sub_issues": "Mostra sotto-attività",
         "show_empty_groups": "Mostra gruppi vuoti"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Clicca per votare contro",
       "click_to_view_upvotes": "Clicca per vedere i voti a favore",
       "click_to_view_downvotes": "Clicca per vedere i voti contro"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Sotto-elemento di lavoro aggiornato con successo",
-      "error": "Errore nell'aggiornamento del sotto-elemento di lavoro"
+      "success": "Sotto-attività aggiornata correttamente",
+      "error": "Errore durante l'aggiornamento della sotto-attività"
     },
     "remove": {
-      "success": "Sotto-elemento di lavoro rimosso con successo",
-      "error": "Errore nella rimozione del sotto-elemento di lavoro"
+      "success": "Sotto-attività rimossa correttamente",
+      "error": "Errore durante la rimozione della sotto-attività"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Non hai sotto-elementi di lavoro che corrispondono ai filtri che hai applicato.",
-        "description": "Per vedere tutti i sotto-elementi di lavoro, cancella tutti i filtri applicati.",
+        "title": "Nessuna sotto-attività corrisponde ai filtri applicati.",
+        "description": "Per vedere tutte le sotto-attività, cancella tutti i filtri applicati.",
         "action": "Cancella filtri"
       },
       "list_filters": {

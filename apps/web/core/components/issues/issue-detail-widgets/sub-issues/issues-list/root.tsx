@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import { ListFilter } from "lucide-react";
@@ -16,6 +16,7 @@ import { EIssueServiceType, EIssuesStoreType } from "@plane/types";
 import { SectionEmptyState } from "@/components/empty-state/section-empty-state-root";
 import { getGroupByColumns, isWorkspaceLevel } from "@/components/issues/issue-layouts/utils";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 
 import { SubIssuesListGroup } from "./list-group";
 type Props = {
@@ -56,12 +57,22 @@ export const SubIssuesListRoot = observer(function SubIssuesListRoot(props: Prop
       filters: { getSubIssueFilters, getGroupedSubWorkItems, getFilteredSubWorkItems, resetFilters },
     },
   } = useIssueDetail(issueServiceType);
+  const { fetchProjectTypes, fetchedMap } = useProjectHierarchyType();
+
+  // Prefetch hierarchy types so chips render on list items
+  useEffect(() => {
+    if (!workspaceSlug || !projectId || fetchedMap[projectId]) return;
+    void fetchProjectTypes(workspaceSlug, projectId);
+  }, [workspaceSlug, projectId, fetchedMap, fetchProjectTypes]);
 
   // derived values
   const filters = getSubIssueFilters(rootIssueId);
   const isRootLevel = useMemo(() => rootIssueId === parentIssueId, [rootIssueId, parentIssueId]);
   const group_by = isRootLevel ? (filters?.displayFilters?.group_by ?? null) : null;
   const filteredSubWorkItemsCount = (getFilteredSubWorkItems(rootIssueId, filters.filters ?? {}) ?? []).length;
+  const totalSubWorkItemsCount = (subIssuesByIssueId(rootIssueId) ?? []).length;
+  // Only show the filter empty state when items exist but active filters hide them all
+  const showFilterEmptyState = isRootLevel && totalSubWorkItemsCount > 0 && filteredSubWorkItemsCount === 0;
 
   const groups = getGroupByColumns({
     groupBy: group_by as GroupByColumnTypes,
@@ -87,7 +98,7 @@ export const SubIssuesListRoot = observer(function SubIssuesListRoot(props: Prop
 
   return (
     <div className="relative">
-      {isRootLevel && filteredSubWorkItemsCount === 0 ? (
+      {showFilterEmptyState ? (
         <SectionEmptyState
           title={
             !isSubWorkItems

@@ -33,6 +33,13 @@ from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
 from plane.app.permissions import allow_permission, ROLE
 from plane.utils.host import base_host
+from plane.utils.issue_cycle import (
+    clear_subtask_cycles_for_parents,
+    cycle_visible_hierarchy_levels,
+    filter_cycle_assignable_issue_ids,
+    purge_milestone_and_epic_from_cycles,
+    sync_subtask_cycles_for_parents,
+)
 from plane.utils.filters import ComplexFilterBackend
 from plane.utils.filters import IssueFilterSet
 
@@ -108,11 +115,15 @@ class CycleIssueViewSet(BaseViewSet):
     @method_decorator(gzip_page)
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def list(self, request, slug, project_id, cycle_id):
+        # Drop any milestone/epic memberships so they never appear in cycles
+        purge_milestone_and_epic_from_cycles(cycle_id=cycle_id, project_id=project_id)
+
         filters = issue_filters(request.query_params, "GET")
         issue_queryset = (
             Issue.issue_objects.filter(issue_cycle__cycle_id=cycle_id, issue_cycle__deleted_at__isnull=True)
             .filter(project_id=project_id)
             .filter(workspace__slug=slug)
+            .filter(hierarchy_level__in=cycle_visible_hierarchy_levels())
         )
 
         # Apply filtering from filterset
@@ -164,12 +175,15 @@ class CycleIssueViewSet(BaseViewSet):
                             slug=slug,
                             project_id=project_id,
                             filters=filters,
+                            queryset=total_issue_queryset,
                         ),
                         sub_group_by_fields=issue_group_values(
                             field=sub_group_by,
                             slug=slug,
                             project_id=project_id,
                             filters=filters,
+                            queryset=total_issue_queryset,
+                            for_subgroup=True,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,
@@ -199,6 +213,7 @@ class CycleIssueViewSet(BaseViewSet):
                         slug=slug,
                         project_id=project_id,
                         filters=filters,
+                        queryset=total_issue_queryset,
                     ),
                     group_by_field_name=group_by,
                     count_filter=Q(
@@ -232,6 +247,15 @@ class CycleIssueViewSet(BaseViewSet):
         if cycle.end_date is not None and cycle.end_date < timezone.now():
             return Response(
                 {"error": "The Cycle has already been completed so no new issues can be added"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Delivery (L3) and sub-tasks (L4) can be assigned to cycles; L1/L2 are excluded.
+        # L4 may also inherit from parent via sync_subtask_cycles_for_parents below.
+        issues = filter_cycle_assignable_issue_ids(issues)
+        if not issues:
+            return Response(
+                {"error": "Only delivery work items and sub-tasks can be added to a cycle"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -297,6 +321,16 @@ class CycleIssueViewSet(BaseViewSet):
 
         # Update the cycle issues
         CycleIssue.objects.bulk_update(updated_records, ["cycle_id"], batch_size=100)
+
+        # Cascade cycle to L4 sub-tasks under these delivery items
+        sync_subtask_cycles_for_parents(
+            issues,
+            cycle_id,
+            project_id,
+            cycle.workspace_id,
+            request.user.id,
+        )
+
         # Capture Issue Activity
         issue_activity.delay(
             type="cycle.activity.created",
@@ -341,4 +375,6 @@ class CycleIssueViewSet(BaseViewSet):
             origin=base_host(request=request, is_app=True),
         )
         cycle_issue.delete()
+        # Clear inherited cycle on L4 children when parent leaves the cycle
+        clear_subtask_cycles_for_parents([issue_id], project_id)
         return Response(status=status.HTTP_204_NO_CONTENT)

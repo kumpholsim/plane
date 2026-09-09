@@ -19,6 +19,7 @@ import emptyIssueLight from "@/app/assets/empty-state/search/issues-light.webp?u
 // components
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHead } from "@/components/core/page-title";
+import { isEpicWorkItem } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -68,7 +69,7 @@ export const IssueDetailsPage = observer(function IssueDetailsPage({ params }: R
     projectId,
     workspaceSlug.toString(),
     issueId,
-    issue?.is_epic ? EIssueServiceType.EPICS : EIssueServiceType.ISSUES
+    isEpicWorkItem(issue) ? EIssueServiceType.EPICS : EIssueServiceType.ISSUES
   );
 
   useEffect(() => {

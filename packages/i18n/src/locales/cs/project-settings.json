@@ -55,6 +55,11 @@
         "error": "Chyba při aktualizaci štítku"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Dílčí úkol",
+      "heading": "Dílčí úkol",
+      "description": "Organizujte dílčí úkoly podle rolí jako Design, Dev a QA. Přetažením změníte pořadí nebo smažete nepoužívané kategorie."
+    },
     "estimates": {
       "heading": "Odhady",
       "description": "Nastavte systémy odhadů pro sledování a komunikaci úsilí potřebného pro každou pracovní položku.",

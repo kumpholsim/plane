@@ -6,16 +6,22 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { observer } from "mobx-react";
+import { useTranslation } from "@plane/i18n";
+import { PlusIcon } from "@plane/propel/icons";
 import type { TIssue, TIssueServiceType } from "@plane/types";
 import { EIssueServiceType, EIssuesStoreType } from "@plane/types";
 // components
 import { DeleteIssueModal } from "@/components/issues/delete-issue-modal";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useSubWorkItemCategory } from "@/hooks/store/use-sub-work-item-category";
 // local imports
 import { CreateUpdateIssueModal } from "../../issue-modal/modal";
+import { canAddSubTasks, childCreateLabelKey, getChildHierarchyLevel, getHierarchyLevel, getIssueDepth } from "./depth";
 import { useSubIssueOperations } from "./helper";
+import { InlineCreateSubTask } from "./inline-create";
 import { SubIssuesListRoot } from "./issues-list/root";
+import { SubIssuesActionButton } from "./quick-action-button";
 
 type Props = {
   workspaceSlug: string;
@@ -29,6 +35,7 @@ type TIssueCrudState = { toggle: boolean; parentIssueId: string | undefined; iss
 
 export const SubIssuesCollapsibleContent = observer(function SubIssuesCollapsibleContent(props: Props) {
   const { workspaceSlug, projectId, parentIssueId, disabled, issueServiceType = EIssueServiceType.ISSUES } = props;
+  const { t } = useTranslation();
   // state
   const [issueCrudState, setIssueCrudState] = useState<{
     create: TIssueCrudState;
@@ -61,12 +68,20 @@ export const SubIssuesCollapsibleContent = observer(function SubIssuesCollapsibl
   const {
     toggleCreateIssueModal,
     toggleDeleteIssueModal,
+    issueCrudOperationState,
+    setIssueCrudOperationState,
+    issue: { getIssueById },
     subIssues: { subIssueHelpersByIssueId, setSubIssueHelpers },
   } = useIssueDetail(issueServiceType);
+  const { getCategoryById } = useSubWorkItemCategory();
 
   // helpers
   const subIssueOperations = useSubIssueOperations(issueServiceType);
-  const subIssueHelpers = subIssueHelpersByIssueId(`${parentIssueId}_root`);
+  const parentIssue = getIssueById(parentIssueId);
+  const parentDepth = getIssueDepth(parentIssue, getIssueById);
+  const parentLevel = getHierarchyLevel(parentIssue);
+  const childLevel = getChildHierarchyLevel(parentIssue);
+  const allowAddSubTasks = !disabled && canAddSubTasks(parentDepth, parentLevel);
 
   // handler
   const handleIssueCrudState = useCallback(
@@ -83,25 +98,59 @@ export const SubIssuesCollapsibleContent = observer(function SubIssuesCollapsibl
     [issueCrudState]
   );
 
+  const handleCloseInlineCreate = useCallback(() => {
+    setIssueCrudOperationState({
+      ...issueCrudOperationState,
+      create: {
+        toggle: false,
+        parentIssueId: undefined,
+        issue: undefined,
+        categoryId: null,
+      },
+    });
+  }, [issueCrudOperationState, setIssueCrudOperationState]);
+
+  const handleInlineCategoryChange = useCallback(
+    (categoryId: string) => {
+      setIssueCrudOperationState({
+        ...issueCrudOperationState,
+        create: {
+          ...issueCrudOperationState.create,
+          categoryId,
+        },
+      });
+    },
+    [issueCrudOperationState, setIssueCrudOperationState]
+  );
+
   const handleFetchSubIssues = useCallback(async () => {
-    const currentSubIssueHelpers = subIssueHelpersByIssueId(`${parentIssueId}_root`);
-    if (!currentSubIssueHelpers.issue_visibility.includes(parentIssueId)) {
-      try {
-        setSubIssueHelpers(`${parentIssueId}_root`, "preview_loader", parentIssueId);
-        await subIssueOperations.fetchSubIssues(workspaceSlug, projectId, parentIssueId);
-        setSubIssueHelpers(`${parentIssueId}_root`, "issue_visibility", parentIssueId);
-      } catch (error) {
-        console.error("Error fetching sub-work items:", error);
-      } finally {
-        setSubIssueHelpers(`${parentIssueId}_root`, "preview_loader", "");
+    const helperKey = `${parentIssueId}_root`;
+    const currentSubIssueHelpers = subIssueHelpersByIssueId(helperKey);
+    // Already fetched for this parent — nothing to do.
+    if (currentSubIssueHelpers.issue_visibility.includes(parentIssueId)) return;
+
+    try {
+      if (!currentSubIssueHelpers.preview_loader.includes(parentIssueId)) {
+        setSubIssueHelpers(helperKey, "preview_loader", parentIssueId);
+      }
+      await subIssueOperations.fetchSubIssues(workspaceSlug, projectId, parentIssueId);
+      // setSubIssueHelpers toggles; only add visibility if it is not already present
+      // (avoids Strict Mode double-effect clearing the flag).
+      if (!subIssueHelpersByIssueId(helperKey).issue_visibility.includes(parentIssueId)) {
+        setSubIssueHelpers(helperKey, "issue_visibility", parentIssueId);
+      }
+    } catch (error) {
+      console.error("Error fetching sub-tasks:", error);
+    } finally {
+      if (subIssueHelpersByIssueId(helperKey).preview_loader.includes(parentIssueId)) {
+        setSubIssueHelpers(helperKey, "preview_loader", parentIssueId);
       }
     }
   }, [parentIssueId, projectId, setSubIssueHelpers, subIssueHelpersByIssueId, subIssueOperations, workspaceSlug]);
 
   useEffect(() => {
-    handleFetchSubIssues();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parentIssueId]);
+    void handleFetchSubIssues();
+  }, [handleFetchSubIssues]);
 
   // render conditions
   const shouldRenderDeleteIssueModal =
@@ -112,22 +161,57 @@ export const SubIssuesCollapsibleContent = observer(function SubIssuesCollapsibl
 
   const shouldRenderUpdateIssueModal = issueCrudState?.update?.toggle && issueCrudState?.update?.issue;
 
+  const showInlineCreate =
+    allowAddSubTasks &&
+    issueCrudOperationState?.create?.toggle &&
+    issueCrudOperationState?.create?.parentIssueId === parentIssueId;
+
+  const inlineCategoryId = issueCrudOperationState?.create?.categoryId ?? null;
+  const inlineCategory = inlineCategoryId ? getCategoryById(inlineCategoryId) : null;
+
   return (
     <>
-      {subIssueHelpers.issue_visibility.includes(parentIssueId) && (
-        <SubIssuesListRoot
-          storeType={EIssuesStoreType.PROJECT}
-          workspaceSlug={workspaceSlug}
-          projectId={projectId}
-          parentIssueId={parentIssueId}
-          rootIssueId={parentIssueId}
-          spacingLeft={6}
-          canEdit={!disabled}
-          handleIssueCrudState={handleIssueCrudState}
-          subIssueOperations={subIssueOperations}
-          issueServiceType={issueServiceType}
-        />
-      )}
+      <SubIssuesListRoot
+        storeType={EIssuesStoreType.PROJECT}
+        workspaceSlug={workspaceSlug}
+        projectId={projectId}
+        parentIssueId={parentIssueId}
+        rootIssueId={parentIssueId}
+        spacingLeft={6}
+        canEdit={!disabled}
+        handleIssueCrudState={handleIssueCrudState}
+        subIssueOperations={subIssueOperations}
+        issueServiceType={issueServiceType}
+      />
+
+      {/* Bottom Add sub-task — quiet list-style affordance, not a solid button */}
+      {allowAddSubTasks &&
+        (showInlineCreate ? (
+          <InlineCreateSubTask
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            parentIssueId={parentIssueId}
+            category={inlineCategory}
+            issueServiceType={issueServiceType}
+            onClose={handleCloseInlineCreate}
+            onCategoryChange={handleInlineCategoryChange}
+          />
+        ) : (
+          <div className="border-t border-subtle">
+            <SubIssuesActionButton
+              issueId={parentIssueId}
+              disabled={disabled}
+              issueServiceType={issueServiceType}
+              customButtonClassName="w-full hover:bg-layer-1 disabled:cursor-not-allowed disabled:opacity-50"
+              customButton={
+                <span className="flex w-full items-center gap-2 px-3 py-2.5 text-13 font-medium whitespace-nowrap text-placeholder hover:text-secondary">
+                  <PlusIcon className="size-3.5 flex-shrink-0 stroke-2" />
+                  <span>{t(childCreateLabelKey(childLevel))}</span>
+                </span>
+              }
+            />
+          </div>
+        ))}
 
       {shouldRenderDeleteIssueModal && (
         <DeleteIssueModal

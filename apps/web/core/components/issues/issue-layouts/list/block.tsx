@@ -11,25 +11,30 @@ import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { ChevronRightIcon } from "@plane/propel/icons";
+import { MAX_SUB_TASK_DEPTH } from "@plane/constants";
 // types
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TIssue, IIssueDisplayProperties, TIssueMap } from "@plane/types";
-import { EIssueServiceType } from "@plane/types";
+import { EIssueServiceType, EIssuesStoreType } from "@plane/types";
 // ui
 import { Spinner, ControlLink, Row } from "@plane/ui";
 import { cn, generateWorkItemLink } from "@plane/utils";
 // components
 import { MultipleSelectEntityAction } from "@/components/core/multiple-select";
+import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
+import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
 import { IssueProperties } from "@/components/issues/issue-layouts/properties";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProject } from "@/hooks/store/use-project";
+import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 import { calculateIdentifierWidth } from "../utils";
+import { IssuePinLevelControls } from "./pin-level-controls";
 import type { TRenderQuickActions } from "./list-view-types";
 
 interface IssueBlockProps {
@@ -49,6 +54,7 @@ interface IssueBlockProps {
   setIsCurrentBlockDragging: React.Dispatch<React.SetStateAction<boolean>>;
   canDrag: boolean;
   isEpic?: boolean;
+  showPinControls?: boolean;
 }
 
 export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
@@ -69,6 +75,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
     setIsCurrentBlockDragging,
     canDrag,
     isEpic = false,
+    showPinControls = false,
   } = props;
   // ref
   const issueRef = useRef<HTMLDivElement | null>(null);
@@ -77,6 +84,8 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
   const workspaceSlug = routerWorkspaceSlug?.toString();
   const projectId = routerProjectId?.toString();
   // hooks
+  const storeType = useIssueStoreType();
+  const isCompactList = storeType === EIssuesStoreType.CYCLE;
   const { sidebarCollapsed: isSidebarCollapsed } = useAppTheme();
   const { getProjectIdentifierById, currentProjectNextSequenceId } = useProject();
   const {
@@ -135,13 +144,15 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
   const isIssueActive = selectionHelpers.getIsEntityActive(issue.id);
   const isSubIssue = nestingLevel !== 0;
   const canSelectIssues = canEditIssueProperties && !selectionHelpers.isSelectionDisabled;
+  const shouldHighlightCycleDoneRow =
+    isCompactList && nestingLevel === 0 && isFullyDoneL3ForCycleHighlight(issue, issuesMap);
 
   const marginLeft = `${spacingLeft}px`;
 
   const handleToggleExpand = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     e.preventDefault();
-    if (nestingLevel >= 3) {
+    if (nestingLevel >= MAX_SUB_TASK_DEPTH) {
       handleIssuePeekOverview(issue);
     } else {
       setExpanded((prevState) => {
@@ -179,15 +190,18 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
       <Row
         ref={issueRef}
         className={cn(
-          "group/list-block relative flex min-h-11 flex-col gap-3 bg-layer-transparent py-3 text-13 transition-colors hover:bg-layer-transparent-hover",
+          "group/list-block relative flex flex-col bg-layer-transparent text-13 transition-colors hover:bg-layer-transparent-hover",
+          isCompactList ? "min-h-7 gap-1.5 py-1.5" : "min-h-11 gap-3 py-3",
           {
             "border-accent-strong": getIsIssuePeeked(issue.id) && peekIssue?.nestingLevel === nestingLevel,
             "border-strong-1": isIssueActive,
             "last:border-b-transparent": !getIsIssuePeeked(issue.id) && !isIssueActive,
             "bg-accent-primary/5 hover:bg-accent-primary/10": isIssueSelected,
             "bg-layer-1": isCurrentBlockDragging,
+            "bg-success-subtle hover:bg-success-subtle": shouldHighlightCycleDoneRow && !isIssueSelected,
             "md:flex-row md:items-center": isSidebarCollapsed,
             "lg:flex-row lg:items-center": !isSidebarCollapsed,
+            "cursor-grab active:cursor-grabbing": isDraggingAllowed,
           }
         )}
         onDragStart={() => {
@@ -233,6 +247,12 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
                   </div>
                 </Tooltip>
               )}
+              {/* Hierarchy type always visible next to identifier/title */}
+              <HierarchyTypeBadge issue={issue} disabled={!canEditIssueProperties} updateIssue={updateIssue} />
+              {showPinControls && (
+                <IssuePinLevelControls issue={issue} canEdit={canEditIssueProperties} updateIssue={updateIssue} />
+              )}
+
               {displayProperties && (displayProperties.key || displayProperties.issue_type) && (
                 <div className="flex-shrink-0" style={{ minWidth: `${keyMinWidth}px` }}>
                   {issue.project_id && (

@@ -55,6 +55,11 @@
         "error": "ラベルの更新中にエラーが発生しました"
       }
     },
+    "sub_work_item_categories": {
+      "label": "サブタスク",
+      "heading": "サブタスク",
+      "description": "Design、Dev、QA などの役割でサブタスクを整理します。ドラッグで並べ替えたり、使わないカテゴリを削除できます。"
+    },
     "estimates": {
       "heading": "見積もり",
       "description": "チームの複雑さと作業負荷を伝えるのに役立ちます。",

@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { observer } from "mobx-react";
 import type { Control } from "react-hook-form";
-import { Controller } from "react-hook-form";
+import { Controller, useWatch } from "react-hook-form";
 import { ETabIndices, EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { ParentPropertyIcon } from "@plane/propel/icons";
@@ -21,9 +21,9 @@ import { CycleDropdown } from "@/components/dropdowns/cycle";
 import { DateDropdown } from "@/components/dropdowns/date";
 import { EstimateDropdown } from "@/components/dropdowns/estimate";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
-import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { canEditCycle } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 import { ParentIssuesListModal } from "@/components/issues/parent-issues-list-modal";
 import { IssueLabelSelect } from "@/components/issues/select";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
@@ -71,6 +71,8 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
   const { allowPermissions } = useUserPermissions();
   // derived values
   const projectDetails = getProjectById(projectId);
+  const hierarchyLevel = useWatch({ control, name: "hierarchy_level" });
+  const showCycle = projectDetails?.cycle_view && canEditCycle(hierarchyLevel ?? 3);
 
   const { getIndex } = getTabIndex(ETabIndices.ISSUE_FORM, isMobile);
 
@@ -198,7 +200,7 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
           </div>
         )}
       />
-      {projectDetails?.cycle_view && (
+      {showCycle && (
         <Controller
           control={control}
           name="cycle_id"
@@ -214,29 +216,6 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
                 value={value}
                 buttonVariant="border-with-text"
                 tabIndex={getIndex("cycle_id")}
-              />
-            </div>
-          )}
-        />
-      )}
-      {projectDetails?.module_view && workspaceSlug && (
-        <Controller
-          control={control}
-          name="module_ids"
-          render={({ field: { value, onChange } }) => (
-            <div className="h-7">
-              <ModuleDropdown
-                projectId={projectId ?? undefined}
-                value={value ?? []}
-                onChange={(moduleIds) => {
-                  onChange(moduleIds);
-                  handleFormChange();
-                }}
-                placeholder={t("modules")}
-                buttonVariant="border-with-text"
-                tabIndex={getIndex("module_ids")}
-                multiple
-                showCount
               />
             </div>
           )}

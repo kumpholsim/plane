@@ -439,7 +439,7 @@
       "content": {
         "intro": "Il tipo di elemento di lavoro {workItemTypeName} include:",
         "parent_items": "{count, plural, one {Verrà rimosso # collegamento padre} other {Verranno rimossi # collegamenti padre}}.",
-        "child_items": "{count, plural, one {sotto-elemento di lavoro} other {sotto-elementi di lavoro}}",
+        "child_items": "{count, plural, one {sotto-attività} other {sotto-attività}}",
         "parent_line_suffix_when_also_children": ", e ",
         "footer": "Questa modifica rimuoverà le relazioni padre-figlio dagli elementi di lavoro esistenti del tipo {workItemTypeName}."
       },

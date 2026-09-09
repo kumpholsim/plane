@@ -61,6 +61,8 @@ from .issue import (
     ProjectUserPropertySerializer,
     IssueAssigneeSerializer,
     LabelSerializer,
+    ProjectHierarchyTypeSerializer,
+    SubWorkItemCategorySerializer,
     IssueSerializer,
     IssueFlatSerializer,
     IssueStateSerializer,

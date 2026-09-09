@@ -31,7 +31,7 @@ import type {
   TLogicalOperator,
   TSupportedOperators,
 } from "@plane/types";
-import { FILTER_NODE_TYPE } from "@plane/types";
+import { FILTER_NODE_TYPE, LOGICAL_OPERATOR, COLLECTION_OPERATOR } from "@plane/types";
 // local imports
 import {
   deepCompareFilterExpressions,
@@ -83,6 +83,9 @@ export interface IFilterInstance<P extends TFilterProperty, E extends TExternalF
   isVisible: boolean;
   allConditions: TFilterConditionNode<P, TFilterValue>[];
   allConditionsForDisplay: TFilterConditionNodeForDisplay<P, TFilterValue>[];
+  pinnedProperties: P[];
+  isPropertyPinned: (property: P) => boolean;
+  ensurePinnedConditions: () => void;
   // computed option helpers
   clearFilterOptions: TClearFilterOptions | undefined;
   saveViewOptions: TSaveViewOptions<E> | undefined;
@@ -149,6 +152,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
 
   // helper instance
   private helper: IFilterInstanceHelper<P, E>;
+  pinnedProperties: P[] = [];
 
   constructor(params: TFilterParams<P, E>) {
     this.id = uuidv4();
@@ -165,7 +169,9 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
     this.expression = cloneDeep(initialExpression);
     this.expressionOptions = this.helper.initializeExpressionOptions(params.options?.expression);
     this.onExpressionChange = params.onExpressionChange;
+    this.pinnedProperties = (params.options?.pinnedProperties ?? []) as P[];
     this.helper.setInitialVisibility(params.options?.visibility ?? DEFAULT_FILTER_VISIBILITY_OPTIONS);
+    this.ensurePinnedConditions();
 
     makeObservable(this, {
       // observables
@@ -175,6 +181,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
       expressionOptions: observable.struct,
       adapter: observable,
       configManager: observable,
+      pinnedProperties: observable.ref,
       // computed
       hasActiveFilters: computed,
       hasChanges: computed,
@@ -201,6 +208,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
       saveView: action,
       updateView: action,
       updateExpressionOptions: action,
+      ensurePinnedConditions: action,
     });
   }
 
@@ -250,8 +258,34 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
    */
   get allConditionsForDisplay(): IFilterInstance<P, E>["allConditionsForDisplay"] {
     if (!this.expression) return [];
-    return extractConditionsWithDisplayOperators(this.expression);
+    const conditions = extractConditionsWithDisplayOperators(this.expression);
+    if (!this.pinnedProperties.length) return conditions;
+
+    const pinned: typeof conditions = [];
+    for (const property of this.pinnedProperties) {
+      pinned.push(...conditions.filter((condition) => condition.property === property));
+    }
+    const rest = conditions.filter((condition) => !this.pinnedProperties.includes(condition.property));
+    return [...pinned, ...rest];
   }
+
+  isPropertyPinned: IFilterInstance<P, E>["isPropertyPinned"] = (property) => this.pinnedProperties.includes(property);
+
+  ensurePinnedConditions: IFilterInstance<P, E>["ensurePinnedConditions"] = action(() => {
+    for (const property of this.pinnedProperties) {
+      const existing = this.allConditions.find((condition) => condition.property === property);
+      if (existing) continue;
+      this.addCondition(
+        LOGICAL_OPERATOR.AND,
+        {
+          property,
+          operator: COLLECTION_OPERATOR.IN,
+          value: [],
+        },
+        false
+      );
+    }
+  });
 
   // ------------ computed option helpers ------------
 
@@ -328,6 +362,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
   resetExpression: IFilterInstance<P, E>["resetExpression"] = action(
     (externalExpression, shouldResetInitialExpression = true) => {
       this.expression = this.helper.initializeExpression(externalExpression);
+      this.ensurePinnedConditions();
       if (shouldResetInitialExpression) {
         this._resetInitialFilterExpression();
       }
@@ -462,8 +497,17 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
       // If the condition is not valid, return
       if (!conditionBeforeUpdate || conditionBeforeUpdate.type !== FILTER_NODE_TYPE.CONDITION) return;
 
-      // If the value is not valid, remove the condition
+      // If the value is not valid, remove the condition (or reset pinned chips)
       if (!hasValidValue(value)) {
+        if (this.isPropertyPinned(conditionBeforeUpdate.property)) {
+          updateNodeInExpression(this.expression, conditionId, {
+            value: [],
+          });
+          if (hasValidValue(conditionBeforeUpdate.value)) {
+            this._notifyExpressionChange();
+          }
+          return;
+        }
         this.removeCondition(conditionId);
         return;
       }
@@ -489,6 +533,16 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
    */
   removeCondition: IFilterInstance<P, E>["removeCondition"] = action((conditionId) => {
     if (!this.expression) return;
+    const condition = findNodeById(this.expression, conditionId);
+    if (condition?.type === FILTER_NODE_TYPE.CONDITION && this.isPropertyPinned(condition.property)) {
+      updateNodeInExpression(this.expression, conditionId, {
+        value: [],
+      });
+      if (hasValidValue(condition.value)) {
+        this._notifyExpressionChange();
+      }
+      return;
+    }
     const { expression, shouldNotify } = removeNodeFromExpression(this.expression, conditionId);
     this.expression = expression;
     if (shouldNotify) {
@@ -503,6 +557,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
     if (this.canClearFilters) {
       const shouldNotify = shouldNotifyChangeForExpression(this.expression);
       this.expression = null;
+      this.ensurePinnedConditions();
       await this.clearFilterOptions?.onFilterClear();
       if (shouldNotify) {
         this._notifyExpressionChange();

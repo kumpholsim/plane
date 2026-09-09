@@ -9,7 +9,13 @@ import { isEmpty } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 // plane imports
 import type { TIssueFilterPriorityObject, TIssuePriorities } from "@plane/constants";
-import { ISSUE_DISPLAY_FILTERS_BY_PAGE, ISSUE_PRIORITY_FILTERS, STATE_GROUPS } from "@plane/constants";
+import {
+  ISSUE_DISPLAY_FILTERS_BY_PAGE,
+  ISSUE_PRIORITY_FILTERS,
+  LOCKED_BOARD_LAYOUT_DISPLAY_FILTERS,
+  LOCKED_LIST_LAYOUT_DISPLAY_FILTERS,
+  STATE_GROUPS,
+} from "@plane/constants";
 import type {
   IGanttBlock,
   IIssueDisplayFilterOptions,
@@ -271,20 +277,59 @@ export const getComputedDisplayFilters = (
   displayFilters: IIssueDisplayFilterOptions = {},
   defaultValues?: IIssueDisplayFilterOptions
 ): IIssueDisplayFilterOptions => {
-  const filters = !isEmpty(displayFilters) ? displayFilters : defaultValues;
+  // Prefer saved filters; fall back to provided defaults (e.g. cycle list Epic + Manual)
+  const filters = {
+    ...defaultValues,
+    ...(!isEmpty(displayFilters) ? displayFilters : {}),
+  };
   return {
     calendar: {
-      show_weekends: filters?.calendar?.show_weekends || false,
-      layout: filters?.calendar?.layout || "month",
+      show_weekends: filters?.calendar?.show_weekends ?? false,
+      layout: filters?.calendar?.layout ?? "month",
     },
-    layout: filters?.layout || EIssueLayoutTypes.LIST,
-    order_by: filters?.order_by || "sort_order",
-    group_by: filters?.group_by || null,
-    sub_group_by: filters?.sub_group_by || null,
-    sub_issue: filters?.sub_issue || false,
-    show_empty_groups: filters?.show_empty_groups || false,
+    layout: filters?.layout ?? EIssueLayoutTypes.LIST,
+    order_by: filters?.order_by ?? "sort_order",
+    group_by: filters?.group_by ?? null,
+    sub_group_by: filters?.sub_group_by ?? null,
+    sub_issue: filters?.sub_issue ?? false,
+    show_empty_groups: filters?.show_empty_groups ?? false,
   };
 };
+
+/**
+ * List / board layouts use fixed structural display settings.
+ * Other layouts keep stored display filters as-is.
+ */
+export const resolveDisplayFiltersForLayout = (
+  displayFilters: IIssueDisplayFilterOptions | undefined
+): IIssueDisplayFilterOptions => {
+  if (!displayFilters) {
+    return {
+      ...LOCKED_LIST_LAYOUT_DISPLAY_FILTERS,
+      layout: EIssueLayoutTypes.LIST,
+    };
+  }
+  if (displayFilters.layout === EIssueLayoutTypes.LIST || displayFilters.layout === "list") {
+    return {
+      ...displayFilters,
+      ...LOCKED_LIST_LAYOUT_DISPLAY_FILTERS,
+    };
+  }
+  if (displayFilters.layout === EIssueLayoutTypes.KANBAN || displayFilters.layout === "kanban") {
+    return {
+      ...displayFilters,
+      ...LOCKED_BOARD_LAYOUT_DISPLAY_FILTERS,
+    };
+  }
+  return displayFilters;
+};
+
+/**
+ * Whether L4 / sub-tasks should appear in the current view.
+ * Board layout always includes L4 (see LOCKED_BOARD_LAYOUT_DISPLAY_FILTERS).
+ */
+export const areSubIssuesIncludedInView = (displayFilters: IIssueDisplayFilterOptions | undefined): boolean =>
+  resolveDisplayFiltersForLayout(displayFilters)?.sub_issue ?? false;
 
 /**
  * @description This method is used to apply the display properties on the issues

@@ -5,11 +5,12 @@
  */
 
 import type { MutableRefObject } from "react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { attachInstruction, extractInstruction } from "@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item";
 import { observer } from "mobx-react";
+import { useParams } from "next/navigation";
 // plane helpers
 import { useOutsideClickDetector } from "@plane/hooks";
 // types
@@ -18,6 +19,7 @@ import { EIssueServiceType } from "@plane/types";
 // components
 import { DropIndicator } from "@plane/ui";
 import RenderIfVisible from "@/components/core/render-if-visible-HOC";
+import { useIssueExpandCollapse } from "@/components/issues/issue-layouts/expand-collapse";
 import { ListLoaderItemRow } from "@/components/ui/loader/layouts/list-layout-loader";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -26,6 +28,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 // types
 import { HIGHLIGHT_CLASS, getIssueBlockId, isIssueNew } from "../utils";
 import { IssueBlock } from "./block";
+import { getIssuePinLevel } from "./epic-list-sections";
 import type { TRenderQuickActions } from "./list-view-types";
 
 type Props = {
@@ -46,6 +49,7 @@ type Props = {
   isLastChild?: boolean;
   shouldRenderByDefault?: boolean;
   isEpic?: boolean;
+  showPinControls?: boolean;
 };
 
 export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
@@ -67,6 +71,7 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
     selectionHelpers,
     shouldRenderByDefault,
     isEpic = false,
+    showPinControls = false,
   } = props;
   // states
   const [isExpanded, setExpanded] = useState<boolean>(false);
@@ -76,10 +81,31 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
   const issueBlockRef = useRef<HTMLDivElement | null>(null);
   // hooks
   const { isMobile } = usePlatformOS();
+  const { workspaceSlug } = useParams();
+  const { listNestedExpand, level } = useIssueExpandCollapse();
   // store hooks
   const { subIssues: subIssuesStore } = useIssueDetail(isEpic ? EIssueServiceType.EPICS : EIssueServiceType.ISSUES);
 
   const isSubIssue = nestingLevel !== 0;
+  const currentIssue = issuesMap[issueId];
+  const currentPinLevel = showPinControls ? getIssuePinLevel(currentIssue) : null;
+  const isCurrentPinned = currentPinLevel !== null && currentPinLevel > 0;
+
+  // Sync L3→L4 nest expansion with the header expand/collapse cycle (list level 2)
+  useEffect(() => {
+    if (isEpic || nestingLevel !== 0) return;
+
+    if (listNestedExpand) {
+      setExpanded(true);
+      if (workspaceSlug && currentIssue?.project_id) {
+        subIssuesStore.fetchSubIssues(workspaceSlug.toString(), currentIssue.project_id, issueId);
+      }
+      return;
+    }
+
+    // Levels 0–1 keep nested rows collapsed
+    if (level < 2) setExpanded(false);
+  }, [currentIssue?.project_id, isEpic, issueId, level, listNestedExpand, nestingLevel, subIssuesStore, workspaceSlug]);
 
   useEffect(() => {
     const blockElement = issueBlockRef.current;
@@ -89,7 +115,13 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
     return combine(
       dropTargetForElements({
         element: blockElement,
-        canDrop: ({ source }) => source?.data?.id !== issueId && !isSubIssue && canDropOverIssue,
+        canDrop: ({ source }) => {
+          if (source?.data?.id === issueId || isSubIssue || !canDropOverIssue) return false;
+          if (!showPinControls || currentPinLevel === null) return true;
+          const sourceIssue = issuesMap[source.data.id as string];
+          const sourcePinned = getIssuePinLevel(sourceIssue) > 0;
+          return sourcePinned === isCurrentPinned;
+        },
         getData: ({ input, element }) => {
           const data = { id: issueId, type: "ISSUE" };
 
@@ -121,7 +153,18 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
         },
       })
     );
-  }, [issueId, isLastChild, issueBlockRef, isSubIssue, canDropOverIssue, setInstruction]);
+  }, [
+    issueId,
+    isLastChild,
+    issueBlockRef,
+    isSubIssue,
+    canDropOverIssue,
+    setInstruction,
+    showPinControls,
+    currentPinLevel,
+    isCurrentPinned,
+    issuesMap,
+  ]);
 
   useOutsideClickDetector(issueBlockRef, () => {
     issueBlockRef?.current?.classList?.remove(HIGHLIGHT_CLASS);
@@ -159,6 +202,7 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
           isCurrentBlockDragging={isParentIssueBeingDragged || isCurrentBlockDragging}
           setIsCurrentBlockDragging={setIsCurrentBlockDragging}
           isEpic={isEpic}
+          showPinControls={showPinControls}
         />
       </RenderIfVisible>
 
@@ -174,7 +218,7 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
             canEditProperties={canEditProperties}
             displayProperties={displayProperties}
             nestingLevel={nestingLevel + 1}
-            spacingLeft={spacingLeft + 12}
+            spacingLeft={spacingLeft + 24}
             containerRef={containerRef}
             selectionHelpers={selectionHelpers}
             groupId={groupId}

@@ -14,11 +14,16 @@ import { generateWorkItemLink } from "@plane/utils";
 import { useIssueDetail } from "./store/use-issue-detail";
 import { useProject } from "./store/use-project";
 
+type TPeekRedirectionOptions = {
+  /** When true and peek is already open, push current peek onto history (sub-work navigation). */
+  fromSubWork?: boolean;
+};
+
 const useIssuePeekOverviewRedirection = (isEpic: boolean = false) => {
   // router
   const router = useRouter();
   //   store hooks
-  const { getIsIssuePeeked, setPeekIssue } = useIssueDetail(
+  const { getIsIssuePeeked, setPeekIssue, navigatePeekIssue, isPeekOpen } = useIssueDetail(
     isEpic ? EIssueServiceType.EPICS : EIssueServiceType.ISSUES
   );
   const { getProjectIdentifierById } = useProject();
@@ -27,7 +32,8 @@ const useIssuePeekOverviewRedirection = (isEpic: boolean = false) => {
     workspaceSlug: string | undefined,
     issue: TIssue | undefined,
     isMobile = false,
-    nestingLevel?: number
+    nestingLevel?: number,
+    options?: TPeekRedirectionOptions
   ) => {
     if (!issue) return;
     const { project_id, id, archived_at, tempId } = issue;
@@ -46,7 +52,18 @@ const useIssuePeekOverviewRedirection = (isEpic: boolean = false) => {
       if (isMobile) {
         router.push(workItemLink);
       } else {
-        setPeekIssue({ workspaceSlug, projectId: project_id, issueId: id, nestingLevel, isArchived: !!archived_at });
+        const nextPeek = {
+          workspaceSlug,
+          projectId: project_id,
+          issueId: id,
+          nestingLevel,
+          isArchived: !!archived_at,
+        };
+        if (options?.fromSubWork && isPeekOpen) {
+          navigatePeekIssue(nextPeek);
+        } else {
+          setPeekIssue(nextPeek);
+        }
       }
     }
   };

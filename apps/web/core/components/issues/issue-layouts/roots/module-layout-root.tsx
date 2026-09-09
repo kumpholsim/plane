@@ -9,11 +9,17 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 // plane imports
-import { ISSUE_DISPLAY_FILTERS_BY_PAGE, PROJECT_VIEW_TRACKER_ELEMENTS } from "@plane/constants";
+import {
+  ISSUE_DISPLAY_FILTERS_BY_PAGE,
+  PROJECT_VIEW_TRACKER_ELEMENTS,
+  PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES,
+} from "@plane/constants";
+import type { TWorkItemFilterProperty } from "@plane/types";
 import { EIssuesStoreType, EIssueLayoutTypes } from "@plane/types";
 import { Row, ERowVariant } from "@plane/ui";
 // hooks
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
+import { WorkItemPinnedFilters } from "@/components/work-item-filters/pinned-filters";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
 import { useIssues } from "@/hooks/store/use-issues";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
@@ -53,6 +59,16 @@ export const ModuleLayoutRoot = observer(function ModuleLayoutRoot() {
   // derived values
   const workItemFilters = moduleId ? issuesFilter?.getIssueFilters(moduleId) : undefined;
   const activeLayout = workItemFilters?.displayFilters?.layout || undefined;
+  const isPinnedFilterLayout = activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN;
+  const filtersToShowByLayout: TWorkItemFilterProperty[] = isPinnedFilterLayout
+    ? [
+        ...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters.filter(
+          (property): property is TWorkItemFilterProperty => !["state_id", "assignee_id"].includes(property as string)
+        ),
+        "progress_status",
+      ]
+    : [...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters];
+  const suppressedProperties: TWorkItemFilterProperty[] = ["state_id", "progress_status", "assignee_id"];
 
   useSWR(
     workspaceSlug && projectId && moduleId
@@ -73,17 +89,24 @@ export const ModuleLayoutRoot = observer(function ModuleLayoutRoot() {
         enableSaveView
         entityType={EIssuesStoreType.MODULE}
         entityId={moduleId}
-        filtersToShowByLayout={ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters}
+        filtersToShowByLayout={filtersToShowByLayout}
         initialWorkItemFilters={workItemFilters}
         updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId, moduleId)}
         projectId={projectId}
         workspaceSlug={workspaceSlug}
+        pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
       >
         {({ filter: moduleWorkItemsFilter }) => (
           <div className="relative flex h-full w-full flex-col overflow-hidden">
             {moduleWorkItemsFilter && (
               <WorkItemFiltersRow
                 filter={moduleWorkItemsFilter}
+                leadingControls={
+                  isPinnedFilterLayout ? (
+                    <WorkItemPinnedFilters filter={moduleWorkItemsFilter} projectId={projectId} />
+                  ) : undefined
+                }
+                suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
                 trackerElements={{
                   saveView: PROJECT_VIEW_TRACKER_ELEMENTS.MODULE_HEADER_SAVE_AS_VIEW_BUTTON,
                 }}

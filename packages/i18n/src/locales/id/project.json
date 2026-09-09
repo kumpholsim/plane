@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Tambah Modul",
+    "add_module": "Tambah epik",
     "update_module": "Perbarui Modul",
-    "create_module": "Buat Modul",
+    "create_module": "Buat epik",
     "archive_module": "Arsipkan Modul",
     "restore_module": "Pulihkan Modul",
     "delete_module": "Hapus modul",
     "empty_state": {
       "general": {
-        "title": "Peta tonggak proyek Anda ke Modul dan lacak pekerjaan terakumulasi dengan mudah.",
-        "description": "Sekelompok item kerja yang tergolong dalam induk yang logis dan hierarkis membentuk satu modul. Anggap saja mereka sebagai cara untuk melacak pekerjaan berdasarkan tonggak proyek. Mereka memiliki periode dan tenggat waktu sendiri serta analitik untuk membantu Anda melihat seberapa dekat atau jauh Anda dari tonggak tersebut.",
+        "title": "Atur epik di bawah milestone dan lacak pekerjaan pengiriman dengan mudah.",
+        "description": "Epik adalah work item L2 di bawah milestone. Gunakan untuk mengelompokkan story, bug, dan task.",
         "primary_button": {
-          "text": "Buat modul pertama Anda",
+          "text": "Buat epik pertama Anda",
           "comic": {
-            "title": "Modul membantu mengelompokkan pekerjaan menurut hierarki.",
-            "description": "Modul kereta, modul sasis, dan modul gudang adalah contoh bagus dari pengelompokan ini."
+            "title": "Epik membantu mengelompokkan pekerjaan berdasarkan hierarki.",
+            "description": "Epik keranjang, epik sasis, dan epik gudang adalah contoh pengelompokan ini."
           }
         }
       },
       "no_issues": {
-        "title": "Tidak ada item kerja dalam modul",
-        "description": "Buat atau tambahkan item kerja yang ingin Anda capai sebagai bagian dari modul ini",
+        "title": "Tidak ada work item di epik",
+        "description": "Buat atau tambahkan work item yang ingin Anda selesaikan sebagai bagian dari epik ini",
         "primary_button": {
           "text": "Buat item kerja baru"
         },

@@ -439,7 +439,7 @@
       "content": {
         "intro": "Tipul de element de lucru {workItemTypeName} are:",
         "parent_items": "{count, plural, one {Se va elimina # legătură părinte} few {Se vor elimina # legături părinte} other {Se vor elimina # de legături părinte}}.",
-        "child_items": "{count, plural, one {sub-element de lucru} few {sub-elemente de lucru} other {sub-elemente de lucru}}",
+        "child_items": "{count, plural, one {subtask} few {subtask-uri} other {subtask-uri}}",
         "parent_line_suffix_when_also_children": ", și ",
         "footer": "Această modificare va elimina relațiile părinte-copil din elementele de lucru existente de tipul {workItemTypeName}."
       },

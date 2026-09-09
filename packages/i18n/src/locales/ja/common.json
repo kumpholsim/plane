@@ -449,6 +449,8 @@
     "layout": "レイアウト",
     "filters": "フィルター",
     "display": "表示",
+    "expand_all": "すべて展開",
+    "collapse_all": "すべて折りたたむ",
     "load_more": "もっと読み込む",
     "activity": "アクティビティ",
     "analytics": "アナリティクス",
@@ -464,7 +466,7 @@
     "epics": "エピック",
     "work_item": "作業項目",
     "work_items": "作業項目",
-    "sub_work_item": "サブ作業項目",
+    "sub_work_item": "サブタスク",
     "views": "ビュー",
     "pages": "ページ",
     "add": "追加",
@@ -507,7 +509,7 @@
       "private": "非公開"
     },
     "done": "完了",
-    "sub_work_items": "サブ作業項目",
+    "sub_work_items": "サブタスク",
     "comment": "コメント",
     "workspace_level": "ワークスペースレベル",
     "order_by": {

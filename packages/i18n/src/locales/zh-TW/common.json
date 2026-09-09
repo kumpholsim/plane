@@ -449,6 +449,8 @@
     "layout": "版面配置",
     "filters": "篩選器",
     "display": "顯示",
+    "expand_all": "全部展開",
+    "collapse_all": "全部摺疊",
     "load_more": "載入更多",
     "activity": "活動",
     "analytics": "分析",
@@ -464,7 +466,7 @@
     "epics": "史詩",
     "work_item": "工作事項",
     "work_items": "工作事項",
-    "sub_work_item": "子工作事項",
+    "sub_work_item": "子任務",
     "views": "檢視",
     "pages": "頁面",
     "add": "新增",
@@ -507,7 +509,7 @@
       "private": "私人"
     },
     "done": "完成",
-    "sub_work_items": "子工作事項",
+    "sub_work_items": "子任務",
     "comment": "留言",
     "workspace_level": "工作區層級",
     "order_by": {

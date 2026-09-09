@@ -19,11 +19,13 @@
       "start_date": "添加开始日期",
       "due_date": "添加截止日期",
       "parent": "添加父工作项",
-      "sub_issue": "添加子工作项",
+      "sub_issue": "添加子任务",
       "dependency": "添加依赖",
       "relation": "添加关系",
       "link": "添加链接",
-      "existing": "添加现有工作项"
+      "existing": "添加现有工作项",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "移除工作项",
@@ -57,14 +59,14 @@
         "label": "显示属性",
         "id": "ID",
         "issue_type": "工作项类型",
-        "sub_issue_count": "子工作项数量",
+        "sub_issue_count": "子任务数量",
         "attachment_count": "附件数量",
         "created_on": "创建于",
-        "sub_issue": "子工作项",
+        "sub_issue": "子任务",
         "work_item_count": "工作项数量"
       },
       "extra": {
-        "show_sub_issues": "显示子工作项",
+        "show_sub_issues": "显示子任务",
         "show_empty_groups": "显示空组"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "点击反对",
       "click_to_view_upvotes": "点击查看赞成票",
       "click_to_view_downvotes": "点击查看反对票"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "子工作项更新成功",
-      "error": "更新子工作项时出错"
+      "success": "子任务更新成功",
+      "error": "更新子任务时出错"
     },
     "remove": {
-      "success": "子工作项移除成功",
-      "error": "移除子工作项时出错"
+      "success": "子任务移除成功",
+      "error": "移除子任务时出错"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "您没有符合您应用的过滤器的子工作项。",
-        "description": "要查看所有子工作项，请清除所有应用的过滤器。",
+        "title": "没有符合已应用筛选条件的子任务。",
+        "description": "要查看所有子任务，请清除所有已应用的筛选条件。",
         "action": "清除过滤器"
       },
       "list_filters": {

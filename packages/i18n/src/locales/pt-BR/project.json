@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Adicionar Módulo",
+    "add_module": "Adicionar epic",
     "update_module": "Atualizar Módulo",
-    "create_module": "Criar Módulo",
+    "create_module": "Criar epic",
     "archive_module": "Arquivar Módulo",
     "restore_module": "Restaurar Módulo",
     "delete_module": "Excluir módulo",
     "empty_state": {
       "general": {
-        "title": "Mapeie os marcos do seu projeto para Módulos e rastreie o trabalho agregado facilmente.",
-        "description": "Um grupo de itens de trabalho que pertencem a um pai lógico e hierárquico forma um módulo. Pense neles como uma forma de rastrear o trabalho por marcos do projeto. Eles têm seus próprios períodos e prazos, bem como análises para ajudá-lo a ver o quão perto ou longe você está de um marco.",
+        "title": "Organize epics sob marcos e acompanhe o trabalho de entrega facilmente.",
+        "description": "Epics são work items L2 sob marcos. Use-os para agrupar stories, bugs e tasks.",
         "primary_button": {
-          "text": "Construa seu primeiro módulo",
+          "text": "Crie seu primeiro epic",
           "comic": {
-            "title": "Os módulos ajudam a agrupar o trabalho por hierarquia.",
-            "description": "Um módulo de carrinho, um módulo de chassi e um módulo de armazém são todos bons exemplos desse agrupamento."
+            "title": "Epics ajudam a agrupar o trabalho por hierarquia.",
+            "description": "Um epic de carrinho, um epic de chassi e um epic de armazém são bons exemplos desse agrupamento."
           }
         }
       },
       "no_issues": {
-        "title": "Nenhum item de trabalho no módulo",
-        "description": "Crie ou adicione itens de trabalho que você deseja realizar como parte deste módulo",
+        "title": "Nenhum work item no epic",
+        "description": "Crie ou adicione work items que deseja concluir como parte deste epic",
         "primary_button": {
           "text": "Criar novos itens de trabalho"
         },

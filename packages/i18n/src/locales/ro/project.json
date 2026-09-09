@@ -216,27 +216,27 @@
     }
   },
   "project_module": {
-    "add_module": "Adaugă Modul",
+    "add_module": "Adaugă epic",
     "update_module": "Actualizează Modul",
-    "create_module": "Creează Modul",
+    "create_module": "Creează epic",
     "archive_module": "Arhivează Modul",
     "restore_module": "Restaurează Modul",
     "delete_module": "Șterge modulul",
     "empty_state": {
       "general": {
-        "title": "Mapează etapele proiectului în Module și urmărește munca agregată cu ușurință.",
-        "description": "Un grup de activități care aparțin unui părinte logic și ierarhic formează un modul. Gândește-te la module ca la un mod de a urmări munca în funcție de etapele proiectului. Au propriile perioade, termene limită și statistici pentru a-ți arăta cât de aproape sau departe ești de un reper.",
+        "title": "Organizează epicele sub milestone-uri și urmărește ușor munca de livrare.",
+        "description": "Epicele sunt work item-uri L2 sub milestone-uri. Folosește-le pentru a grupa story-uri, bug-uri și task-uri.",
         "primary_button": {
-          "text": "Construiește primul tău modul",
+          "text": "Creează primul epic",
           "comic": {
-            "title": "Modulele ajută la organizarea muncii pe niveluri ierarhice.",
-            "description": "Un modul pentru caroserie, un modul pentru șasiu sau un modul pentru depozit sunt exemple bune de astfel de grupare."
+            "title": "Epicele ajută la gruparea muncii pe ierarhie.",
+            "description": "Un epic de coș, un epic de șasiu și un epic de depozit sunt exemple bune ale acestei grupări."
           }
         }
       },
       "no_issues": {
-        "title": "Nicio activitate în modul",
-        "description": "Creează sau adaugă activități pe care vrei să le finalizezi ca parte a acestui modul",
+        "title": "Niciun work item în epic",
+        "description": "Creează sau adaugă work item-uri pe care vrei să le realizezi ca parte a acestui epic",
         "primary_button": {
           "text": "Creează activități noi"
         },

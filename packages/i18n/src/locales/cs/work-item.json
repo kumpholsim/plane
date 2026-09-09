@@ -19,11 +19,13 @@
       "start_date": "Přidat datum začátku",
       "due_date": "Přidat termín",
       "parent": "Přidat nadřazenou pracovní položku",
-      "sub_issue": "Přidat podřízenou pracovní položku",
+      "sub_issue": "Přidat dílčí úkol",
       "dependency": "Přidat závislost",
       "relation": "Přidat vztah",
       "link": "Přidat odkaz",
-      "existing": "Přidat existující pracovní položku"
+      "existing": "Přidat existující pracovní položku",
+      "child_level_2": "Add epic",
+      "child_level_3": "Add work item"
     },
     "remove": {
       "label": "Odebrat pracovní položku",
@@ -57,14 +59,14 @@
         "label": "Zobrazované vlastnosti",
         "id": "ID",
         "issue_type": "Typ pracovní položky",
-        "sub_issue_count": "Počet podřízených položek",
+        "sub_issue_count": "Počet dílčích úkolů",
         "attachment_count": "Počet příloh",
         "created_on": "Vytvořeno dne",
-        "sub_issue": "Podřízená položka",
+        "sub_issue": "Dílčí úkol",
         "work_item_count": "Počet pracovních položek"
       },
       "extra": {
-        "show_sub_issues": "Zobrazit podřízené položky",
+        "show_sub_issues": "Zobrazit dílčí úkoly",
         "show_empty_groups": "Zobrazit prázdné skupiny"
       }
     },
@@ -266,21 +268,25 @@
       "click_to_downvote": "Klikněte pro hlasování dolů",
       "click_to_view_upvotes": "Klikněte pro zobrazení hlasů nahoru",
       "click_to_view_downvotes": "Klikněte pro zobrazení hlasů dolů"
+    },
+    "children": {
+      "level_2": "Epics",
+      "level_3": "Work items"
     }
   },
   "sub_work_item": {
     "update": {
-      "success": "Podřízená pracovní položka úspěšně aktualizována",
-      "error": "Chyba při aktualizaci podřízené položky"
+      "success": "Dílčí úkol byl úspěšně aktualizován",
+      "error": "Chyba při aktualizaci dílčího úkolu"
     },
     "remove": {
-      "success": "Podřízená pracovní položka úspěšně odebrána",
-      "error": "Chyba při odebírání podřízené položky"
+      "success": "Dílčí úkol byl úspěšně odstraněn",
+      "error": "Chyba při odstraňování dílčího úkolu"
     },
     "empty_state": {
       "sub_list_filters": {
-        "title": "Nemáte podřízené pracovní položky, které odpovídají použitým filtrům.",
-        "description": "Chcete-li zobrazit všechny podřízené pracovní položky, odstraňte všechny použité filtry.",
+        "title": "Žádné dílčí úkoly neodpovídají použitým filtrům.",
+        "description": "Chcete-li zobrazit všechny dílčí úkoly, vymažte všechny použité filtry.",
         "action": "Odstranit filtry"
       },
       "list_filters": {

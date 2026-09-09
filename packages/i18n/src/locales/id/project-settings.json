@@ -55,6 +55,11 @@
         "error": "Kesalahan saat memperbarui label"
       }
     },
+    "sub_work_item_categories": {
+      "label": "Sub-tugas",
+      "heading": "Sub-tugas",
+      "description": "Atur sub-tugas berdasarkan peran seperti Design, Dev, dan QA. Seret untuk mengurutkan ulang atau hapus kategori yang tidak digunakan."
+    },
     "estimates": {
       "heading": "Perkiraan",
       "description": "Ini membantu Anda dalam mengkomunikasikan kompleksitas dan beban kerja tim.",

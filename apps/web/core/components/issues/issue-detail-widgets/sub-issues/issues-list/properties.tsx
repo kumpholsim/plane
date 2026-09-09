@@ -11,15 +11,25 @@ import { observer } from "mobx-react";
 import { useTranslation } from "@plane/i18n";
 import { StartDatePropertyIcon, DueDatePropertyIcon } from "@plane/propel/icons";
 import type { IIssueDisplayProperties, TIssue } from "@plane/types";
+import { EIssuesStoreType } from "@plane/types";
 import { getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from "@plane/utils";
 // components
+import { CycleDropdown } from "@/components/dropdowns/cycle";
 import { DateDropdown } from "@/components/dropdowns/date";
 import { DateRangeDropdown } from "@/components/dropdowns/date-range";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import {
+  canEditCycle,
+  getHierarchyLevel,
+  shouldShowCycleProperty,
+} from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { WithDisplayPropertiesHOC } from "@/components/issues/issue-layouts/properties/with-display-properties-HOC";
+import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useIssues } from "@/hooks/store/use-issues";
+import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 
 type Props = {
@@ -39,15 +49,22 @@ type Props = {
   issue: TIssue;
 };
 
+const handleEventPropagation = (e: SyntheticEvent<HTMLDivElement>) => {
+  e.stopPropagation();
+  e.preventDefault();
+};
+
 export const SubIssuesListItemProperties = observer(function SubIssuesListItemProperties(props: Props) {
   const { workspaceSlug, parentIssueId, issueId, canEdit, updateSubIssue, displayProperties, issue } = props;
   const { t } = useTranslation();
   const { getStateById } = useProjectState();
-
-  const handleEventPropagation = (e: SyntheticEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    e.preventDefault();
-  };
+  const { getProjectById } = useProject();
+  const {
+    issue: { getIssueById },
+  } = useIssueDetail();
+  const {
+    issues: { addCycleToIssue, removeCycleFromIssue },
+  } = useIssues(EIssuesStoreType.PROJECT);
 
   const handleStartDate = (date: Date | null) => {
     if (issue.project_id) {
@@ -75,6 +92,26 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
   const isDateRangeEnabled: boolean = Boolean(
     issue.start_date && issue.target_date && displayProperties?.start_date && displayProperties?.due_date
   );
+
+  const projectDetails = issue.project_id ? getProjectById(issue.project_id) : undefined;
+  const hierarchyLevel = getHierarchyLevel(issue);
+  const parentIssue = issue.parent_id ? getIssueById(issue.parent_id) : undefined;
+  // L3 uses its own cycle; L4 inherits from parent when missing
+  const cycleId = canEditCycle(hierarchyLevel)
+    ? (issue.cycle_id ?? null)
+    : (issue.cycle_id ?? parentIssue?.cycle_id ?? null);
+  // Cycle is mandatory on L3/L4 rows in the sub-work section (always shown when cycles are enabled)
+  const showCycle = Boolean(projectDetails?.cycle_view) && shouldShowCycleProperty(hierarchyLevel);
+  const cycleEditable = canEdit && canEditCycle(hierarchyLevel);
+
+  const handleCycleChange = async (nextCycleId: string | null) => {
+    if (!cycleEditable || !issue.project_id || issue.cycle_id === nextCycleId) return;
+    if (nextCycleId) {
+      await addCycleToIssue(workspaceSlug, issue.project_id, nextCycleId, issue.id);
+    } else {
+      await removeCycleFromIssue(workspaceSlug, issue.project_id, issue.id);
+    }
+  };
 
   if (!displayProperties) return <></>;
 
@@ -133,6 +170,7 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
         displayPropertyKey={["start_date", "due_date"]}
         shouldRenderProperty={() => isDateRangeEnabled}
       >
+        {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
         <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
           <DateRangeDropdown
             value={{
@@ -222,6 +260,25 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
           />
         </div>
       </WithDisplayPropertiesHOC>
+
+      {showCycle && (
+        <>
+          {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
+          <div className="h-5 flex-shrink-0" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+            <CycleDropdown
+              projectId={issue.project_id ?? undefined}
+              value={cycleId}
+              onChange={(nextCycleId) => void handleCycleChange(nextCycleId)}
+              disabled={!cycleEditable}
+              buttonVariant="border-without-text"
+              buttonClassName="h-5"
+              placeholder={t("cycle.label", { count: 1 })}
+              nameMaxLength={7}
+              showTooltip
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 });

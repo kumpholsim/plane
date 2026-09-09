@@ -131,6 +131,12 @@ class IssueSearchEndpoint(BaseAPIView):
 
         if cycle == "true":
             issues = self.exclude_issues_in_cycles(issues)
+            # Delivery (L3) and sub-tasks (L4) can be added to a cycle — not milestones/epics
+            from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
+
+            issues = issues.filter(
+                hierarchy_level__in=[HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK]
+            )
 
         if module:
             issues = self.exclude_issues_in_module(issues, module)
