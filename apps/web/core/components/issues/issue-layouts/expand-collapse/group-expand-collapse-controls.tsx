@@ -5,9 +5,13 @@
  */
 
 import { observer } from "mobx-react";
-import { ChevronsUpDown, FoldVertical, UnfoldVertical } from "lucide-react";
+import { ChevronsUpDown, Expand, FoldVertical, Shrink, UnfoldVertical } from "lucide-react";
 import { IconButton } from "@plane/propel/icon-button";
 import { Tooltip } from "@plane/propel/tooltip";
+import { EIssueLayoutTypes } from "@plane/types";
+import { useIssues } from "@/hooks/store/use-issues";
+import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useBoardFullscreen } from "../kanban/board-fullscreen-context";
 import { useIssueExpandCollapse } from "./context";
 
 type Props = {
@@ -35,14 +39,34 @@ const NEXT_ACTION_UI = {
 
 export const GroupExpandCollapseControls = observer(function GroupExpandCollapseControls(_props: Props) {
   const { cycle, isAvailable, nextAction } = useIssueExpandCollapse();
+  const storeType = useIssueStoreType();
+  const { issuesFilter } = useIssues(storeType);
+  const boardFullscreen = useBoardFullscreen();
+  const layout = issuesFilter?.issueFilters?.displayFilters?.layout;
+  const showBoardFullscreen = layout === EIssueLayoutTypes.KANBAN && !!boardFullscreen;
 
-  if (!isAvailable) return null;
-
-  const { icon: Icon, tooltip } = NEXT_ACTION_UI[nextAction];
+  if (!isAvailable && !showBoardFullscreen) return null;
 
   return (
-    <Tooltip tooltipContent={tooltip} position="bottom">
-      <IconButton size="lg" variant="secondary" icon={Icon} onClick={cycle} />
-    </Tooltip>
+    <div className="flex items-center gap-1">
+      {isAvailable && (
+        <Tooltip tooltipContent={NEXT_ACTION_UI[nextAction].tooltip} position="bottom">
+          <IconButton size="lg" variant="secondary" icon={NEXT_ACTION_UI[nextAction].icon} onClick={cycle} />
+        </Tooltip>
+      )}
+      {showBoardFullscreen && (
+        <Tooltip
+          tooltipContent={boardFullscreen.fullScreenMode ? "Exit full screen" : "Full screen board"}
+          position="bottom"
+        >
+          <IconButton
+            size="lg"
+            variant="secondary"
+            icon={boardFullscreen.fullScreenMode ? Shrink : Expand}
+            onClick={boardFullscreen.toggleFullScreenMode}
+          />
+        </Tooltip>
+      )}
+    </div>
   );
 });

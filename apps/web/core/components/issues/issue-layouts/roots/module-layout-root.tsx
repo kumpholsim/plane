@@ -21,6 +21,8 @@ import { Row, ERowVariant } from "@plane/ui";
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
 import { WorkItemPinnedFilters } from "@/components/work-item-filters/pinned-filters";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
+import { BoardFullscreenProvider } from "@/components/issues/issue-layouts/kanban/board-fullscreen-context";
+import { BoardFullscreenShell } from "@/components/issues/issue-layouts/kanban/board-fullscreen-shell";
 import { useIssues } from "@/hooks/store/use-issues";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 // local imports
@@ -85,41 +87,42 @@ export const ModuleLayoutRoot = observer(function ModuleLayoutRoot() {
   if (!workspaceSlug || !projectId || !moduleId || !workItemFilters) return <></>;
   return (
     <IssuesStoreContext.Provider value={EIssuesStoreType.MODULE}>
-      <ProjectLevelWorkItemFiltersHOC
-        enableSaveView
-        entityType={EIssuesStoreType.MODULE}
-        entityId={moduleId}
-        filtersToShowByLayout={filtersToShowByLayout}
-        initialWorkItemFilters={workItemFilters}
-        updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId, moduleId)}
-        projectId={projectId}
-        workspaceSlug={workspaceSlug}
-        pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
-      >
-        {({ filter: moduleWorkItemsFilter }) => (
-          <div className="relative flex h-full w-full flex-col overflow-hidden">
-            {moduleWorkItemsFilter && (
-              <WorkItemFiltersRow
-                filter={moduleWorkItemsFilter}
-                leadingControls={
-                  isPinnedFilterLayout ? (
-                    <WorkItemPinnedFilters filter={moduleWorkItemsFilter} projectId={projectId} />
-                  ) : undefined
-                }
-                suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
-                trackerElements={{
-                  saveView: PROJECT_VIEW_TRACKER_ELEMENTS.MODULE_HEADER_SAVE_AS_VIEW_BUTTON,
-                }}
-              />
-            )}
-            <Row variant={ERowVariant.HUGGING} className="h-full w-full overflow-auto">
-              <ModuleIssueLayout activeLayout={activeLayout} moduleId={moduleId} />
-            </Row>
-            {/* peek overview */}
-            <IssuePeekOverview />
-          </div>
-        )}
-      </ProjectLevelWorkItemFiltersHOC>
+      <BoardFullscreenProvider>
+        <ProjectLevelWorkItemFiltersHOC
+          enableSaveView
+          entityType={EIssuesStoreType.MODULE}
+          entityId={moduleId}
+          filtersToShowByLayout={filtersToShowByLayout}
+          initialWorkItemFilters={workItemFilters}
+          updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId, moduleId)}
+          projectId={projectId}
+          workspaceSlug={workspaceSlug}
+          pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
+        >
+          {({ filter: moduleWorkItemsFilter }) => (
+            <BoardFullscreenShell>
+              {moduleWorkItemsFilter && (
+                <WorkItemFiltersRow
+                  filter={moduleWorkItemsFilter}
+                  leadingControls={
+                    isPinnedFilterLayout ? (
+                      <WorkItemPinnedFilters filter={moduleWorkItemsFilter} projectId={projectId} />
+                    ) : undefined
+                  }
+                  suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
+                  trackerElements={{
+                    saveView: PROJECT_VIEW_TRACKER_ELEMENTS.MODULE_HEADER_SAVE_AS_VIEW_BUTTON,
+                  }}
+                />
+              )}
+              <Row variant={ERowVariant.HUGGING} className="h-full w-full overflow-auto">
+                <ModuleIssueLayout activeLayout={activeLayout} moduleId={moduleId} />
+              </Row>
+              <IssuePeekOverview />
+            </BoardFullscreenShell>
+          )}
+        </ProjectLevelWorkItemFiltersHOC>
+      </BoardFullscreenProvider>
     </IssuesStoreContext.Provider>
   );
 });

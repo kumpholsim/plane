@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { usePopper } from "react-popper";
@@ -16,7 +17,7 @@ import { HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 import { ComboDropDown } from "@plane/ui";
 import { cn } from "@plane/utils";
 import { DropdownButton } from "@/components/dropdowns/buttons";
-import { getL3ProgressStatusColor } from "@/components/issues/hierarchy-status";
+import { getL3ProgressStatusColor, getL3ProgressStatusOptionClassName } from "@/components/issues/hierarchy-status";
 import { BUTTON_VARIANTS_WITH_TEXT } from "@/components/dropdowns/constants";
 import type { TDropdownProps } from "@/components/dropdowns/types";
 import { useDropdown } from "@/hooks/use-dropdown";
@@ -86,6 +87,7 @@ export const ProgressStatusDropdown = observer(function ProgressStatusDropdown(p
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     placement: placement ?? "bottom-start",
+    strategy: "fixed",
     modifiers: [{ name: "preventOverflow", options: { padding: 12 } }],
   });
 
@@ -102,10 +104,7 @@ export const ProgressStatusDropdown = observer(function ProgressStatusDropdown(p
   const options = L3_PROGRESS_STATUS_OPTIONS ?? [];
   const selected = options.find((o) => o.value === value);
   const selectedPhase = phaseFromValue(value);
-  const selectedColor = getL3ProgressStatusColor(
-    value,
-    selectedPhase ? { ...phaseColors, [selectedPhase]: phaseColors[selectedPhase] } : phaseColors
-  );
+  const selectedColor = selectedPhase ? phaseColors[selectedPhase] : getL3ProgressStatusColor(value, phaseColors);
 
   const filteredOptions =
     query === "" ? options : options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()));
@@ -161,68 +160,72 @@ export const ProgressStatusDropdown = observer(function ProgressStatusDropdown(p
       disabled={disabled}
       button={comboButton}
     >
-      {isOpen && (
-        <Combobox.Options className="fixed z-20" static>
-          <div
-            className="shadow-md my-1 max-h-72 w-60 overflow-y-auto rounded-md border-[0.5px] border-subtle bg-surface-1"
-            ref={setPopperElement}
-            style={styles.popper}
-            {...attributes.popper}
-          >
-            <div className="sticky top-0 z-10 flex items-center gap-1.5 bg-surface-1 px-2.5 py-2">
-              <SearchIcon className="size-3.5 text-placeholder" />
-              <Combobox.Input
-                as="input"
-                ref={inputRef}
-                className="w-full bg-transparent text-body-xs-regular outline-none placeholder:text-placeholder"
-                placeholder="Search"
-                displayValue={() => query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={searchInputKeyDown}
-              />
+      {isOpen &&
+        createPortal(
+          <Combobox.Options data-prevent-outside-click static>
+            <div
+              className="shadow-md z-30 my-1 max-h-72 w-60 overflow-y-auto rounded-md border-[0.5px] border-subtle bg-surface-1"
+              ref={setPopperElement}
+              style={styles.popper}
+              {...attributes.popper}
+            >
+              <div className="sticky top-0 z-10 flex items-center gap-1.5 bg-surface-1 px-2.5 py-2">
+                <SearchIcon className="size-3.5 text-placeholder" />
+                <Combobox.Input
+                  as="input"
+                  ref={inputRef}
+                  className="w-full bg-transparent text-body-xs-regular outline-none placeholder:text-placeholder"
+                  placeholder="Search"
+                  displayValue={() => query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={searchInputKeyDown}
+                />
+              </div>
+              <div className="space-y-0.5 px-1.5 pb-1.5">
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((option) => {
+                    const color = phaseColors[option.phase];
+                    return (
+                      <Combobox.Option
+                        key={option.value}
+                        value={option.value}
+                        className={({ active, selected: isSelected }) =>
+                          cn(
+                            "flex w-full cursor-pointer items-center justify-between gap-2 truncate rounded px-1.5 py-1.5 text-body-xs-regular select-none",
+                            getL3ProgressStatusOptionClassName(option.value),
+                            {
+                              "bg-surface-2": active && !getL3ProgressStatusOptionClassName(option.value),
+                              "bg-success-subtle-1": active && !!getL3ProgressStatusOptionClassName(option.value),
+                              "text-primary": isSelected,
+                              "text-secondary": !isSelected,
+                            }
+                          )
+                        }
+                      >
+                        {({ selected: isSelected }) => (
+                          <>
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span
+                                className="size-3.5 flex-shrink-0 rounded-full"
+                                style={{ backgroundColor: color }}
+                                aria-hidden
+                              />
+                              <span className="truncate">{option.label}</span>
+                            </span>
+                            {isSelected && <CheckIcon className="size-3.5 flex-shrink-0" />}
+                          </>
+                        )}
+                      </Combobox.Option>
+                    );
+                  })
+                ) : (
+                  <p className="px-1.5 py-1 text-body-xs-regular text-tertiary">No matches</p>
+                )}
+              </div>
             </div>
-            <div className="space-y-0.5 px-1.5 pb-1.5">
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
-                  const color = getL3ProgressStatusColor(option.value, phaseColors);
-                  return (
-                    <Combobox.Option
-                      key={option.value}
-                      value={option.value}
-                      className={({ active, selected: isSelected }) =>
-                        cn(
-                          "flex w-full cursor-pointer items-center justify-between gap-2 truncate rounded px-1.5 py-1.5 text-body-xs-regular select-none",
-                          {
-                            "bg-surface-2": active,
-                            "text-primary": isSelected,
-                            "text-secondary": !isSelected,
-                          }
-                        )
-                      }
-                    >
-                      {({ selected: isSelected }) => (
-                        <>
-                          <span className="flex min-w-0 items-center gap-2">
-                            <span
-                              className="size-3.5 flex-shrink-0 rounded-full"
-                              style={{ backgroundColor: color }}
-                              aria-hidden
-                            />
-                            <span className="truncate">{option.label}</span>
-                          </span>
-                          {isSelected && <CheckIcon className="size-3.5 flex-shrink-0" />}
-                        </>
-                      )}
-                    </Combobox.Option>
-                  );
-                })
-              ) : (
-                <p className="px-1.5 py-1 text-body-xs-regular text-tertiary">No matches</p>
-              )}
-            </div>
-          </div>
-        </Combobox.Options>
-      )}
+          </Combobox.Options>,
+          document.body
+        )}
     </ComboDropDown>
   );
 });

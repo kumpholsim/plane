@@ -24,6 +24,8 @@ import { TransferIssuesModal } from "@/components/cycles/transfer-issues-modal";
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
 import { WorkItemPinnedFilters } from "@/components/work-item-filters/pinned-filters";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
+import { BoardFullscreenProvider } from "@/components/issues/issue-layouts/kanban/board-fullscreen-context";
+import { BoardFullscreenShell } from "@/components/issues/issue-layouts/kanban/board-fullscreen-shell";
 import { useCycle } from "@/hooks/store/use-cycle";
 import { useIssues } from "@/hooks/store/use-issues";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
@@ -102,55 +104,56 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
   if (!workspaceSlug || !projectId || !cycleId || !workItemFilters) return <></>;
   return (
     <IssuesStoreContext.Provider value={EIssuesStoreType.CYCLE}>
-      <ProjectLevelWorkItemFiltersHOC
-        enableSaveView
-        entityType={EIssuesStoreType.CYCLE}
-        entityId={cycleId}
-        filtersToShowByLayout={filtersToShowByLayout}
-        initialWorkItemFilters={workItemFilters}
-        updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId, cycleId)}
-        projectId={projectId}
-        workspaceSlug={workspaceSlug}
-        pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
-      >
-        {({ filter: cycleWorkItemsFilter }) => (
-          <>
-            <TransferIssuesModal
-              handleClose={() => setTransferIssuesModal(false)}
-              cycleId={cycleId}
-              isOpen={transferIssuesModal}
-            />
-            <div className="relative flex h-full w-full flex-col overflow-hidden">
-              {cycleStatus === "completed" && (
-                <TransferIssues
-                  handleClick={() => setTransferIssuesModal(true)}
-                  canTransferIssues={canTransferIssues}
-                  disabled={!isEmpty(cycleDetails?.progress_snapshot)}
-                />
-              )}
-              {cycleWorkItemsFilter && (
-                <WorkItemFiltersRow
-                  filter={cycleWorkItemsFilter}
-                  leadingControls={
-                    isPinnedFilterLayout ? (
-                      <WorkItemPinnedFilters filter={cycleWorkItemsFilter} projectId={projectId} />
-                    ) : undefined
-                  }
-                  suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
-                  trackerElements={{
-                    saveView: PROJECT_VIEW_TRACKER_ELEMENTS.CYCLE_HEADER_SAVE_AS_VIEW_BUTTON,
-                  }}
-                />
-              )}
-              <div className="h-full w-full overflow-auto">
-                <CycleIssueLayout activeLayout={activeLayout} cycleId={cycleId} isCompletedCycle={isCompletedCycle} />
-              </div>
-              {/* peek overview */}
-              <IssuePeekOverview />
-            </div>
-          </>
-        )}
-      </ProjectLevelWorkItemFiltersHOC>
+      <BoardFullscreenProvider>
+        <ProjectLevelWorkItemFiltersHOC
+          enableSaveView
+          entityType={EIssuesStoreType.CYCLE}
+          entityId={cycleId}
+          filtersToShowByLayout={filtersToShowByLayout}
+          initialWorkItemFilters={workItemFilters}
+          updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId, cycleId)}
+          projectId={projectId}
+          workspaceSlug={workspaceSlug}
+          pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
+        >
+          {({ filter: cycleWorkItemsFilter }) => (
+            <>
+              <TransferIssuesModal
+                handleClose={() => setTransferIssuesModal(false)}
+                cycleId={cycleId}
+                isOpen={transferIssuesModal}
+              />
+              <BoardFullscreenShell>
+                {cycleStatus === "completed" && (
+                  <TransferIssues
+                    handleClick={() => setTransferIssuesModal(true)}
+                    canTransferIssues={canTransferIssues}
+                    disabled={!isEmpty(cycleDetails?.progress_snapshot)}
+                  />
+                )}
+                {cycleWorkItemsFilter && (
+                  <WorkItemFiltersRow
+                    filter={cycleWorkItemsFilter}
+                    leadingControls={
+                      isPinnedFilterLayout ? (
+                        <WorkItemPinnedFilters filter={cycleWorkItemsFilter} projectId={projectId} />
+                      ) : undefined
+                    }
+                    suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
+                    trackerElements={{
+                      saveView: PROJECT_VIEW_TRACKER_ELEMENTS.CYCLE_HEADER_SAVE_AS_VIEW_BUTTON,
+                    }}
+                  />
+                )}
+                <div className="h-full w-full overflow-auto">
+                  <CycleIssueLayout activeLayout={activeLayout} cycleId={cycleId} isCompletedCycle={isCompletedCycle} />
+                </div>
+                <IssuePeekOverview />
+              </BoardFullscreenShell>
+            </>
+          )}
+        </ProjectLevelWorkItemFiltersHOC>
+      </BoardFullscreenProvider>
     </IssuesStoreContext.Provider>
   );
 });

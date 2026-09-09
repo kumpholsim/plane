@@ -11,7 +11,7 @@ import { observer } from "mobx-react";
 import { useTranslation } from "@plane/i18n";
 import { StartDatePropertyIcon, DueDatePropertyIcon } from "@plane/propel/icons";
 import type { IIssueDisplayProperties, TIssue } from "@plane/types";
-import { EIssuesStoreType } from "@plane/types";
+import { EIssuesStoreType, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 import { getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from "@plane/utils";
 // components
 import { CycleDropdown } from "@/components/dropdowns/cycle";
@@ -20,6 +20,7 @@ import { DateRangeDropdown } from "@/components/dropdowns/date-range";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { filterStateIdsForL4 } from "@/components/issues/hierarchy-status";
 import {
   canEditCycle,
   getHierarchyLevel,
@@ -30,6 +31,7 @@ import { WithDisplayPropertiesHOC } from "@/components/issues/issue-layouts/prop
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
+import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import { useProjectState } from "@/hooks/store/use-project-state";
 
 type Props = {
@@ -57,8 +59,9 @@ const handleEventPropagation = (e: SyntheticEvent<HTMLDivElement>) => {
 export const SubIssuesListItemProperties = observer(function SubIssuesListItemProperties(props: Props) {
   const { workspaceSlug, parentIssueId, issueId, canEdit, updateSubIssue, displayProperties, issue } = props;
   const { t } = useTranslation();
-  const { getStateById } = useProjectState();
+  const { getStateById, getProjectStateIds } = useProjectState();
   const { getProjectById } = useProject();
+  const { getCategoryById } = useProjectHierarchyType();
   const {
     issue: { getIssueById },
   } = useIssueDetail();
@@ -95,6 +98,12 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
 
   const projectDetails = issue.project_id ? getProjectById(issue.project_id) : undefined;
   const hierarchyLevel = getHierarchyLevel(issue);
+  const hierarchyType = getCategoryById(issue.hierarchy_type_id ?? "");
+  const isL4 = hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
+  const projectStateIds = getProjectStateIds(issue.project_id ?? undefined) ?? [];
+  const eligibleStateIds = isL4
+    ? filterStateIdsForL4(projectStateIds, getStateById, hierarchyType?.name)
+    : projectStateIds;
   const parentIssue = issue.parent_id ? getIssueById(issue.parent_id) : undefined;
   // L3 uses its own cycle; L4 inherits from parent when missing
   const cycleId = canEditCycle(hierarchyLevel)
@@ -143,6 +152,7 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
             buttonClassName="hover:bg-transparent px-0"
             iconSize="size-5"
             showTooltip
+            stateIds={isL4 ? eligibleStateIds : undefined}
           />
         </div>
       </WithDisplayPropertiesHOC>

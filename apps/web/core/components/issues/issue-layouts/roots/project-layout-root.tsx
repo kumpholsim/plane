@@ -21,6 +21,8 @@ import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/f
 import { WorkItemPinnedFilters } from "@/components/work-item-filters/pinned-filters";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
 // hooks
+import { BoardFullscreenProvider } from "@/components/issues/issue-layouts/kanban/board-fullscreen-context";
+import { BoardFullscreenShell } from "@/components/issues/issue-layouts/kanban/board-fullscreen-shell";
 import { useIssues } from "@/hooks/store/use-issues";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 // local imports
@@ -82,47 +84,48 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
   if (!workspaceSlug || !projectId || !workItemFilters) return <></>;
   return (
     <IssuesStoreContext.Provider value={EIssuesStoreType.PROJECT}>
-      <ProjectLevelWorkItemFiltersHOC
-        enableSaveView
-        entityType={EIssuesStoreType.PROJECT}
-        entityId={projectId}
-        filtersToShowByLayout={filtersToShowByLayout}
-        initialWorkItemFilters={workItemFilters}
-        updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId)}
-        projectId={projectId}
-        workspaceSlug={workspaceSlug}
-        pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
-      >
-        {({ filter: projectWorkItemsFilter }) => (
-          <div className="relative flex h-full w-full flex-col overflow-hidden">
-            {projectWorkItemsFilter && (
-              <WorkItemFiltersRow
-                filter={projectWorkItemsFilter}
-                leadingControls={
-                  isPinnedFilterLayout ? (
-                    <WorkItemPinnedFilters filter={projectWorkItemsFilter} projectId={projectId} />
-                  ) : undefined
-                }
-                suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
-                trackerElements={{
-                  saveView: PROJECT_VIEW_TRACKER_ELEMENTS.PROJECT_HEADER_SAVE_AS_VIEW_BUTTON,
-                }}
-              />
-            )}
-            <div className="relative h-full w-full overflow-auto bg-surface-1">
-              {/* mutation loader */}
-              {issues?.getIssueLoader() === "mutation" && (
-                <div className="shadow-sm fixed top-[70px] right-[20px] z-50 flex h-[40px] w-[40px] items-center justify-center rounded-sm bg-layer-1">
-                  <Spinner className="h-4 w-4" />
-                </div>
+      <BoardFullscreenProvider>
+        <ProjectLevelWorkItemFiltersHOC
+          enableSaveView
+          entityType={EIssuesStoreType.PROJECT}
+          entityId={projectId}
+          filtersToShowByLayout={filtersToShowByLayout}
+          initialWorkItemFilters={workItemFilters}
+          updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId)}
+          projectId={projectId}
+          workspaceSlug={workspaceSlug}
+          pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
+        >
+          {({ filter: projectWorkItemsFilter }) => (
+            <BoardFullscreenShell>
+              {projectWorkItemsFilter && (
+                <WorkItemFiltersRow
+                  filter={projectWorkItemsFilter}
+                  leadingControls={
+                    isPinnedFilterLayout ? (
+                      <WorkItemPinnedFilters filter={projectWorkItemsFilter} projectId={projectId} />
+                    ) : undefined
+                  }
+                  suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
+                  trackerElements={{
+                    saveView: PROJECT_VIEW_TRACKER_ELEMENTS.PROJECT_HEADER_SAVE_AS_VIEW_BUTTON,
+                  }}
+                />
               )}
-              <ProjectIssueLayout activeLayout={activeLayout} />
-            </div>
-            {/* peek overview */}
-            <IssuePeekOverview />
-          </div>
-        )}
-      </ProjectLevelWorkItemFiltersHOC>
+              <div className="relative h-full w-full overflow-auto bg-surface-1">
+                {/* mutation loader */}
+                {issues?.getIssueLoader() === "mutation" && (
+                  <div className="shadow-sm fixed top-[70px] right-[20px] z-50 flex h-[40px] w-[40px] items-center justify-center rounded-sm bg-layer-1">
+                    <Spinner className="h-4 w-4" />
+                  </div>
+                )}
+                <ProjectIssueLayout activeLayout={activeLayout} />
+              </div>
+              <IssuePeekOverview />
+            </BoardFullscreenShell>
+          )}
+        </ProjectLevelWorkItemFiltersHOC>
+      </BoardFullscreenProvider>
     </IssuesStoreContext.Provider>
   );
 });

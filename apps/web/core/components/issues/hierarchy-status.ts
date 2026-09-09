@@ -77,13 +77,16 @@ export const isFullyDoneL3ForCycleHighlight = (
 };
 
 export const L3_TERMINAL_DONE_STATUSES = ["design_done_no_dev", "dev_done_no_qa", "qa_done"] as const;
-export const L3_TERMINAL_DONE_COLOR = "#16A34A";
 
+/** Dot / accent color: always the phase color (design / dev / qa). */
 export const getL3ProgressStatusColor = (
   progressStatus: string | null | undefined,
   phaseColors: Record<string, string>
 ): string => {
-  if (isL3DoneProgressStatus(progressStatus)) return L3_TERMINAL_DONE_COLOR;
   const option = L3_PROGRESS_STATUS_OPTIONS.find((item) => item.value === progressStatus);
   return option ? (phaseColors[option.phase] ?? "var(--text-color-tertiary)") : "var(--text-color-tertiary)";
 };
+
+/** Soft green row background only for the three terminal done statuses. */
+export const getL3ProgressStatusOptionClassName = (progressStatus: string | null | undefined): string =>
+  isL3DoneProgressStatus(progressStatus) ? "bg-success-subtle" : "";

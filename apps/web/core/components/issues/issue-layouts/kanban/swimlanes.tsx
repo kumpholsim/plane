@@ -18,10 +18,14 @@ import type {
   TIssueKanbanFilters,
   TIssueGroupByOptions,
   TIssueOrderByOptions,
+  TDeliveryProgressStatus,
 } from "@plane/types";
+import { HIERARCHY_LEVEL_DELIVERY } from "@plane/types";
 import { Row } from "@plane/ui";
+import { cn } from "@plane/utils";
 // hooks
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { ProgressStatusDropdown } from "@/components/dropdowns/progress-status";
 import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
 // plane web imports
 import { useWorkFlowFDragNDrop } from "@/components/workflow";
@@ -182,24 +186,61 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
           const issueCount = getGroupIssueCount(undefined, _list.id, true) ?? 0;
           const subGroupByVisibilityToggle = visibilitySubGroupBy(_list, issueCount);
           if (subGroupByVisibilityToggle.showGroup === false) return <></>;
+
+          const l3Issue = issuesMap[_list.id];
+          const isL3Swimlane =
+            !!l3Issue &&
+            _list.id !== "None" &&
+            Number(l3Issue.hierarchy_level ?? HIERARCHY_LEVEL_DELIVERY) === HIERARCHY_LEVEL_DELIVERY;
+          const canEditL3 = isL3Swimlane && canEditProperties(l3Issue.project_id ?? undefined);
+
+          const handleL3ProgressChange = async (value: TDeliveryProgressStatus) => {
+            if (!updateIssue || !l3Issue?.project_id) return;
+            await updateIssue(l3Issue.project_id, l3Issue.id, { progress_status: value });
+          };
+
           return (
             <div key={_list.id} className="flex flex-shrink-0 flex-col">
               <div className="sticky top-[50px] z-[3] flex w-full items-center border-y-[0.5px] border-subtle bg-layer-1 py-1">
-                <Row className="sticky left-0 flex-shrink-0">
-                  <HeaderSubGroupByCard
-                    column_id={_list.id}
-                    icon={_list.icon}
-                    title={_list.name}
-                    count={issueCount}
-                    collapsedGroups={collapsedGroups}
-                    handleCollapsedGroups={handleCollapsedGroups}
-                    sub_group_by={sub_group_by}
-                    className={
-                      isFullyDoneL3ForCycleHighlight(issuesMap[_list.id] ?? { id: _list.id }, issuesMap)
-                        ? "rounded-md bg-success-subtle px-1.5"
-                        : undefined
-                    }
-                  />
+                <Row className="sticky left-0 flex min-w-0 items-center">
+                  <div
+                    className={cn(
+                      "flex max-w-2xl min-w-0 items-center gap-2",
+                      isFullyDoneL3ForCycleHighlight(l3Issue ?? { id: _list.id }, issuesMap) &&
+                        "rounded-md bg-success-subtle px-1.5 py-0.5"
+                    )}
+                  >
+                    <HeaderSubGroupByCard
+                      column_id={_list.id}
+                      icon={_list.icon}
+                      title={_list.name}
+                      count={issueCount}
+                      collapsedGroups={collapsedGroups}
+                      handleCollapsedGroups={handleCollapsedGroups}
+                      sub_group_by={sub_group_by}
+                    />
+                    {isL3Swimlane && (
+                      // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
+                      <div
+                        className="h-5 w-auto shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        <ProgressStatusDropdown
+                          value={l3Issue.progress_status}
+                          onChange={handleL3ProgressChange}
+                          projectId={l3Issue.project_id}
+                          disabled={!canEditL3}
+                          buttonVariant="border-with-text"
+                          buttonContainerClassName="truncate max-w-48"
+                          className="h-5 max-w-48"
+                          showTooltip
+                        />
+                      </div>
+                    )}
+                  </div>
                 </Row>
               </div>
 

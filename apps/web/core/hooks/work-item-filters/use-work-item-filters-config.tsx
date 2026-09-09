@@ -36,6 +36,7 @@ import type {
 } from "@plane/types";
 import { Avatar } from "@plane/ui";
 import {
+  cn,
   getAssigneeFilterConfig,
   getCreatedAtFilterConfig,
   getCreatedByFilterConfig,
@@ -67,7 +68,7 @@ import { useProjectState } from "@/hooks/store/use-project-state";
 import { useFiltersOperatorConfigs } from "@/hooks/rich-filters/use-filters-operator-configs";
 import { store } from "@/lib/store-context";
 import { IssueService } from "@/services/issue";
-import { getL3ProgressStatusColor } from "@/components/issues/hierarchy-status";
+import { isL3DoneProgressStatus } from "@/components/issues/hierarchy-status";
 import { L3_PROGRESS_PHASE_FALLBACK_COLORS, L3_PROGRESS_STATUS_OPTIONS } from "@plane/constants";
 
 const issueService = new IssueService();
@@ -242,10 +243,17 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         options: L3_PROGRESS_STATUS_OPTIONS.map((option) => ({
           value: option.value,
           label: option.label,
-          color: getL3ProgressStatusColor(option.value, progressPhaseColors),
+          color: progressPhaseColors[option.phase],
         })),
         getOptionIcon: (option) => (
-          <span className="flex size-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: option.color }} />
+          <span
+            className={cn(
+              "flex size-5 items-center justify-center rounded",
+              isL3DoneProgressStatus(option.value) ? "bg-success-subtle" : undefined
+            )}
+          >
+            <span className="size-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: option.color }} />
+          </span>
         ),
         ...operatorConfigs,
       }),

@@ -29,7 +29,7 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
     <div
       className={cn(
-        "relative flex w-full flex-shrink-0 cursor-pointer flex-row items-center gap-1 rounded-xs py-1.5",
+        "relative flex max-w-md min-w-0 flex-shrink cursor-pointer flex-row items-center gap-1 rounded-xs py-1.5",
         className
       )}
       onClick={() => handleCollapsedGroups("sub_group_by", column_id)}
@@ -46,9 +46,9 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
         {icon ? icon : <Circle width={14} strokeWidth={2} />}
       </div>
 
-      <div className="flex flex-shrink-0 items-center gap-1 text-13">
-        <div className="line-clamp-1 text-primary">{title}</div>
-        <div className="pl-2 text-13 font-medium text-tertiary">{count || 0}</div>
+      <div className="flex min-w-0 items-center gap-1 text-13">
+        <div className="truncate text-primary">{title}</div>
+        <div className="shrink-0 pl-2 text-13 font-medium text-tertiary">{count || 0}</div>
       </div>
     </div>
   );
