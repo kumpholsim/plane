@@ -21,4 +21,10 @@ export const getProjectFormValues = (): Partial<IProject> => ({
   name: "",
   network: 2,
   project_lead: null,
+  // Enable core project features by default (feature selection step shows these on)
+  cycle_view: true,
+  module_view: true,
+  issue_views_view: true,
+  page_view: true,
+  inbox_view: true,
 });

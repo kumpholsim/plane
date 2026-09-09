@@ -260,7 +260,12 @@ class ProjectViewSet(BaseViewSet):
     def create(self, request, slug):
         workspace = Workspace.objects.get(slug=slug)
 
-        serializer = ProjectSerializer(data={**request.data}, context={"workspace_id": workspace.id})
+        # Frontend sends inbox_view; model field is intake_view
+        create_data = {**request.data}
+        if "inbox_view" in create_data and "intake_view" not in create_data:
+            create_data["intake_view"] = create_data.pop("inbox_view")
+
+        serializer = ProjectSerializer(data=create_data, context={"workspace_id": workspace.id})
         if serializer.is_valid():
             serializer.save()
 
@@ -304,6 +309,16 @@ class ProjectViewSet(BaseViewSet):
             ensure_default_project_estimate(
                 serializer.instance, created_by=request.user
             )
+
+            # Default Intake when intake is enabled (on by default for new projects)
+            if serializer.instance.intake_view:
+                intake = Intake.objects.filter(project=serializer.instance, is_default=True).first()
+                if not intake:
+                    Intake.objects.create(
+                        name=f"{serializer.instance.name} Intake",
+                        project=serializer.instance,
+                        is_default=True,
+                    )
 
             project = self.get_queryset().filter(pk=serializer.data["id"]).first()
 

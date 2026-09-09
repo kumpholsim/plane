@@ -78,7 +78,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         href: `/${slug}/projects/${id}/issues`,
         icon: WorkItemsIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: true,
+        shouldRender: false,
         sortOrder: 1,
       },
       {
@@ -138,7 +138,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         href: `/${slug}/projects/${id}/hierarchy`,
         icon: LayersIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: true,
+        shouldRender: false,
         sortOrder: 7,
       },
     ],

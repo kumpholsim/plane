@@ -257,7 +257,8 @@ export const WorkItemPinnedFilters = observer(function WorkItemPinnedFilters(pro
             buttonVariant="transparent-with-text"
             buttonContainerClassName="h-full min-w-[7rem]"
             buttonClassName="h-full px-0 text-13 font-regular text-secondary hover:bg-transparent"
-            optionsClassName="z-20"
+            // Above board fullscreen shell (z-[25]) so the menu stays usable when zoomed in
+            optionsClassName="z-[100]"
           />
         </FilterChipShell>
       </div>

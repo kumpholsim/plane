@@ -162,8 +162,8 @@ class IssueFilterSet(BaseFilterSet):
     state_id = filters.UUIDFilter(field_name="state_id")
     state_id__in = UUIDInFilter(field_name="state_id", lookup_expr="in")
 
-    progress_status = filters.CharFilter(field_name="progress_status")
-    progress_status__in = CharInFilter(field_name="progress_status", lookup_expr="in")
+    progress_status = filters.CharFilter(method="filter_progress_status")
+    progress_status__in = CharInFilter(method="filter_progress_status_in", lookup_expr="in")
 
     project_id = filters.UUIDFilter(field_name="project_id")
     project_id__in = UUIDInFilter(field_name="project_id", lookup_expr="in")
@@ -216,17 +216,81 @@ class IssueFilterSet(BaseFilterSet):
     # Filter methods with soft delete exclusion for relations
 
     def filter_assignee_id(self, queryset, name, value):
-        """Filter by assignee ID, excluding soft deleted users"""
-        return Q(
-            issue_assignee__assignee_id=value,
-            issue_assignee__deleted_at__isnull=True,
+        """Filter by assignee ID, excluding soft deleted users.
+
+        L3 (delivery) matches only when an L4 child has the assignee — not when the
+        L3 itself is assigned. Other levels match on their own assignees.
+        """
+        from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
+
+        l3_with_assigned_l4 = Issue.issue_objects.filter(
+            hierarchy_level=HIERARCHY_LEVEL_DELIVERY,
+            parent_issue__hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+            parent_issue__deleted_at__isnull=True,
+            parent_issue__issue_assignee__assignee_id=value,
+            parent_issue__issue_assignee__deleted_at__isnull=True,
+        ).values("id")
+        return Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY, id__in=l3_with_assigned_l4) | (
+            ~Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY)
+            & Q(
+                issue_assignee__assignee_id=value,
+                issue_assignee__deleted_at__isnull=True,
+            )
         )
 
     def filter_assignee_id_in(self, queryset, name, value):
-        """Filter by assignee IDs (in), excluding soft deleted users"""
-        return Q(
-            issue_assignee__assignee_id__in=value,
-            issue_assignee__deleted_at__isnull=True,
+        """Filter by assignee IDs (in), excluding soft deleted users.
+
+        Same L3-via-L4 rule as filter_assignee_id.
+        """
+        from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
+
+        l3_with_assigned_l4 = Issue.issue_objects.filter(
+            hierarchy_level=HIERARCHY_LEVEL_DELIVERY,
+            parent_issue__hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+            parent_issue__deleted_at__isnull=True,
+            parent_issue__issue_assignee__assignee_id__in=value,
+            parent_issue__issue_assignee__deleted_at__isnull=True,
+        ).values("id")
+        return Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY, id__in=l3_with_assigned_l4) | (
+            ~Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY)
+            & Q(
+                issue_assignee__assignee_id__in=value,
+                issue_assignee__deleted_at__isnull=True,
+            )
+        )
+
+    def filter_progress_status(self, queryset, name, value):
+        """Filter by L3 progress status.
+
+        Matches delivery (L3) items with that status, and includes their L4 children
+        so board swimlanes still have cards under matching stories.
+        """
+        from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
+
+        matching_l3 = Issue.issue_objects.filter(
+            hierarchy_level=HIERARCHY_LEVEL_DELIVERY,
+            progress_status=value,
+        ).values("id")
+        return Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY, progress_status=value) | Q(
+            hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+            parent_id__in=matching_l3,
+        )
+
+    def filter_progress_status_in(self, queryset, name, value):
+        """Filter by L3 progress statuses (in).
+
+        Same L3-match + include L4 children rule as filter_progress_status.
+        """
+        from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
+
+        matching_l3 = Issue.issue_objects.filter(
+            hierarchy_level=HIERARCHY_LEVEL_DELIVERY,
+            progress_status__in=value,
+        ).values("id")
+        return Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY, progress_status__in=value) | Q(
+            hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+            parent_id__in=matching_l3,
         )
 
     def filter_cycle_id(self, queryset, name, value):

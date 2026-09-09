@@ -120,6 +120,8 @@ type TGetGroupByColumns = {
   projectId?: string;
   /** When true and groupBy is module, build L3 delivery-parent swimlanes (not Epic columns) */
   asSubGroup?: boolean;
+  /** Limit delivery-parent swimlanes to parents of these issue ids (current board/list payload) */
+  issueIds?: string[];
 };
 
 // NOTE: Type of groupBy is different compared to what's being passed from the components.
@@ -132,6 +134,7 @@ export const getGroupByColumns = ({
   isEpic = false,
   projectId,
   asSubGroup = false,
+  issueIds,
 }: TGetGroupByColumns): IGroupByColumn[] | undefined => {
   // If no groupBy is specified and includeNone is true, return "All Issues" group
   if (!groupBy && includeNone) {
@@ -155,7 +158,7 @@ export const getGroupByColumns = ({
   > = {
     project: getProjectColumns,
     cycle: getCycleColumns,
-    module: asSubGroup ? getDeliveryParentColumns : getModuleColumns,
+    module: asSubGroup ? () => getDeliveryParentColumns({ issueIds }) : getModuleColumns,
     state: getStateColumns,
     "state_detail.group": getStateGroupColumns,
     priority: getPriorityColumns,
@@ -286,14 +289,15 @@ const getModuleColumns = (): IGroupByColumn[] | undefined => {
 };
 
 /** Board swimlanes when sub-grouped by module: L3 delivery items as row containers, L4 in state columns */
-const getDeliveryParentColumns = (): IGroupByColumn[] | undefined => {
+const getDeliveryParentColumns = (options?: { issueIds?: string[] }): IGroupByColumn[] | undefined => {
   const { currentProjectDetails } = store.projectRoot.project;
   if (!currentProjectDetails?.id) return;
   const { issuesMap } = store.issue.issues;
   const projectId = currentProjectDetails.id;
   const deliveryIds = new Set<string>();
+  const scopedIssueIds = options?.issueIds;
 
-  Object.values(issuesMap).forEach((issue) => {
+  const considerIssue = (issue: TIssue | undefined) => {
     if (!issue || issue.project_id !== projectId) return;
     const level = getHierarchyLevel(issue);
     if (level === 4 && issue.parent_id) {
@@ -304,7 +308,15 @@ const getDeliveryParentColumns = (): IGroupByColumn[] | undefined => {
     if (level === 4 && issue.module_ids?.[0]) {
       deliveryIds.add(issue.module_ids[0]);
     }
-  });
+  };
+
+  if (scopedIssueIds && scopedIssueIds.length > 0) {
+    scopedIssueIds.forEach((issueId) => considerIssue(issuesMap[issueId]));
+  } else {
+    // Without a scoped payload, do not invent swimlanes from the global issue cache —
+    // that surfaces L3 rows that aren't part of the current filtered board/list.
+    return [];
+  }
 
   const columns: IGroupByColumn[] = [];
   deliveryIds.forEach((deliveryId) => {
@@ -317,7 +329,8 @@ const getDeliveryParentColumns = (): IGroupByColumn[] | undefined => {
     });
   });
 
-  const hasUngroupedL4 = Object.values(issuesMap).some((issue) => {
+  const hasUngroupedL4 = scopedIssueIds.some((issueId) => {
+    const issue = issuesMap[issueId];
     if (!issue || issue.project_id !== projectId) return false;
     if (getHierarchyLevel(issue) !== 4) return false;
     return !issue.parent_id && !issue.module_ids?.[0];
@@ -331,6 +344,24 @@ const getDeliveryParentColumns = (): IGroupByColumn[] | undefined => {
     });
   }
   return columns;
+};
+
+/** Flatten grouped / sub-grouped issue id maps into a single list for swimlane scoping */
+export const collectGroupedIssueIds = (groupedIssueIds: TGroupedIssues | undefined): string[] => {
+  if (!groupedIssueIds) return [];
+  const ids: string[] = [];
+  Object.values(groupedIssueIds).forEach((value) => {
+    if (Array.isArray(value)) {
+      ids.push(...value);
+      return;
+    }
+    if (value && typeof value === "object") {
+      Object.values(value).forEach((inner) => {
+        if (Array.isArray(inner)) ids.push(...inner);
+      });
+    }
+  });
+  return ids;
 };
 
 const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefined => {

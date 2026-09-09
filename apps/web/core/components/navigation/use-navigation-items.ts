@@ -40,7 +40,7 @@ export const useNavigationItems = ({
         href: `/${workspaceSlug}/projects/${projectId}/issues`,
         icon: WorkItemsIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: true,
+        shouldRender: false,
         sortOrder: 1,
       },
       {
@@ -100,7 +100,7 @@ export const useNavigationItems = ({
         href: `/${workspaceSlug}/projects/${projectId}/hierarchy`,
         icon: LayersIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: true,
+        shouldRender: false,
         sortOrder: 7,
       },
     ],

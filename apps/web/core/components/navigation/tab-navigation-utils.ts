@@ -12,7 +12,7 @@ export type TTabPreferences = {
 
 // Constants
 export const TAB_PREFS_KEY = "plane_tab_prefs";
-export const DEFAULT_TAB_KEY = "work_items";
+export const DEFAULT_TAB_KEY = "cycles";
 
 /**
  * Get tab preferences for a specific project from localStorage
@@ -75,7 +75,7 @@ export const getTabUrl = (workspaceSlug: string, projectId: string, tabKey: stri
     overview: `${baseUrl}/overview`,
     epics: `${baseUrl}/epics`,
   };
-  return tabUrlMap[tabKey] || `${baseUrl}/issues`; // fallback to issues
+  return tabUrlMap[tabKey] || `${baseUrl}/cycles`; // fallback to cycles
 };
 
 /**
@@ -112,6 +112,6 @@ export const getValidatedDefaultTab = (projectId: string, availableTabKeys: stri
     return defaultTab;
   }
 
-  // Fall back to work_items
+  // Fall back to cycles (work items tab is hidden)
   return DEFAULT_TAB_KEY;
 };

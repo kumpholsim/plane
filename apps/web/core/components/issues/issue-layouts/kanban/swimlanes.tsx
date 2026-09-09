@@ -32,7 +32,7 @@ import { useWorkFlowFDragNDrop } from "@/components/workflow";
 // local imports
 import type { TRenderQuickActions } from "../list/list-view-types";
 import type { GroupDropLocation } from "../utils";
-import { getGroupByColumns, isWorkspaceLevel } from "../utils";
+import { collectGroupedIssueIds, getGroupByColumns, isWorkspaceLevel } from "../utils";
 import { KanBan } from "./default";
 import { HeaderGroupByCard } from "./headers/group-by-card";
 import { HeaderSubGroupByCard } from "./headers/sub-group-by-card";
@@ -343,12 +343,14 @@ export const KanBanSwimLanes = observer(function KanBanSwimLanes(props: IKanBanS
     isWorkspaceLevel: isWorkspaceLevel(storeType),
     isEpic: isEpic,
   });
+  const scopedIssueIds = collectGroupedIssueIds(groupedIssueIds as TGroupedIssues);
   const subGroupByList = getGroupByColumns({
     groupBy: sub_group_by as GroupByColumnTypes,
     includeNone: true,
     isWorkspaceLevel: isWorkspaceLevel(storeType),
     isEpic: isEpic,
     asSubGroup: true,
+    issueIds: scopedIssueIds,
   });
 
   if (!groupByList || !subGroupByList) return null;
