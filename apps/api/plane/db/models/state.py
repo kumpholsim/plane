@@ -20,8 +20,54 @@ class StateGroup(models.TextChoices):
     TRIAGE = "triage", "Triage"
 
 
-# Default states — L4 board columns only (6) + Triage
-DEFAULT_STATES = [
+WORKFLOW_MODE_SCRUM = "scrum"
+WORKFLOW_MODE_STAGED_GATE_SCRUMBAN = "staged_gate_scrumban"
+
+
+# Classic Plane defaults (baseline 5f7d92784c)
+DEFAULT_STATES_SCRUM = [
+    {
+        "name": "Backlog",
+        "color": "#60646C",
+        "sequence": 15000,
+        "group": StateGroup.BACKLOG.value,
+        "default": True,
+    },
+    {
+        "name": "Todo",
+        "color": "#60646C",
+        "sequence": 25000,
+        "group": StateGroup.UNSTARTED.value,
+    },
+    {
+        "name": "In Progress",
+        "color": "#F59E0B",
+        "sequence": 35000,
+        "group": StateGroup.STARTED.value,
+    },
+    {
+        "name": "Done",
+        "color": "#46A758",
+        "sequence": 45000,
+        "group": StateGroup.COMPLETED.value,
+    },
+    {
+        "name": "Cancelled",
+        "color": "#9AA4BC",
+        "sequence": 55000,
+        "group": StateGroup.CANCELLED.value,
+    },
+    {
+        "name": "Triage",
+        "color": "#4E5355",
+        "sequence": 65000,
+        "group": StateGroup.TRIAGE.value,
+    },
+]
+
+
+# Staged-gate Scrumban — L4 board columns + Triage
+DEFAULT_STATES_STAGED_GATE_SCRUMBAN = [
     {
         "name": "To Do",
         "color": "#60646C",
@@ -72,6 +118,16 @@ DEFAULT_STATES = [
         "group": StateGroup.TRIAGE.value,
     },
 ]
+
+
+# Backward-compatible alias — prefer default_states_for_workflow_mode()
+DEFAULT_STATES = DEFAULT_STATES_SCRUM
+
+
+def default_states_for_workflow_mode(workflow_mode: str | None):
+    if workflow_mode == WORKFLOW_MODE_STAGED_GATE_SCRUMBAN:
+        return DEFAULT_STATES_STAGED_GATE_SCRUMBAN
+    return DEFAULT_STATES_SCRUM
 
 
 class StateManager(SoftDeletionManager):

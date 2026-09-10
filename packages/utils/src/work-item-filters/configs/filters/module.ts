@@ -11,33 +11,32 @@ import { EQUALITY_OPERATOR, COLLECTION_OPERATOR } from "@plane/types";
 import type { TCreateFilterConfigParams, IFilterIconConfig, TCreateFilterConfig } from "../../../rich-filters";
 import { createFilterConfig, getMultiSelectConfig, createOperatorConfigEntry } from "../../../rich-filters";
 
-/** Minimal epic shape for the (legacy module_id) filter options. */
+/** Minimal option shape for the ``module_id`` filter — a module on classic, an epic on Scrumban. */
 export type TEpicFilterOption = {
   id: string;
   name: string;
 };
 
 /**
- * Epic filter specific params (property key remains ``module_id`` for saved views).
+ * Module filter specific params. Scrumban reuses the ``module_id`` property key for epics.
  */
 export type TCreateModuleFilterParams = TCreateFilterConfigParams &
   IFilterIconConfig<undefined> & {
-    /** @deprecated Use `epics` — kept for call-site compatibility during rename. */
     modules?: TEpicFilterOption[];
-    epics?: TEpicFilterOption[];
+    /** Defaults to the stock "Module" label; Scrumban passes "Epic". */
+    label?: string;
   };
 
 /**
- * Helper to get the epic multi select config
+ * Helper to get the module multi select config
  */
-export const getModuleMultiSelectConfig = (params: TCreateModuleFilterParams) => {
-  const epics = params.epics ?? params.modules ?? [];
-  return getMultiSelectConfig<TEpicFilterOption, string, undefined>(
+export const getModuleMultiSelectConfig = (params: TCreateModuleFilterParams) =>
+  getMultiSelectConfig<TEpicFilterOption, string, undefined>(
     {
-      items: epics,
-      getId: (epic) => epic.id,
-      getLabel: (epic) => epic.name,
-      getValue: (epic) => epic.id,
+      items: params.modules ?? [],
+      getId: (moduleOption) => moduleOption.id,
+      getLabel: (moduleOption) => moduleOption.name,
+      getValue: (moduleOption) => moduleOption.id,
       getIconData: () => undefined,
     },
     {
@@ -48,18 +47,17 @@ export const getModuleMultiSelectConfig = (params: TCreateModuleFilterParams) =>
       ...params,
     }
   );
-};
 
 /**
- * Get the epic filter config (UI label "Epic"; property key still module_id).
+ * Get the module filter config. Scrumban overrides the label with "Epic".
  */
 export const getModuleFilterConfig =
   <P extends TFilterProperty>(key: P): TCreateFilterConfig<P, TCreateModuleFilterParams> =>
   (params: TCreateModuleFilterParams) =>
     createFilterConfig<P>({
       id: key,
-      label: "Epic",
       ...params,
+      label: params.label ?? "Module",
       icon: params.filterIcon,
       supportedOperatorConfigsMap: new Map([
         createOperatorConfigEntry(COLLECTION_OPERATOR.IN, params, (updatedParams) =>

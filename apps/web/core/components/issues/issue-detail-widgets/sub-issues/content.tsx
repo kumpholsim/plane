@@ -15,6 +15,7 @@ import { DeleteIssueModal } from "@/components/issues/delete-issue-modal";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useSubWorkItemCategory } from "@/hooks/store/use-sub-work-item-category";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // local imports
 import { CreateUpdateIssueModal } from "../../issue-modal/modal";
 import { canAddSubTasks, childCreateLabelKey, getChildHierarchyLevel, getHierarchyLevel, getIssueDepth } from "./depth";
@@ -74,14 +75,17 @@ export const SubIssuesCollapsibleContent = observer(function SubIssuesCollapsibl
     subIssues: { subIssueHelpersByIssueId, setSubIssueHelpers },
   } = useIssueDetail(issueServiceType);
   const { getCategoryById } = useSubWorkItemCategory();
+  // Classic adds sub-items from the widget action bar; Scrumban adds them inline with a hierarchy type
+  const isStagedGateScrumban = useIsStagedGateScrumban(projectId);
 
   // helpers
   const subIssueOperations = useSubIssueOperations(issueServiceType);
+  const subIssueHelpers = subIssueHelpersByIssueId(`${parentIssueId}_root`);
   const parentIssue = getIssueById(parentIssueId);
   const parentDepth = getIssueDepth(parentIssue, getIssueById);
   const parentLevel = getHierarchyLevel(parentIssue);
   const childLevel = getChildHierarchyLevel(parentIssue);
-  const allowAddSubTasks = !disabled && canAddSubTasks(parentDepth, parentLevel);
+  const allowAddSubTasks = isStagedGateScrumban && !disabled && canAddSubTasks(parentDepth, parentLevel);
 
   // handler
   const handleIssueCrudState = useCallback(
@@ -171,18 +175,20 @@ export const SubIssuesCollapsibleContent = observer(function SubIssuesCollapsibl
 
   return (
     <>
-      <SubIssuesListRoot
-        storeType={EIssuesStoreType.PROJECT}
-        workspaceSlug={workspaceSlug}
-        projectId={projectId}
-        parentIssueId={parentIssueId}
-        rootIssueId={parentIssueId}
-        spacingLeft={6}
-        canEdit={!disabled}
-        handleIssueCrudState={handleIssueCrudState}
-        subIssueOperations={subIssueOperations}
-        issueServiceType={issueServiceType}
-      />
+      {(isStagedGateScrumban || subIssueHelpers.issue_visibility.includes(parentIssueId)) && (
+        <SubIssuesListRoot
+          storeType={EIssuesStoreType.PROJECT}
+          workspaceSlug={workspaceSlug}
+          projectId={projectId}
+          parentIssueId={parentIssueId}
+          rootIssueId={parentIssueId}
+          spacingLeft={6}
+          canEdit={!disabled}
+          handleIssueCrudState={handleIssueCrudState}
+          subIssueOperations={subIssueOperations}
+          issueServiceType={issueServiceType}
+        />
+      )}
 
       {/* Bottom Add sub-task — quiet list-style affordance, not a solid button */}
       {allowAddSubTasks &&

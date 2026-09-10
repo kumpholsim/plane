@@ -38,6 +38,24 @@ export enum EIssueFilterType {
   KANBAN_FILTERS = "kanban_filters",
 }
 
+/** Stock Plane display filters applied when a project has no saved preferences. */
+export const CLASSIC_DEFAULT_DISPLAY_FILTERS = {
+  group_by: null,
+  order_by: "-created_at" as const,
+  layout: "list" as const,
+  sub_issue: true,
+  show_empty_groups: true,
+};
+
+/** Staged-gate Scrumban opens on the locked Epic list view. */
+export const SCRUMBAN_DEFAULT_DISPLAY_FILTERS = {
+  group_by: "module" as const,
+  order_by: "sort_order" as const,
+  layout: "list" as const,
+  sub_issue: false,
+  show_empty_groups: false,
+};
+
 /**
  * List layout view is locked — Epic grouping, manual order, no nested sub-tasks / empty groups.
  * Other layouts keep their own display settings; list always resolves to these.

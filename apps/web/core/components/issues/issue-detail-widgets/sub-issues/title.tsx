@@ -12,6 +12,7 @@ import { EIssueServiceType } from "@plane/types";
 import { CircularProgressIndicator, CollapsibleButton } from "@plane/ui";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import { SubWorkItemTitleActions } from "./title-actions";
 import { childrenSectionTitleKey, getHierarchyLevel } from "./depth";
 
@@ -33,13 +34,23 @@ export const SubIssuesCollapsibleTitle = observer(function SubIssuesCollapsibleT
     issue: { getIssueById },
     subIssues: { subIssuesByIssueId, stateDistributionByIssueId },
   } = useIssueDetail(issueServiceType);
-  // derived values — always render header, even with zero sub-tasks
+  const isStagedGateScrumban = useIsStagedGateScrumban(projectId);
+  // derived values
   const subIssuesDistribution = stateDistributionByIssueId(parentIssueId);
-  const subIssues = subIssuesByIssueId(parentIssueId) ?? [];
+  const storedSubIssues = subIssuesByIssueId(parentIssueId);
   const parentIssue = getIssueById(parentIssueId);
   const parentLevel = getHierarchyLevel(parentIssue);
   const isEpicService = issueServiceType === EIssueServiceType.EPICS;
-  const titleKey = childrenSectionTitleKey(parentLevel, isEpicService);
+
+  // Scrumban always renders the header so sub-tasks can be added; classic hides it until one exists
+  if (!isStagedGateScrumban && !storedSubIssues) return null;
+
+  const subIssues = storedSubIssues ?? [];
+  const title = isStagedGateScrumban
+    ? t(childrenSectionTitleKey(parentLevel, isEpicService), { count: 2 })
+    : isEpicService
+      ? t("issue.label", { count: 1 })
+      : t("common.sub_work_items");
 
   // calculate percentage of completed sub-issues
   const completedCount = subIssuesDistribution?.completed?.length ?? 0;
@@ -49,7 +60,7 @@ export const SubIssuesCollapsibleTitle = observer(function SubIssuesCollapsibleT
   return (
     <CollapsibleButton
       isOpen={isOpen}
-      title={`${t(titleKey, { count: 2 })}`}
+      title={title}
       indicatorElement={
         <div className="flex items-center gap-1.5 text-13 text-tertiary">
           <CircularProgressIndicator size={18} percentage={percentage} strokeWidth={3} />

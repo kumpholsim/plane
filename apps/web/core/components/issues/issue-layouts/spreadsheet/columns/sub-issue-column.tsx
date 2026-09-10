@@ -14,6 +14,7 @@ import { Row } from "@plane/ui";
 import { cn } from "@plane/utils";
 // hooks
 import { useAppRouter } from "@/hooks/use-app-router";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 
 type Props = {
   issue: TIssue;
@@ -25,6 +26,7 @@ export const SpreadsheetSubIssueColumn = observer(function SpreadsheetSubIssueCo
   const router = useAppRouter();
   // hooks
   const { workspaceSlug } = useParams();
+  const isStagedGateScrumban = useIsStagedGateScrumban(issue.project_id);
   // derived values
   const isEpic = issue?.is_epic;
   const subIssueCount = issue?.sub_issues_count ?? 0;
@@ -35,7 +37,8 @@ export const SpreadsheetSubIssueColumn = observer(function SpreadsheetSubIssueCo
     );
   };
 
-  const label = `${subIssueCount} sub-task${subIssueCount !== 1 ? "s" : ""}`;
+  const unit = isStagedGateScrumban ? "sub-task" : "sub-work item";
+  const label = `${subIssueCount} ${unit}${subIssueCount !== 1 ? "s" : ""}`;
 
   return (
     <Row

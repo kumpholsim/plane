@@ -43,11 +43,11 @@ class ProjectHierarchyTypeViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def list(self, request, *args, **kwargs):
-        # Backfill defaults for older projects that never received seeded types
+        # Seed defaults only for Staged-gate Scrumban — never backfill classic Scrum projects.
         project = Project.objects.filter(
             id=self.kwargs.get("project_id"), workspace__slug=self.kwargs.get("slug")
         ).first()
-        if project is not None:
+        if project is not None and project.workflow_mode == "staged_gate_scrumban":
             ensure_default_project_hierarchy_types(project, created_by=request.user)
         return super().list(request, *args, **kwargs)
 

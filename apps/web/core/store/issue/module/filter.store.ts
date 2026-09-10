@@ -9,7 +9,7 @@ import { action, computed, makeObservable, observable, runInAction } from "mobx"
 // base class
 import { computedFn } from "mobx-utils";
 import type { TSupportedFilterTypeForUpdate } from "@plane/constants";
-import { EIssueFilterType } from "@plane/constants";
+import { EIssueFilterType, isStagedGateScrumbanMode } from "@plane/constants";
 import type {
   IIssueDisplayFilterOptions,
   IIssueDisplayProperties,
@@ -116,10 +116,12 @@ export class ModuleIssuesFilter extends IssueFilterHelperStore implements IModul
 
     if (filteredParams.includes("module")) filteredParams.splice(filteredParams.indexOf("module"), 1);
 
+    const projectId = this.rootIssueStore.projectId;
     const filteredRouteParams: Partial<Record<TIssueParams, string | boolean>> = this.computedFilteredParams(
       userFilters?.richFilters,
       userFilters?.displayFilters,
-      filteredParams
+      filteredParams,
+      isStagedGateScrumbanMode(projectId ? this.rootIssueStore.projectMap?.[projectId]?.workflow_mode : undefined)
     );
 
     return filteredRouteParams;
@@ -223,9 +225,12 @@ export class ModuleIssuesFilter extends IssueFilterHelperStore implements IModul
         case EIssueFilterType.DISPLAY_FILTERS: {
           const updatedDisplayFilters = { ...(filters as IIssueDisplayFilterOptions) };
           const nextLayout = updatedDisplayFilters.layout ?? _filters.displayFilters.layout;
+          const locksStructuralFilters = isStagedGateScrumbanMode(
+            this.rootIssueStore.projectMap?.[projectId]?.workflow_mode
+          );
 
-          // List / board layouts are locked — don't persist view tweaks into shared display filters
-          if (nextLayout === "list" || nextLayout === "kanban") {
+          // Scrumban locks list / board structure — don't persist view tweaks into shared display filters
+          if (locksStructuralFilters && (nextLayout === "list" || nextLayout === "kanban")) {
             const layoutOnlyUpdate = Object.keys(updatedDisplayFilters).every((key) => key === "layout");
             if (!layoutOnlyUpdate) {
               delete updatedDisplayFilters.group_by;

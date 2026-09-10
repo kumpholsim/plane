@@ -16,6 +16,9 @@ export enum EUserProjectRoles {
   GUEST = 5,
 }
 
+/** scrum = classic Plane; staged_gate_scrumban = L1–L4 hierarchy product */
+export type TProjectWorkflowMode = "scrum" | "staged_gate_scrumban";
+
 export interface IPartialProject {
   id: string;
   name: string;
@@ -33,6 +36,8 @@ export interface IPartialProject {
   guest_view_all_features?: boolean;
   project_lead?: IUserLite | string | null;
   network?: number;
+  /** scrum = classic Plane; staged_gate_scrumban = hierarchy product */
+  workflow_mode?: TProjectWorkflowMode;
   // Timestamps
   created_at?: Date;
   updated_at?: Date;

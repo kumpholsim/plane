@@ -17,7 +17,7 @@ import { useOutsideClickDetector } from "@plane/hooks";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TIssue, IIssueDisplayProperties, IIssueMap } from "@plane/types";
-import { EIssueServiceType, EIssuesStoreType } from "@plane/types";
+import { EIssueServiceType, EIssuesStoreType, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 // ui
 import { ControlLink, DropIndicator } from "@plane/ui";
 import { cn, generateWorkItemLink } from "@plane/utils";
@@ -29,6 +29,7 @@ import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-st
 import { HIGHLIGHT_CLASS, getIssueBlockId } from "@/components/issues/issue-layouts/utils";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
+import { getHierarchyLevel } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useEstimate } from "@/hooks/store/estimates/use-estimate";
@@ -38,6 +39,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-redirection";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import { useTranslation } from "@plane/i18n";
 // local components
 import type { TRenderQuickActions } from "../list/list-view-types";
@@ -181,7 +183,9 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
   const [isMenuActive, setIsMenuActive] = useState(false);
   // hooks
   const { isMobile } = usePlatformOS();
-  const showCardFooter = Boolean(displayProperties?.assignee || displayProperties?.estimate);
+  const isStagedGateScrumban = useIsStagedGateScrumban(issue.project_id);
+  // Scrumban pins assignee/estimate to the card footer instead of the properties row
+  const showCardFooter = isStagedGateScrumban && Boolean(displayProperties?.assignee || displayProperties?.estimate);
 
   const customActionButton = (
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
@@ -206,7 +210,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
 
   return (
     <div className={cn("relative", showCardFooter ? "pb-6" : undefined)}>
-      <div className={cn("relative flex items-center gap-1.5")}>
+      <div className={cn("relative", isStagedGateScrumban && "flex items-center gap-1.5")}>
         {issue.project_id && (
           <IssueIdentifier
             issueId={issue.id}
@@ -216,7 +220,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
             displayProperties={displayProperties}
           />
         )}
-        <HierarchyTypeBadge issue={issue} disabled={isReadOnly} updateIssue={updateIssue} />
+        {isStagedGateScrumban && <HierarchyTypeBadge issue={issue} disabled={isReadOnly} updateIssue={updateIssue} />}
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
         <div
           className={cn("absolute -top-1 right-0", {
@@ -234,8 +238,19 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
       </div>
 
       <Tooltip tooltipContent={issue.name} isMobile={isMobile} renderByDefault={false}>
-        <div className="line-clamp-1 w-full text-body-sm-medium text-primary">
-          <span>{issue.name}</span>
+        <div
+          className={cn(
+            "w-full text-body-sm-medium text-primary",
+            isStagedGateScrumban && getHierarchyLevel(issue) === HIERARCHY_LEVEL_SUB_TASK
+              ? "py-3 leading-5 break-words whitespace-normal"
+              : "line-clamp-1"
+          )}
+        >
+          <span>
+            {isStagedGateScrumban && getHierarchyLevel(issue) === HIERARCHY_LEVEL_SUB_TASK && issue.name.length > 100
+              ? `${issue.name.slice(0, 100)}…`
+              : issue.name}
+          </span>
         </div>
       </Tooltip>
 
@@ -252,12 +267,14 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
         isEpic={isEpic}
       />
 
-      <KanbanCardFooter
-        issue={issue}
-        displayProperties={displayProperties}
-        updateIssue={updateIssue}
-        isReadOnly={isReadOnly}
-      />
+      {showCardFooter && (
+        <KanbanCardFooter
+          issue={issue}
+          displayProperties={displayProperties}
+          updateIssue={updateIssue}
+          isReadOnly={isReadOnly}
+        />
+      )}
     </div>
   );
 });
@@ -285,7 +302,8 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
   const workspaceSlug = routerWorkspaceSlug?.toString();
   // hooks
   const storeType = useIssueStoreType();
-  const isCompact = storeType === EIssuesStoreType.CYCLE;
+  const isStagedGateScrumban = useIsStagedGateScrumban(issuesMap[issueId]?.project_id);
+  const isCompact = isStagedGateScrumban && storeType === EIssuesStoreType.CYCLE;
   const { getProjectIdentifierById } = useProject();
   const { getIsIssuePeeked } = useIssueDetail(isEpic ? EIssueServiceType.EPICS : EIssueServiceType.ISSUES);
   const { handleRedirection } = useIssuePeekOverviewRedirection(isEpic);
@@ -365,12 +383,12 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
   const shouldHighlightCycleDoneCard = isCompact && isFullyDoneL3ForCycleHighlight(issue, issuesMap);
 
   return (
-    <>
+    <div className={cn("min-w-0", !isStagedGateScrumban && (isCompact ? "mb-1.5" : "mb-2"))}>
       <DropIndicator isVisible={!isCurrentBlockDragging && isDraggingOverBlock} />
       <div
         id={`issue-${issueId}`}
         // make Z-index higher at the beginning of drag, to have a issue drag image of issue block without any overlaps
-        className={cn("group/kanban-block relative", isCompact ? "mb-1.5" : "mb-2", {
+        className={cn("group/kanban-block relative", {
           "z-[1]": isCurrentBlockDragging,
         })}
         onDragStart={() => {
@@ -424,6 +442,6 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
           </RenderIfVisible>
         </ControlLink>
       </div>
-    </>
+    </div>
   );
 });

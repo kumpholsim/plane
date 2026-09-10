@@ -147,10 +147,63 @@ def is_qa_hierarchy_type(hierarchy_type) -> bool:
     return str(getattr(hierarchy_type, "name", "")).strip().lower() == "qa"
 
 
+def is_dev_hierarchy_type(hierarchy_type) -> bool:
+    if hierarchy_type is None:
+        return False
+    return str(getattr(hierarchy_type, "name", "")).strip().lower() == "dev"
+
+
+def is_dev_or_qa_hierarchy_type(hierarchy_type) -> bool:
+    return is_dev_hierarchy_type(hierarchy_type) or is_qa_hierarchy_type(hierarchy_type)
+
+
 def is_design_or_dev_hierarchy_type(hierarchy_type) -> bool:
     if hierarchy_type is None:
         return False
     return str(getattr(hierarchy_type, "name", "")).strip().lower() in {"design", "dev"}
+
+
+def todo_board_key_for_l4(hierarchy_type) -> str:
+    """Dev uses Design/Dev To Do; QA uses QA To Do."""
+    if is_qa_hierarchy_type(hierarchy_type):
+        return BOARD_STATE_QA_TODO
+    return BOARD_STATE_DESIGN_DEV_TODO
+
+
+L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE = (
+    "Add an assignee and estimate before moving this sub-task out of To Do."
+)
+
+
+def l4_leave_todo_requirement_error(
+    *,
+    hierarchy_level,
+    hierarchy_type,
+    current_state,
+    next_state,
+    has_assignee: bool,
+    has_estimate: bool,
+) -> str | None:
+    """
+    Dev/QA L4 cards cannot leave their To Do column without both assignee and estimate.
+    Returns an error message when blocked, otherwise None.
+    """
+    if hierarchy_level != 4 or not is_dev_or_qa_hierarchy_type(hierarchy_type):
+        return None
+    if current_state is None or next_state is None:
+        return None
+
+    todo_key = todo_board_key_for_l4(hierarchy_type)
+    current_key = board_state_key(getattr(current_state, "external_id", None))
+    next_key = board_state_key(getattr(next_state, "external_id", None))
+
+    if current_key != todo_key:
+        return None
+    if next_key == todo_key or getattr(current_state, "id", None) == getattr(next_state, "id", None):
+        return None
+    if has_assignee and has_estimate:
+        return None
+    return L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE
 
 
 def allowed_board_keys_for_l4(hierarchy_type) -> tuple[str, ...]:

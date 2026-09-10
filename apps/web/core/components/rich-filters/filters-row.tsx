@@ -98,6 +98,10 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
         ...buttonConfig,
         isDisabled: disabledAllOperations,
       }}
+      onFilterSelect={() => {
+        // Ensure newly added criteria chips are visible (pinned bar can show + while extras are collapsed)
+        filter.toggleVisibility(true);
+      }}
     />
   );
 
@@ -145,11 +149,11 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
         {pinnedConditions.map((condition) => (
           <FilterItem key={condition.id} filter={filter} condition={condition} isDisabled={disabledAllOperations} />
         ))}
-        {showExtraFilters &&
+        {(showExtraFilters || otherConditions.length > 0) &&
           otherConditions.map((condition) => (
             <FilterItem key={condition.id} filter={filter} condition={condition} isDisabled={disabledAllOperations} />
           ))}
-        {(showPinnedChips || showExtraFilters) && addFilterButton}
+        {(showPinnedChips || showExtraFilters || otherConditions.length > 0) && addFilterButton}
       </div>
       {(showExtraFilters || showPinnedChips) && (
         <div

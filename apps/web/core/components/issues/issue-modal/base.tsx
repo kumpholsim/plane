@@ -24,6 +24,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { useIssuesActions } from "@/hooks/use-issues-actions";
 // components
+import { isStagedGateScrumbanMode } from "@plane/constants";
 import { canEditCycle } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // services
 import { FileService } from "@/services/file.service";
@@ -78,13 +79,17 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   const { issues: draftIssues } = useIssues(EIssuesStoreType.WORKSPACE_DRAFT);
   const { fetchIssue } = useIssueDetail();
   const { allowedProjectIds, handleCreateUpdatePropertyValues, handleCreateSubWorkItem } = useIssueModal();
-  const { getProjectByIdentifier } = useProject();
+  const { getProjectByIdentifier, getProjectById } = useProject();
   // current store details
   const { createIssue, updateIssue } = useIssuesActions(storeType);
   // derived values
   const routerProjectIdentifier = workItem?.toString().split("-")[0];
   const projectIdFromRouter = getProjectByIdentifier(routerProjectIdentifier)?.id;
   const projectId = data?.project_id ?? routerProjectId?.toString() ?? projectIdFromRouter;
+  // Cycle is restricted to delivery-level work items in Scrumban only
+  const isStagedGateScrumban = isStagedGateScrumbanMode(projectId ? getProjectById(projectId)?.workflow_mode : null);
+  const canAssignCycle = (level: number | string | null | undefined) =>
+    !isStagedGateScrumban || canEditCycle(level == null ? level : Number(level));
 
   const fetchIssueDetail = async (issueId: string | undefined) => {
     setDescription(undefined);
@@ -203,7 +208,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       // check if we should add issue to cycle/module
       if (!is_draft_issue) {
         if (
-          canEditCycle(payload.hierarchy_level ?? response.hierarchy_level) &&
+          canAssignCycle(payload.hierarchy_level ?? response.hierarchy_level) &&
           payload.cycle_id &&
           payload.cycle_id !== "" &&
           (payload.cycle_id !== cycleId || storeType !== EIssuesStoreType.CYCLE)
@@ -267,7 +272,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   const handleCycleChange = async (issueData: Partial<TIssue> | undefined, payload: Partial<TIssue>) => {
     if (!workspaceSlug || !issueData?.project_id || !issueData?.id) return;
     // Only delivery (L3) work items can change cycle; L4 inherits from parent
-    if (!canEditCycle(payload.hierarchy_level ?? issueData.hierarchy_level)) return;
+    if (!canAssignCycle(payload.hierarchy_level ?? issueData.hierarchy_level)) return;
     // return if user is not trying to change the cycle, i.e
     // - cycle_id is not present in payload
     // - cycle_id is the same as the current cycle id

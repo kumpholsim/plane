@@ -8,13 +8,17 @@ import pytest
 
 from plane.utils.hierarchy_status import (
     BOARD_STATE_DONE,
+    BOARD_STATE_DESIGN_DEV_TODO,
     BOARD_STATE_EXTERNAL_PREFIX,
+    BOARD_STATE_QA_TODO,
+    L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE,
     PROGRESS_DESIGN_DONE_NO_DEV,
     PROGRESS_DESIGN_TODO,
     PROGRESS_DEV_DONE_NO_QA,
     PROGRESS_QA_DONE,
     is_story_fully_done,
     issue_ids_to_transfer_from_cycle,
+    l4_leave_todo_requirement_error,
 )
 
 
@@ -104,3 +108,86 @@ def test_transfer_skips_fully_done_l3(monkeypatch):
     assert "l4-done" not in result
     assert "l3-open" in result
     assert "l4-open" in result
+
+
+@pytest.mark.unit
+def test_dev_and_qa_cannot_leave_todo_without_assignee_and_estimate():
+    todo = _state(BOARD_STATE_DESIGN_DEV_TODO, group="unstarted", name="To Do")
+    in_progress = _state("design_dev_in_progress", group="started", name="In Progress")
+    qa_todo = _state(BOARD_STATE_QA_TODO, group="started", name="QA To Do")
+    qa_in_progress = _state("qa_in_progress", group="started", name="QA In Progress")
+    dev_type = SimpleNamespace(name="Dev")
+    qa_type = SimpleNamespace(name="QA")
+    design_type = SimpleNamespace(name="Design")
+
+    # Dev blocked without assignee/estimate
+    assert (
+        l4_leave_todo_requirement_error(
+            hierarchy_level=4,
+            hierarchy_type=dev_type,
+            current_state=todo,
+            next_state=in_progress,
+            has_assignee=False,
+            has_estimate=False,
+        )
+        == L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE
+    )
+    assert (
+        l4_leave_todo_requirement_error(
+            hierarchy_level=4,
+            hierarchy_type=dev_type,
+            current_state=todo,
+            next_state=in_progress,
+            has_assignee=True,
+            has_estimate=False,
+        )
+        == L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE
+    )
+    # Dev allowed when both set
+    assert (
+        l4_leave_todo_requirement_error(
+            hierarchy_level=4,
+            hierarchy_type=dev_type,
+            current_state=todo,
+            next_state=in_progress,
+            has_assignee=True,
+            has_estimate=True,
+        )
+        is None
+    )
+    # QA blocked without both
+    assert (
+        l4_leave_todo_requirement_error(
+            hierarchy_level=4,
+            hierarchy_type=qa_type,
+            current_state=qa_todo,
+            next_state=qa_in_progress,
+            has_assignee=False,
+            has_estimate=True,
+        )
+        == L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE
+    )
+    # Design is not gated
+    assert (
+        l4_leave_todo_requirement_error(
+            hierarchy_level=4,
+            hierarchy_type=design_type,
+            current_state=todo,
+            next_state=in_progress,
+            has_assignee=False,
+            has_estimate=False,
+        )
+        is None
+    )
+    # Already out of To Do — no gate
+    assert (
+        l4_leave_todo_requirement_error(
+            hierarchy_level=4,
+            hierarchy_type=dev_type,
+            current_state=in_progress,
+            next_state=_state(BOARD_STATE_DONE, group="completed", name="Done"),
+            has_assignee=False,
+            has_estimate=False,
+        )
+        is None
+    )

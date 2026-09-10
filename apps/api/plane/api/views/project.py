@@ -29,7 +29,7 @@ from plane.db.models import (
     DeployBoard,
     ProjectMember,
     State,
-    DEFAULT_STATES,
+    default_states_for_workflow_mode,
     ensure_default_project_estimate,
     ensure_default_project_hierarchy_types,
     Workspace,
@@ -270,16 +270,17 @@ class ProjectListCreateAPIEndpoint(BaseAPIView):
                                 is_triage=state["group"] == "triage",
                                 created_by=request.user,
                             )
-                            for state in DEFAULT_STATES
+                            for state in default_states_for_workflow_mode(serializer.instance.workflow_mode)
                         ]
                     )
 
-                    ensure_default_project_hierarchy_types(
-                        serializer.instance, created_by=request.user
-                    )
-                    ensure_default_project_estimate(
-                        serializer.instance, created_by=request.user
-                    )
+                    if serializer.instance.workflow_mode == "staged_gate_scrumban":
+                        ensure_default_project_hierarchy_types(
+                            serializer.instance, created_by=request.user
+                        )
+                        ensure_default_project_estimate(
+                            serializer.instance, created_by=request.user
+                        )
 
                     project = self.get_queryset().filter(pk=serializer.instance.id).first()
 

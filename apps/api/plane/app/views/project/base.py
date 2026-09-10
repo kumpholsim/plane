@@ -35,7 +35,7 @@ from plane.db.models import (
     ProjectNetwork,
     ProjectUserProperty,
     State,
-    DEFAULT_STATES,
+    default_states_for_workflow_mode,
     ensure_default_project_estimate,
     ensure_default_project_hierarchy_types,
     Workspace,
@@ -299,18 +299,20 @@ class ProjectViewSet(BaseViewSet):
                         is_triage=state["group"] == "triage",
                         created_by=request.user,
                     )
-                    for state in DEFAULT_STATES
+                    for state in default_states_for_workflow_mode(serializer.instance.workflow_mode)
                 ]
             )
 
-            ensure_default_project_hierarchy_types(
-                serializer.instance, created_by=request.user
-            )
-            ensure_default_project_estimate(
-                serializer.instance, created_by=request.user
-            )
+            # Hierarchy catalog + Linear estimate are Scrumban-only create seeds.
+            if serializer.instance.workflow_mode == "staged_gate_scrumban":
+                ensure_default_project_hierarchy_types(
+                    serializer.instance, created_by=request.user
+                )
+                ensure_default_project_estimate(
+                    serializer.instance, created_by=request.user
+                )
 
-            # Default Intake when intake is enabled (on by default for new projects)
+            # Default Intake when intake is enabled
             if serializer.instance.intake_view:
                 intake = Intake.objects.filter(project=serializer.instance, is_default=True).first()
                 if not intake:

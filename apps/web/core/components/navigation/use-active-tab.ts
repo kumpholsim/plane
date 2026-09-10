@@ -8,6 +8,7 @@ import { useCallback, useMemo } from "react";
 import type { TIssue } from "@plane/types";
 import type { TNavigationItem } from "@/components/navigation/tab-navigation-root";
 import { isEpicWorkItem, isModulesTabWorkItem } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 
 type UseActiveTabProps = {
   navigationItems: TNavigationItem[];
@@ -18,14 +19,16 @@ type UseActiveTabProps = {
 };
 
 export const useActiveTab = ({ navigationItems, pathname, workItemId, workItem, projectId }: UseActiveTabProps) => {
+  // Only Scrumban routes milestones and epics through the Modules tab
+  const isStagedGateScrumban = useIsStagedGateScrumban(projectId);
   // Check if a navigation item is active
   const isActive = useCallback(
     (item: TNavigationItem) => {
       const belongsToProject = Boolean(workItemId && workItem && workItem.project_id === projectId);
-      const isModulesItem = belongsToProject && isModulesTabWorkItem(workItem);
+      const isModulesItem = isStagedGateScrumban && belongsToProject && isModulesTabWorkItem(workItem);
       const isEpicItem = belongsToProject && isEpicWorkItem(workItem);
       // Delivery / sub-task detail → Work items; Milestone / Epic → Modules (or Epics if present)
-      const isWorkItemActive = item.key === "work_items" && belongsToProject && !isModulesItem;
+      const isWorkItemActive = item.key === "work_items" && belongsToProject && !isModulesItem && !isEpicItem;
       const isEpicActive = item.key === "epics" && isEpicItem;
       const isModuleActive = item.key === "modules" && isModulesItem;
       // Pathname condition - use exact match or startsWith for better accuracy
@@ -33,7 +36,7 @@ export const useActiveTab = ({ navigationItems, pathname, workItemId, workItem, 
       // Return
       return isWorkItemActive || isEpicActive || isModuleActive || isPathnameActive;
     },
-    [pathname, workItem, workItemId, projectId]
+    [isStagedGateScrumban, pathname, workItem, workItemId, projectId]
   );
 
   // Find active item

@@ -124,7 +124,7 @@ export const ISSUE_GROUP_BY_OPTIONS: {
   { key: "team_project", titleTranslationKey: "common.team_project" }, // required this on team issues
   { key: "project", titleTranslationKey: "common.project" }, // required this on my issues
   { key: "cycle", titleTranslationKey: "common.cycle" }, // required this on my issues
-  { key: "module", titleTranslationKey: "common.epic" }, // group-by epic (legacy key "module")
+  { key: "module", titleTranslationKey: "common.module" },
   { key: "labels", titleTranslationKey: "common.labels" },
   { key: "assignees", titleTranslationKey: "common.assignees" },
   { key: "created_by", titleTranslationKey: "common.created_by" },
@@ -212,7 +212,7 @@ export const ISSUE_DISPLAY_PROPERTIES: {
     key: "estimate",
     titleTranslationKey: "common.estimate",
   },
-  { key: "modules", titleTranslationKey: "common.epic" },
+  { key: "modules", titleTranslationKey: "common.modules" },
   { key: "cycle", titleTranslationKey: "common.cycle" },
 ];
 

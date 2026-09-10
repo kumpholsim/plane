@@ -8,7 +8,7 @@ import React, { useCallback, useMemo } from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { EUserPermissionsLevel, EUserPermissions } from "@plane/constants";
+import { EUserPermissionsLevel, EUserPermissions, isStagedGateScrumbanMode } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { CycleIcon, IntakeIcon, LayersIcon, ModuleIcon, PageIcon, ViewsIcon, WorkItemsIcon } from "@plane/propel/icons";
 import type { EUserProjectRoles } from "@plane/types";
@@ -58,6 +58,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
     : undefined;
   const workItem = workItemId ? getIssueById(workItemId) : undefined;
   const project = getPartialProjectById(projectId);
+  const isScrumban = isStagedGateScrumbanMode(project?.workflow_mode);
   // handlers
   const handleProjectClick = () => {
     if (window.innerWidth < 768) {
@@ -78,7 +79,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         href: `/${slug}/projects/${id}/issues`,
         icon: WorkItemsIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: false,
+        shouldRender: !isScrumban,
         sortOrder: 1,
       },
       {
@@ -138,11 +139,11 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         href: `/${slug}/projects/${id}/hierarchy`,
         icon: LayersIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: false,
+        shouldRender: isScrumban,
         sortOrder: 7,
       },
     ],
-    [project]
+    [isScrumban, project]
   );
 
   // memoized navigation items and adding additional navigation items
@@ -168,15 +169,16 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
   const isActive = useCallback(
     (item: TNavigationItem) => {
       const belongsToProject = Boolean(workItemId && workItem && workItem.project_id === projectId);
-      const isModulesItem = belongsToProject && isModulesTabWorkItem(workItem);
+      // Only Scrumban routes milestones and epics through the Modules tab
+      const isModulesItem = isScrumban && belongsToProject && isModulesTabWorkItem(workItem);
       const isEpicItem = belongsToProject && isEpicWorkItem(workItem);
-      const isWorkItemActive = item.key === "work_items" && belongsToProject && !isModulesItem;
+      const isWorkItemActive = item.key === "work_items" && belongsToProject && !isModulesItem && !isEpicItem;
       const isEpicActive = item.key === "epics" && isEpicItem;
       const isModuleActive = item.key === "modules" && isModulesItem;
       const isPathnameActive = pathname.includes(item.href);
       return isWorkItemActive || isEpicActive || isModuleActive || isPathnameActive;
     },
-    [pathname, workItem, workItemId, projectId]
+    [isScrumban, pathname, workItem, workItemId, projectId]
   );
 
   if (!project) return null;

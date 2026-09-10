@@ -277,38 +277,51 @@ export const getComputedDisplayFilters = (
   displayFilters: IIssueDisplayFilterOptions = {},
   defaultValues?: IIssueDisplayFilterOptions
 ): IIssueDisplayFilterOptions => {
-  // Prefer saved filters; fall back to provided defaults (e.g. cycle list Epic + Manual)
-  const filters = {
-    ...defaultValues,
-    ...(!isEmpty(displayFilters) ? displayFilters : {}),
-  };
+  const filters = !isEmpty(displayFilters) ? displayFilters : defaultValues;
   return {
     calendar: {
-      show_weekends: filters?.calendar?.show_weekends ?? false,
-      layout: filters?.calendar?.layout ?? "month",
+      show_weekends: filters?.calendar?.show_weekends || false,
+      layout: filters?.calendar?.layout || "month",
     },
-    layout: filters?.layout ?? EIssueLayoutTypes.LIST,
-    order_by: filters?.order_by ?? "sort_order",
-    group_by: filters?.group_by ?? null,
-    sub_group_by: filters?.sub_group_by ?? null,
-    sub_issue: filters?.sub_issue ?? false,
-    show_empty_groups: filters?.show_empty_groups ?? false,
+    layout: filters?.layout || EIssueLayoutTypes.LIST,
+    order_by: filters?.order_by || "sort_order",
+    group_by: filters?.group_by || null,
+    sub_group_by: filters?.sub_group_by || null,
+    sub_issue: filters?.sub_issue || false,
+    show_empty_groups: filters?.show_empty_groups || false,
   };
 };
 
 /**
- * List / board layouts use fixed structural display settings.
- * Other layouts keep stored display filters as-is.
+ * List / board layouts use fixed structural display settings when Scrumban locks are on.
+ * Classic (default) keeps stored display filters as-is.
  */
 export const resolveDisplayFiltersForLayout = (
-  displayFilters: IIssueDisplayFilterOptions | undefined
+  displayFilters: IIssueDisplayFilterOptions | undefined,
+  options?: { lockStructuralFilters?: boolean }
 ): IIssueDisplayFilterOptions => {
+  const lockStructuralFilters = options?.lockStructuralFilters ?? false;
+
   if (!displayFilters) {
+    if (!lockStructuralFilters) {
+      return {
+        layout: EIssueLayoutTypes.LIST,
+        group_by: null,
+        order_by: "-created_at",
+        sub_issue: true,
+        show_empty_groups: true,
+      };
+    }
     return {
       ...LOCKED_LIST_LAYOUT_DISPLAY_FILTERS,
       layout: EIssueLayoutTypes.LIST,
     };
   }
+
+  if (!lockStructuralFilters) {
+    return displayFilters;
+  }
+
   if (displayFilters.layout === EIssueLayoutTypes.LIST || displayFilters.layout === "list") {
     return {
       ...displayFilters,
@@ -326,10 +339,12 @@ export const resolveDisplayFiltersForLayout = (
 
 /**
  * Whether L4 / sub-tasks should appear in the current view.
- * Board layout always includes L4 (see LOCKED_BOARD_LAYOUT_DISPLAY_FILTERS).
+ * Pass `lockStructuralFilters` on Scrumban so board uses LOCKED_BOARD (sub_issue: true).
  */
-export const areSubIssuesIncludedInView = (displayFilters: IIssueDisplayFilterOptions | undefined): boolean =>
-  resolveDisplayFiltersForLayout(displayFilters)?.sub_issue ?? false;
+export const areSubIssuesIncludedInView = (
+  displayFilters: IIssueDisplayFilterOptions | undefined,
+  options?: { lockStructuralFilters?: boolean }
+): boolean => resolveDisplayFiltersForLayout(displayFilters, options)?.sub_issue ?? false;
 
 /**
  * @description This method is used to apply the display properties on the issues

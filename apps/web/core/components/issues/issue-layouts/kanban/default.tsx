@@ -26,12 +26,14 @@ import { KanbanColumnLoader } from "@/components/ui/loader/layouts/kanban-layout
 // hooks
 import { useKanbanView } from "@/hooks/store/use-kanban-view";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // types
 // parent components
 import { useWorkFlowFDragNDrop } from "@/components/workflow";
 import type { TRenderQuickActions } from "../list/list-view-types";
 import type { GroupDropLocation } from "../utils";
 import { getGroupByColumns, isWorkspaceLevel, getApproximateCardHeight } from "../utils";
+import { CLASSIC_KANBAN_COLUMN_CLASS, SCRUMBAN_KANBAN_COLUMN_CLASS } from "./scrumban-board-layout";
 // components
 import { HeaderGroupByCard } from "./headers/group-by-card";
 import { KanbanGroup } from "./kanban-group";
@@ -101,6 +103,8 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
   // store hooks
   const storeType = useIssueStoreType();
   const issueKanBanView = useKanbanView();
+  // Scrumban packs more columns on screen for the staged-gate board
+  const isStagedGateScrumban = useIsStagedGateScrumban();
   // derived values
   const isDragDisabled = !issueKanBanView?.getCanUserDragDrop(group_by, sub_group_by);
 
@@ -144,7 +148,7 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
   const isSubGroup = !!sub_group_id && sub_group_id !== "null";
 
   return (
-    <ContentWrapper className={`relative flex-row gap-4 !pt-2 !pb-0`}>
+    <ContentWrapper className={`relative w-full flex-row gap-4 !pt-2 !pb-0`}>
       {list &&
         list.length > 0 &&
         list.map((subList: IGroupByColumn, groupIndex) => {
@@ -161,8 +165,12 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
           return (
             <div
               key={subList.id}
-              className={`group relative flex flex-shrink-0 flex-col ${
-                groupByVisibilityToggle.showIssues ? `w-[228px]` : ``
+              className={`group relative flex flex-col ${
+                groupByVisibilityToggle.showIssues
+                  ? isStagedGateScrumban
+                    ? SCRUMBAN_KANBAN_COLUMN_CLASS
+                    : CLASSIC_KANBAN_COLUMN_CLASS
+                  : ``
               } `}
             >
               {sub_group_by === null && (

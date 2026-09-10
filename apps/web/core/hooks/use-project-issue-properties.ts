@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import { isStagedGateScrumbanMode } from "@plane/constants";
 import type { TIssue, TIssuesResponse } from "@plane/types";
 import { store } from "@/lib/store-context";
 import { IssueService } from "@/services/issue";
@@ -11,6 +12,8 @@ import { useProjectEstimates } from "./store/estimates";
 import { useCycle } from "./store/use-cycle";
 import { useLabel } from "./store/use-label";
 import { useMember } from "./store/use-member";
+import { useModule } from "./store/use-module";
+import { useProject } from "./store/use-project";
 import { useProjectHierarchyType } from "./store/use-project-hierarchy-type";
 import { useProjectState } from "./store/use-project-state";
 
@@ -36,6 +39,8 @@ export const useProjectIssueProperties = () => {
   } = useMember();
   const { fetchProjectLabels } = useLabel();
   const { fetchAllCycles: fetchProjectAllCycles } = useCycle();
+  const { fetchModules: fetchProjectAllModules } = useModule();
+  const { getProjectById } = useProject();
   const { getProjectEstimates } = useProjectEstimates();
   const { fetchProjectTypes, fetchedMap } = useProjectHierarchyType();
 
@@ -76,22 +81,27 @@ export const useProjectIssueProperties = () => {
       await fetchProjectAllCycles(workspaceSlug.toString(), projectId.toString());
     }
   };
-  // fetching project epics (L2) into the shared issues map for filters / group-by
+  // fetching project modules — Scrumban instead loads L2 epics into the shared issues map
   const fetchModules = async (
     workspaceSlug: string | string[] | undefined,
     projectId: string | string[] | undefined
   ) => {
-    if (workspaceSlug && projectId) {
-      try {
-        const response = await issueService.getIssues(workspaceSlug.toString(), projectId.toString(), {
-          hierarchy_level: "2",
-          sub_issue: true,
-          per_page: 100,
-        });
-        store.issue.issues.addIssue(normalizeIssueList(response as TIssuesResponse));
-      } catch {
-        // ignore — filters will show empty epic options
-      }
+    if (!workspaceSlug || !projectId) return;
+
+    if (!isStagedGateScrumbanMode(getProjectById(projectId.toString())?.workflow_mode)) {
+      await fetchProjectAllModules(workspaceSlug.toString(), projectId.toString());
+      return;
+    }
+
+    try {
+      const response = await issueService.getIssues(workspaceSlug.toString(), projectId.toString(), {
+        hierarchy_level: "2",
+        sub_issue: true,
+        per_page: "100",
+      });
+      store.issue.issues.addIssue(normalizeIssueList(response as TIssuesResponse));
+    } catch {
+      // ignore — filters will show empty epic options
     }
   };
   // fetching project estimates

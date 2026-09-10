@@ -20,8 +20,8 @@ import { ContentWrapper, CustomMenu, DragHandle, DropIndicator, Loader } from "@
 import { cn, generateWorkItemLink } from "@plane/utils";
 import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 import { isEpicWorkItem } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
+import { CreateUpdateEpicModal } from "@/components/modules/modal";
 import { CreateUpdateMilestoneModal } from "@/components/modules/milestone-modal";
-import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import { useUserPermissions } from "@/hooks/store/user";
@@ -30,6 +30,8 @@ import { IssueService } from "@/services/issue";
 
 const issueService = new IssueService();
 export const HIERARCHY_MODULES_REFRESH_EVENT = "plane:hierarchy-modules-refresh";
+export const HIERARCHY_OPEN_MILESTONE_EVENT = "plane:hierarchy-open-milestone";
+export const HIERARCHY_OPEN_EPIC_EVENT = "plane:hierarchy-open-epic";
 
 const EPIC_DND_TYPE = "HIERARCHY_EPIC";
 const EPIC_ROW_DND_TYPE = "HIERARCHY_EPIC_ROW";
@@ -388,7 +390,6 @@ function MilestoneGroupSection(props: MilestoneGroupSectionProps) {
 export const HierarchyModulesListView = observer(function HierarchyModulesListView() {
   const { workspaceSlug, projectId } = useParams() as { workspaceSlug: string; projectId: string };
   const router = useAppRouter();
-  const { toggleCreateModuleModal } = useCommandPalette();
   const { getProjectById } = useProject();
   const { fetchProjectTypes, fetchedMap, getTypeById } = useProjectHierarchyType();
   const { allowPermissions } = useUserPermissions();
@@ -397,6 +398,8 @@ export const HierarchyModulesListView = observer(function HierarchyModulesListVi
   const [milestones, setMilestones] = useState<TIssue[]>([]);
   const [loader, setLoader] = useState(true);
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
+  const [isEpicModalOpen, setIsEpicModalOpen] = useState(false);
+  const [epicMilestoneId, setEpicMilestoneId] = useState<string | null>(null);
   const [editingMilestone, setEditingMilestone] = useState<TIssue | undefined>(undefined);
   const [busyMilestoneId, setBusyMilestoneId] = useState<string | null>(null);
 
@@ -515,6 +518,22 @@ export const HierarchyModulesListView = observer(function HierarchyModulesListVi
     setEditingMilestone(undefined);
   };
 
+  const openCreateEpicModal = (milestoneId: string | null = null) => {
+    setEpicMilestoneId(milestoneId);
+    setIsEpicModalOpen(true);
+  };
+
+  useEffect(() => {
+    const onOpenMilestone = () => openCreateMilestoneModal();
+    const onOpenEpic = () => openCreateEpicModal(null);
+    window.addEventListener(HIERARCHY_OPEN_MILESTONE_EVENT, onOpenMilestone);
+    window.addEventListener(HIERARCHY_OPEN_EPIC_EVENT, onOpenEpic);
+    return () => {
+      window.removeEventListener(HIERARCHY_OPEN_MILESTONE_EVENT, onOpenMilestone);
+      window.removeEventListener(HIERARCHY_OPEN_EPIC_EVENT, onOpenEpic);
+    };
+  }, []);
+
   const handleDropEpic = useCallback(
     async ({ epicId, milestoneId, relativeToEpicId, placeBelow = false }: EpicDropArgs) => {
       if (!workspaceSlug || !projectId || !canManage) return;
@@ -608,6 +627,16 @@ export const HierarchyModulesListView = observer(function HierarchyModulesListVi
         workspaceSlug={workspaceSlug}
         projectId={projectId}
       />
+      <CreateUpdateEpicModal
+        isOpen={isEpicModalOpen}
+        onClose={() => {
+          setIsEpicModalOpen(false);
+          setEpicMilestoneId(null);
+        }}
+        workspaceSlug={workspaceSlug}
+        projectId={projectId}
+        initialMilestoneId={epicMilestoneId}
+      />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-13 text-tertiary">
           Drag epics to reorder within a group, or move them between milestones and Ungrouped.
@@ -617,7 +646,14 @@ export const HierarchyModulesListView = observer(function HierarchyModulesListVi
             <Button variant="secondary" size="sm" onClick={openCreateMilestoneModal}>
               Create milestone
             </Button>
-            <Button variant="primary" size="sm" onClick={() => toggleCreateModuleModal(true)}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setEpicMilestoneId(null);
+                setIsEpicModalOpen(true);
+              }}
+            >
               Create epic
             </Button>
           </div>
@@ -633,7 +669,14 @@ export const HierarchyModulesListView = observer(function HierarchyModulesListVi
               <Button variant="secondary" size="sm" onClick={openCreateMilestoneModal}>
                 Create milestone
               </Button>
-              <Button variant="primary" size="sm" onClick={() => toggleCreateModuleModal(true)}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setEpicMilestoneId(null);
+                  setIsEpicModalOpen(true);
+                }}
+              >
                 Create epic
               </Button>
             </div>
@@ -657,7 +700,10 @@ export const HierarchyModulesListView = observer(function HierarchyModulesListVi
                 onOpenMilestone={openIssue}
                 onEditMilestone={openEditMilestoneModal}
                 onDeleteMilestone={(m, count) => void handleDeleteMilestone(m, count)}
-                onCreateEpic={() => toggleCreateModuleModal(true)}
+                onCreateEpic={() => {
+                  setEpicMilestoneId(group.milestoneId);
+                  setIsEpicModalOpen(true);
+                }}
                 onDropEpic={(args) => void handleDropEpic(args)}
               />
             );

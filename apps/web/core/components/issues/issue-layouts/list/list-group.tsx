@@ -33,6 +33,7 @@ import { useProjectState } from "@/hooks/store/use-project-state";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import { useIssuesStore } from "@/hooks/use-issue-layout-store";
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // local imports
 import { GroupDragOverlay } from "../group-drag-overlay";
 import { ListQuickAddIssueButton, QuickAddIssueRoot } from "../quick-add";
@@ -107,13 +108,15 @@ export const ListGroup = observer(function ListGroup(props: Props) {
   const groupRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslation();
   const projectState = useProjectState();
+  const isStagedGateScrumban = useIsStagedGateScrumban();
 
   const {
     issues: { getGroupIssueCount, getPaginationData, getIssueLoader },
   } = useIssuesStore();
 
-  // Under Epic grouping: optional High Priority band for pins, then the rest (no type subsections)
-  const epicListBands = group_by === "module" ? buildEpicListBands(groupIssueIds, issuesMap) : null;
+  // Under Scrumban's Epic grouping: optional High Priority band for pins, then the rest
+  const epicListBands =
+    isStagedGateScrumban && group_by === "module" ? buildEpicListBands(groupIssueIds, issuesMap) : null;
 
   const [intersectionElement, setIntersectionElement] = useState<HTMLDivElement | null>(null);
 
@@ -169,7 +172,10 @@ export const ListGroup = observer(function ListGroup(props: Props) {
       } else if (groupByKey === "cycle" && value != "None") {
         preloadedData = { ...preloadedData, cycle_id: value };
       } else if (groupByKey === "module" && value != "None") {
-        preloadedData = { ...preloadedData, parent_id: value };
+        // Scrumban's module groups are epics, so new items are parented rather than added to a module
+        preloadedData = isStagedGateScrumban
+          ? { ...preloadedData, parent_id: value }
+          : { ...preloadedData, module_ids: [value] };
       } else if (groupByKey === "created_by") {
         preloadedData = { ...preloadedData };
       } else {

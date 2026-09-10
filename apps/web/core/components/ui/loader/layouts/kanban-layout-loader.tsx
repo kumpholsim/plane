@@ -12,13 +12,15 @@ import { ContentWrapper } from "@plane/ui";
 // plane utils
 import { cn } from "@plane/utils";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 
 export const KanbanIssueBlockLoader = forwardRef(function KanbanIssueBlockLoader(
   { cardHeight, shouldAnimate = true }: { cardHeight?: number; shouldAnimate?: boolean },
   ref: React.ForwardedRef<HTMLSpanElement>
 ) {
   const storeType = useIssueStoreType();
-  const resolvedHeight = cardHeight ?? (storeType === EIssuesStoreType.CYCLE ? 80 : 100);
+  const isCompact = useIsStagedGateScrumban() && storeType === EIssuesStoreType.CYCLE;
+  const resolvedHeight = cardHeight ?? (isCompact ? 80 : 100);
 
   return (
     <span

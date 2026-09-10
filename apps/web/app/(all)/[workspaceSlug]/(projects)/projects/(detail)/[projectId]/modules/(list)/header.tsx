@@ -7,7 +7,12 @@
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
-import { EUserPermissions, EUserPermissionsLevel, MODULE_TRACKER_ELEMENTS } from "@plane/constants";
+import {
+  EUserPermissions,
+  EUserPermissionsLevel,
+  MODULE_TRACKER_ELEMENTS,
+  isStagedGateScrumbanMode,
+} from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 // ui
 import { Button } from "@plane/propel/button";
@@ -16,6 +21,10 @@ import { Breadcrumbs, Header } from "@plane/ui";
 // components
 import { BreadcrumbLink } from "@/components/common/breadcrumb-link";
 import { ModuleViewHeader } from "@/components/modules";
+import {
+  HIERARCHY_OPEN_EPIC_EVENT,
+  HIERARCHY_OPEN_MILESTONE_EVENT,
+} from "@/components/modules/hierarchy-modules-list-view";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useProject } from "@/hooks/store/use-project";
@@ -32,7 +41,8 @@ export const ModulesListHeader = observer(function ModulesListHeader() {
   const { toggleCreateModuleModal } = useCommandPalette();
   const { allowPermissions } = useUserPermissions();
 
-  const { loader } = useProject();
+  const { loader, currentProjectDetails } = useProject();
+  const isScrumban = isStagedGateScrumbanMode(currentProjectDetails?.workflow_mode);
 
   const { t } = useTranslation();
 
@@ -51,7 +61,7 @@ export const ModulesListHeader = observer(function ModulesListHeader() {
             <Breadcrumbs.Item
               component={
                 <BreadcrumbLink
-                  label="Modules"
+                  label={isScrumban ? "Milestones & Epics" : "Modules"}
                   href={`/${workspaceSlug}/projects/${projectId}/modules/`}
                   icon={<ModuleIcon className="h-4 w-4 text-tertiary" />}
                   isLast
@@ -63,21 +73,44 @@ export const ModulesListHeader = observer(function ModulesListHeader() {
         </div>
       </Header.LeftItem>
       <Header.RightItem>
-        <ModuleViewHeader />
-        {canUserCreateModule ? (
-          <Button
-            variant="primary"
-            data-ph-element={MODULE_TRACKER_ELEMENTS.RIGHT_HEADER_ADD_BUTTON}
-            onClick={() => {
-              toggleCreateModuleModal(true);
-            }}
-            size="lg"
-          >
-            <div className="block sm:hidden">{t("add")}</div>
-            <div className="hidden sm:block">{t("project_module.add_module")}</div>
-          </Button>
+        {isScrumban ? (
+          canUserCreateModule ? (
+            <>
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => window.dispatchEvent(new Event(HIERARCHY_OPEN_MILESTONE_EVENT))}
+              >
+                Create milestone
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => window.dispatchEvent(new Event(HIERARCHY_OPEN_EPIC_EVENT))}
+              >
+                Create epic
+              </Button>
+            </>
+          ) : null
         ) : (
-          <></>
+          <>
+            <ModuleViewHeader />
+            {canUserCreateModule ? (
+              <Button
+                variant="primary"
+                data-ph-element={MODULE_TRACKER_ELEMENTS.RIGHT_HEADER_ADD_BUTTON}
+                onClick={() => {
+                  toggleCreateModuleModal(true);
+                }}
+                size="lg"
+              >
+                <div className="block sm:hidden">{t("add")}</div>
+                <div className="hidden sm:block">{t("project_module.add_module")}</div>
+              </Button>
+            ) : (
+              <></>
+            )}
+          </>
         )}
       </Header.RightItem>
     </Header>

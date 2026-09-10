@@ -15,9 +15,6 @@ export const DEFAULT_WORK_ITEM_FORM_VALUES: Partial<TIssue> = {
   estimate_point: null,
   state_id: "",
   parent_id: null,
-  hierarchy_type_id: null,
-  hierarchy_level: 3,
-  sub_work_item_category_id: null,
   priority: "none",
   assignee_ids: [],
   label_ids: [],
@@ -25,4 +22,11 @@ export const DEFAULT_WORK_ITEM_FORM_VALUES: Partial<TIssue> = {
   module_ids: null,
   start_date: null,
   target_date: null,
+};
+
+/** Hierarchy defaults layered on top of the stock form values for Staged-gate Scrumban projects. */
+export const STAGED_GATE_SCRUMBAN_WORK_ITEM_FORM_VALUES: Partial<TIssue> = {
+  hierarchy_type_id: null,
+  hierarchy_level: 3,
+  sub_work_item_category_id: null,
 };

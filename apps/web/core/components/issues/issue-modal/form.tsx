@@ -12,7 +12,7 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { FormProvider, useForm, Controller } from "react-hook-form";
 // editor
-import { ETabIndices, DEFAULT_WORK_ITEM_FORM_VALUES } from "@plane/constants";
+import { ETabIndices, DEFAULT_WORK_ITEM_FORM_VALUES, isStagedGateScrumbanMode } from "@plane/constants";
 import type { EditorRefApi } from "@plane/editor";
 // i18n
 import { useTranslation } from "@plane/i18n";
@@ -150,6 +150,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   } = methods;
 
   const projectId = watch("project_id");
+  // Classic Scrum has no work item hierarchy, so it never submits hierarchy fields
+  const isStagedGateScrumban = isStagedGateScrumbanMode(projectId ? getProjectById(projectId)?.workflow_mode : null);
   const activeAdditionalPropertiesLength = getActiveAdditionalPropertiesLength({
     projectId: projectId,
     workspaceSlug: workspaceSlug?.toString(),
@@ -199,9 +201,10 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, projectId]);
 
-  // Default L3 Story hierarchy type for root work items when creating
+  // Default L3 Story hierarchy type for root work items when creating (Scrumban only)
   useEffect(() => {
     if (data?.id || !projectId || !workspaceSlug) return;
+    if (!isStagedGateScrumbanMode(getProjectById(projectId)?.workflow_mode)) return;
     const existingType = watch("hierarchy_type_id");
     const parentId = watch("parent_id");
     if (existingType || parentId) return;
@@ -405,41 +408,45 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   />
                 </div>
               )}
-              <Controller
-                control={control}
-                name="hierarchy_type_id"
-                render={({ field }) => (
-                  <input
-                    type="hidden"
-                    name={field.name}
-                    ref={field.ref}
-                    onBlur={field.onBlur}
-                    value={field.value ?? ""}
-                    onChange={(e) => field.onChange(e.target.value || null)}
+              {isStagedGateScrumban && (
+                <>
+                  <Controller
+                    control={control}
+                    name="hierarchy_type_id"
+                    render={({ field }) => (
+                      <input
+                        type="hidden"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value || null)}
+                      />
+                    )}
                   />
-                )}
-              />
-              <Controller
-                control={control}
-                name="hierarchy_level"
-                render={({ field: { value, onChange } }) => (
-                  <input type="hidden" value={value ?? 3} onChange={(e) => onChange(Number(e.target.value) || 3)} />
-                )}
-              />
-              <Controller
-                control={control}
-                name="sub_work_item_category_id"
-                render={({ field }) => (
-                  <input
-                    type="hidden"
-                    name={field.name}
-                    ref={field.ref}
-                    onBlur={field.onBlur}
-                    value={field.value ?? ""}
-                    onChange={(e) => field.onChange(e.target.value || null)}
+                  <Controller
+                    control={control}
+                    name="hierarchy_level"
+                    render={({ field: { value, onChange } }) => (
+                      <input type="hidden" value={value ?? 3} onChange={(e) => onChange(Number(e.target.value) || 3)} />
+                    )}
                   />
-                )}
-              />
+                  <Controller
+                    control={control}
+                    name="sub_work_item_category_id"
+                    render={({ field }) => (
+                      <input
+                        type="hidden"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value || null)}
+                      />
+                    )}
+                  />
+                </>
+              )}
               <div className="space-y-1">
                 <IssueTitleInput
                   control={control}

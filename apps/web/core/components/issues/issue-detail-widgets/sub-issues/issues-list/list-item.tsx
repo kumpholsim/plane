@@ -6,7 +6,7 @@
 
 import { observer } from "mobx-react";
 import { Link as Loader } from "lucide-react";
-import { MAX_SUB_TASK_DEPTH } from "@plane/constants";
+import { MAX_SUB_TASK_DEPTH, isStagedGateScrumbanMode } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { LinkIcon, EditIcon, TrashIcon, CloseIcon, ChevronRightIcon } from "@plane/propel/icons";
 // plane imports
@@ -87,7 +87,10 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
   const subIssueCount = issue?.sub_issues_count ?? 0;
   const issueDepth = getIssueDepth(issue, getIssueById);
   const issueLevel = getHierarchyLevel(issue);
-  const canExpandNestedSubTasks = issueDepth < MAX_SUB_TASK_DEPTH && issueLevel < 4;
+  // Scrumban caps nesting at the sub-task level; classic expands wherever children exist
+  const canExpandNestedSubTasks = isStagedGateScrumbanMode(projectDetail?.workflow_mode)
+    ? issueDepth < MAX_SUB_TASK_DEPTH && issueLevel < 4
+    : true;
 
   // derived values
   const subIssueFilters = getSubIssueFilters(parentIssueId);

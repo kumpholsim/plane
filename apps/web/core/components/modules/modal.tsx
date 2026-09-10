@@ -15,6 +15,7 @@ import { CustomMenu, EModalPosition, EModalWidth, ModalCore } from "@plane/ui";
 import { ModuleForm } from "@/components/modules";
 import { HIERARCHY_MODULES_REFRESH_EVENT } from "@/components/modules/hierarchy-modules-list-view";
 // hooks
+import { useModule } from "@/hooks/store/use-module";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import useKeypress from "@/hooks/use-keypress";
@@ -52,11 +53,121 @@ const normalizeIssues = (response: TIssuesResponse | undefined): TIssue[] => {
   return list;
 };
 
-export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal(props: Props) {
+const ClassicModuleModal = observer(function ClassicModuleModal(props: Props) {
   const { isOpen, onClose, data, workspaceSlug, projectId } = props;
+  // states
+  const [activeProject, setActiveProject] = useState<string | null>(null);
+  // store hooks
+  const { workspaceProjectIds } = useProject();
+  const { createModule, updateModuleDetails } = useModule();
+  const { isMobile } = usePlatformOS();
+
+  const handleClose = () => {
+    reset(defaultValues);
+    onClose();
+  };
+
+  const { reset } = useForm<IModule>({
+    defaultValues,
+  });
+
+  const handleCreateModule = async (payload: Partial<IModule>) => {
+    if (!workspaceSlug || !projectId) return;
+
+    const selectedProjectId = payload.project_id ?? projectId.toString();
+    await createModule(workspaceSlug.toString(), selectedProjectId, payload)
+      .then(() => {
+        handleClose();
+        setToast({
+          type: TOAST_TYPE.SUCCESS,
+          title: "Success!",
+          message: "Module created successfully.",
+        });
+        return undefined;
+      })
+      .catch((err) => {
+        setToast({
+          type: TOAST_TYPE.ERROR,
+          title: "Error!",
+          message: err?.detail ?? err?.error ?? "Module could not be created. Please try again.",
+        });
+      });
+  };
+
+  const handleUpdateModule = async (payload: Partial<IModule>) => {
+    if (!workspaceSlug || !projectId || !data) return;
+
+    const selectedProjectId = payload.project_id ?? projectId.toString();
+    await updateModuleDetails(workspaceSlug.toString(), selectedProjectId, data.id, payload)
+      .then(() => {
+        handleClose();
+        setToast({
+          type: TOAST_TYPE.SUCCESS,
+          title: "Success!",
+          message: "Module updated successfully.",
+        });
+        return undefined;
+      })
+      .catch((err) => {
+        setToast({
+          type: TOAST_TYPE.ERROR,
+          title: "Error!",
+          message: err?.detail ?? err?.error ?? "Module could not be updated. Please try again.",
+        });
+      });
+  };
+
+  const handleFormSubmit = async (formData: Partial<IModule>) => {
+    if (!workspaceSlug || !projectId) return;
+    if (data) await handleUpdateModule({ ...formData });
+    else await handleCreateModule({ ...formData });
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setActiveProject(null);
+      return;
+    }
+    if (data && data.project_id) {
+      setActiveProject(data.project_id);
+      return;
+    }
+    if (workspaceProjectIds && workspaceProjectIds.length > 0 && !activeProject)
+      setActiveProject(projectId ?? workspaceProjectIds?.[0] ?? null);
+  }, [activeProject, data, projectId, workspaceProjectIds, isOpen]);
+
+  useKeypress("Escape", () => {
+    if (isOpen) handleClose();
+  });
+
+  return (
+    <ModalCore isOpen={isOpen} position={EModalPosition.TOP} width={EModalWidth.XXL}>
+      <ModuleForm
+        handleFormSubmit={handleFormSubmit}
+        handleClose={handleClose}
+        status={!!data}
+        projectId={activeProject ?? ""}
+        setActiveProject={setActiveProject}
+        data={data}
+        isMobile={isMobile}
+      />
+    </ModalCore>
+  );
+});
+
+type EpicModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  workspaceSlug: string;
+  projectId: string;
+  initialMilestoneId?: string | null;
+};
+
+export const CreateUpdateEpicModal = observer(function CreateUpdateEpicModal(props: EpicModalProps) {
+  const { isOpen, onClose, workspaceSlug, projectId, initialMilestoneId = null } = props;
   const [activeProject, setActiveProject] = useState<string | null>(null);
   const [milestones, setMilestones] = useState<TIssue[]>([]);
-  const [milestoneParentId, setMilestoneParentId] = useState<string | null>(null);
+  const [milestoneParentId, setMilestoneParentId] = useState<string | null>(initialMilestoneId);
   const { workspaceProjectIds } = useProject();
   const { fetchProjectTypes, getActiveProjectTypes, fetchedMap } = useProjectHierarchyType();
   const { isMobile } = usePlatformOS();
@@ -70,6 +181,11 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
   const { reset } = useForm<IModule>({
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setMilestoneParentId(initialMilestoneId);
+  }, [isOpen, initialMilestoneId]);
 
   useEffect(() => {
     if (!isOpen || !workspaceSlug || !projectId) return;
@@ -87,7 +203,7 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
     void load();
   }, [isOpen, workspaceSlug, projectId, fetchedMap, fetchProjectTypes]);
 
-  const handleCreateModule = async (payload: Partial<IModule>) => {
+  const handleCreateEpic = async (payload: Partial<IModule>) => {
     if (!workspaceSlug || !projectId) return;
 
     const selectedProjectId = payload.project_id ?? projectId.toString();
@@ -127,15 +243,7 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
 
   const handleFormSubmit = async (formData: Partial<IModule>) => {
     if (!workspaceSlug || !projectId) return;
-    if (data) {
-      setToast({
-        type: TOAST_TYPE.ERROR,
-        title: "Error!",
-        message: "Edit this epic from its work item page.",
-      });
-      return;
-    }
-    await handleCreateModule(formData);
+    await handleCreateEpic(formData);
   };
 
   useEffect(() => {
@@ -143,13 +251,9 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
       setActiveProject(null);
       return;
     }
-    if (data && data.project_id) {
-      setActiveProject(data.project_id);
-      return;
-    }
     if (workspaceProjectIds && workspaceProjectIds.length > 0 && !activeProject)
       setActiveProject(projectId ?? workspaceProjectIds?.[0] ?? null);
-  }, [activeProject, data, projectId, workspaceProjectIds, isOpen]);
+  }, [activeProject, projectId, workspaceProjectIds, isOpen]);
 
   useKeypress("Escape", () => {
     if (isOpen) handleClose();
@@ -198,7 +302,7 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
         status={false}
         projectId={activeProject ?? ""}
         setActiveProject={setActiveProject}
-        data={data}
+        data={undefined}
         isMobile={isMobile}
         entityLabel="epic"
         typeBadge={
@@ -207,4 +311,8 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
       />
     </ModalCore>
   );
+});
+
+export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal(props: Props) {
+  return <ClassicModuleModal {...props} />;
 });

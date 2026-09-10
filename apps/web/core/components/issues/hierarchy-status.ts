@@ -6,6 +6,7 @@
 
 import {
   DESIGN_DEV_BOARD_KEYS,
+  HIERARCHY_BOARD_STATE_KEYS,
   L3_PROGRESS_STATUS_OPTIONS,
   QA_BOARD_KEYS,
   boardStateKeyFromExternalId,
@@ -15,6 +16,58 @@ import type { IState, TIssueMap } from "@plane/types";
 
 export const isQaHierarchyTypeName = (name: string | null | undefined): boolean =>
   (name ?? "").trim().toLowerCase() === "qa";
+
+export const isDevHierarchyTypeName = (name: string | null | undefined): boolean =>
+  (name ?? "").trim().toLowerCase() === "dev";
+
+export const isDevOrQaHierarchyTypeName = (name: string | null | undefined): boolean =>
+  isDevHierarchyTypeName(name) || isQaHierarchyTypeName(name);
+
+export const todoBoardKeyForL4Type = (hierarchyTypeName: string | null | undefined): THierarchyBoardStateKey =>
+  isQaHierarchyTypeName(hierarchyTypeName)
+    ? HIERARCHY_BOARD_STATE_KEYS.QA_TODO
+    : HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO;
+
+export const L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE =
+  "Add an assignee and estimate before moving this sub-task out of To Do.";
+
+/** Dev/QA L4 cannot leave their To Do column without both assignee and estimate. */
+export const getL4LeaveTodoRequirementError = (params: {
+  hierarchyLevel?: number | string | null;
+  hierarchyTypeName?: string | null;
+  currentStateExternalId?: string | null;
+  nextStateExternalId?: string | null;
+  currentStateId?: string | null;
+  nextStateId?: string | null;
+  assigneeIds?: string[] | null;
+  estimatePoint?: string | null;
+}): string | null => {
+  const {
+    hierarchyLevel,
+    hierarchyTypeName,
+    currentStateExternalId,
+    nextStateExternalId,
+    currentStateId,
+    nextStateId,
+    assigneeIds,
+    estimatePoint,
+  } = params;
+
+  if (Number(hierarchyLevel ?? 0) !== 4 || !isDevOrQaHierarchyTypeName(hierarchyTypeName)) return null;
+
+  const todoKey = todoBoardKeyForL4Type(hierarchyTypeName);
+  const currentKey = boardStateKeyFromExternalId(currentStateExternalId);
+  const nextKey = boardStateKeyFromExternalId(nextStateExternalId);
+
+  if (currentKey !== todoKey) return null;
+  if (nextKey === todoKey || (currentStateId && nextStateId && currentStateId === nextStateId)) return null;
+
+  const hasAssignee = (assigneeIds?.length ?? 0) > 0;
+  const hasEstimate = Boolean(estimatePoint);
+  if (hasAssignee && hasEstimate) return null;
+
+  return L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE;
+};
 
 export const allowedBoardKeysForL4Type = (hierarchyTypeName: string | null | undefined): THierarchyBoardStateKey[] =>
   isQaHierarchyTypeName(hierarchyTypeName) ? [...QA_BOARD_KEYS] : [...DESIGN_DEV_BOARD_KEYS];

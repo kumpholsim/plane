@@ -8,7 +8,7 @@ import { isEqual, concat, get, indexOf, isEmpty, orderBy, pull, set, uniq, updat
 import { action, computed, makeObservable, observable, runInAction } from "mobx";
 import { computedFn } from "mobx-utils";
 // plane constants
-import { ALL_ISSUES, ISSUE_PRIORITIES } from "@plane/constants";
+import { ALL_ISSUES, ISSUE_PRIORITIES, isStagedGateScrumbanMode } from "@plane/constants";
 // types
 import type {
   TIssue,
@@ -28,7 +28,7 @@ import type {
 } from "@plane/types";
 import { EIssueServiceType, EIssueLayoutTypes, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 // helpers
-import { convertToISODateString, areSubIssuesIncludedInView } from "@plane/utils";
+import { convertToISODateString, areSubIssuesIncludedInView, resolveDisplayFiltersForLayout } from "@plane/utils";
 // plane web imports
 // services
 import { CycleService } from "@/services/cycle.service";
@@ -212,6 +212,8 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       // computed
       moduleId: computed,
       cycleId: computed,
+      lockStructuralFilters: computed,
+      resolvedDisplayFilters: computed,
       orderBy: computed,
       groupBy: computed,
       subGroupBy: computed,
@@ -275,9 +277,23 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     return this.rootIssueStore.cycleId;
   }
 
+  // Scrumban locks list/board grouping — must match layout UI and fetch params
+  get lockStructuralFilters() {
+    const projectId = this.rootIssueStore.projectId;
+    return isStagedGateScrumbanMode(projectId ? this.rootIssueStore.projectMap?.[projectId]?.workflow_mode : undefined);
+  }
+
+  get resolvedDisplayFilters() {
+    const displayFilters = this.issueFilterStore?.issueFilters?.displayFilters;
+    if (!displayFilters) return;
+    return resolveDisplayFiltersForLayout(displayFilters, {
+      lockStructuralFilters: this.lockStructuralFilters,
+    });
+  }
+
   // current Order by value
   get orderBy() {
-    const displayFilters = this.issueFilterStore?.issueFilters?.displayFilters;
+    const displayFilters = this.resolvedDisplayFilters;
     if (!displayFilters) return;
 
     return displayFilters?.order_by;
@@ -285,7 +301,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
 
   // current Group by value
   get groupBy() {
-    const displayFilters = this.issueFilterStore?.issueFilters?.displayFilters;
+    const displayFilters = this.resolvedDisplayFilters;
     if (!displayFilters || !displayFilters?.layout) return;
 
     const layout = displayFilters?.layout;
@@ -299,7 +315,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
 
   // current Sub group by value
   get subGroupBy() {
-    const displayFilters = this.issueFilterStore?.issueFilters?.displayFilters;
+    const displayFilters = this.resolvedDisplayFilters;
     if (!displayFilters || displayFilters.group_by === displayFilters.sub_group_by) return;
 
     return displayFilters?.layout === "kanban" ? displayFilters?.sub_group_by : undefined;
@@ -1212,10 +1228,15 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     const issueId = issue?.id ?? issueBeforeUpdate?.id;
     if (!issueId) return;
 
-    // Get display filters to check if 'Show sub-tasks' is enabled — only L4 is gated.
-    // List layout always locks sub_issue off so other layouts' Display settings don't leak in.
-    // Board (state × epic subgroup) always includes L4 — same rule as fetch params.
-    const isShowSubTasksEnabled = areSubIssuesIncludedInView(this.issueFilterStore.issueFilters?.displayFilters);
+    // Get display filters to check if 'Show sub-tasks' is enabled.
+    // Scrumban gates only L4; classic gates any work item with a parent.
+    const isShowSubTasksEnabled = areSubIssuesIncludedInView(this.issueFilterStore.issueFilters?.displayFilters, {
+      lockStructuralFilters: this.lockStructuralFilters,
+    });
+    const projectIdForIssue = issue?.project_id ?? issueBeforeUpdate?.project_id ?? this.rootIssueStore.projectId;
+    const isScrumbanProject = isStagedGateScrumbanMode(
+      projectIdForIssue ? this.rootIssueStore.projectMap?.[projectIdForIssue]?.workflow_mode : undefined
+    );
 
     // get issueUpdates from another method by passing down the three arguments
     // issueUpdates is nothing but an array of objects that contain the path of the issueId list that need updating and also the action that needs to be performed at the path
@@ -1226,7 +1247,9 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       for (const issueUpdate of issueUpdates) {
         //if update is add, add it at a particular path
         if (issueUpdate.action === EIssueGroupedAction.ADD) {
-          const isSubTask = Number(issue?.hierarchy_level ?? 0) >= HIERARCHY_LEVEL_SUB_TASK;
+          const isSubTask = isScrumbanProject
+            ? Number(issue?.hierarchy_level ?? 0) >= HIERARCHY_LEVEL_SUB_TASK
+            : !!issue?.parent_id;
           if (isSubTask && !isShowSubTasksEnabled) continue;
           // add issue Id at the path
           update(this, ["groupedIssueIds", ...issueUpdate.path], (issueIds: string[] = []) =>
@@ -1648,6 +1671,15 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   ): string[] => {
     // if issue object is undefined return empty array
     if (!issueObject) return [];
+    // Board swimlanes are L3 rows. L4 always groups by parent_id — module_ids may be the
+    // ancestor epic from the create payload / unscoped grouper annotation.
+    if (groupByKey === "module" && this.lockStructuralFilters && this.subGroupBy === "module") {
+      const isL4 = Number(issueObject.hierarchy_level ?? 0) >= HIERARCHY_LEVEL_SUB_TASK;
+      if (isL4) {
+        const deliveryParentId = issueObject.parent_id || (Array.isArray(value) && value[0] ? value[0] : undefined);
+        return deliveryParentId ? [String(deliveryParentId)] : ["None"];
+      }
+    }
     // if value is not defined, return None value in array
     if (!value || isEmpty(value)) return ["None"];
     // if array return the array

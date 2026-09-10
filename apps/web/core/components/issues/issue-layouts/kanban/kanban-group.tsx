@@ -11,7 +11,7 @@ import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element
 import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
 import { observer } from "mobx-react";
 // plane constants
-import { DRAG_ALLOWED_GROUPS } from "@plane/constants";
+import { DRAG_ALLOWED_GROUPS, HIERARCHY_BOARD_STATE_KEYS, boardStateKeyFromExternalId } from "@plane/constants";
 // i18n
 import { useTranslation } from "@plane/i18n";
 //types
@@ -41,11 +41,13 @@ import { useWorkFlowFDragNDrop } from "@/components/workflow";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import { useIssueStoreType, useIssuesStore } from "@/hooks/use-issue-layout-store";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // local imports
 import { GroupDragOverlay } from "../group-drag-overlay";
 import type { TRenderQuickActions } from "../list/list-view-types";
-import { KanbanQuickAddIssueButton, QuickAddIssueRoot } from "../quick-add";
+import { KanbanQuickAddIssueButton, QuickAddIssueRoot, ScrumbanKanbanQuickAdd } from "../quick-add";
 import { KanbanIssueBlocksList } from "./blocks-list";
+import { SCRUMBAN_KANBAN_CARD_GRID_CLASS } from "./scrumban-board-layout";
 
 interface IKanbanGroup {
   groupId: string;
@@ -100,7 +102,8 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
   // hooks
   const projectState = useProjectState();
   const storeType = useIssueStoreType();
-  const isCompact = storeType === EIssuesStoreType.CYCLE;
+  const isStagedGateScrumban = useIsStagedGateScrumban();
+  const isCompact = isStagedGateScrumban && storeType === EIssuesStoreType.CYCLE;
 
   const {
     issues: { getGroupIssueCount, getPaginationData, getIssueLoader },
@@ -215,7 +218,10 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
       } else if (groupByKey === "cycle") {
         preloadedData = { ...preloadedData, cycle_id: groupValue };
       } else if (groupByKey === "module") {
-        preloadedData = { ...preloadedData, parent_id: groupValue };
+        // Scrumban's module groups are epics, so new items are parented rather than added to a module
+        preloadedData = isStagedGateScrumban
+          ? { ...preloadedData, parent_id: groupValue }
+          : { ...preloadedData, module_ids: [groupValue] };
       } else if (groupByKey === "labels" && groupValue != "None") {
         preloadedData = { ...preloadedData, label_ids: [groupValue] };
       } else if (groupByKey === "assignees" && groupValue != "None") {
@@ -235,7 +241,9 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
       } else if (subGroupByKey === "cycle") {
         preloadedData = { ...preloadedData, cycle_id: subGroupValue };
       } else if (subGroupByKey === "module") {
-        preloadedData = { ...preloadedData, parent_id: subGroupValue };
+        preloadedData = isStagedGateScrumban
+          ? { ...preloadedData, parent_id: subGroupValue }
+          : { ...preloadedData, module_ids: [subGroupValue] };
       } else if (subGroupByKey === "labels" && subGroupValue != "None") {
         preloadedData = { ...preloadedData, label_ids: [subGroupValue] };
       } else if (subGroupByKey === "assignees" && subGroupValue != "None") {
@@ -273,6 +281,11 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
   );
 
   const shouldLoadMore = nextPageResults === undefined ? issueIds?.length < groupIssueCount : !!nextPageResults;
+  const columnState = projectState.getStateById(groupId);
+  const columnStateKey = boardStateKeyFromExternalId(columnState?.external_id);
+  const isScrumbanTodoColumn =
+    columnStateKey === HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO ||
+    (columnStateKey === null && (columnState?.name ?? "").trim().toLowerCase() === "to do");
   const canOverlayBeVisible = isWorkflowDropDisabled || orderBy !== "sort_order" || isDropDisabled;
   const shouldOverlayBeVisible = isDraggingOverColumn && canOverlayBeVisible;
   const canDragIssuesInCurrentGrouping =
@@ -285,6 +298,7 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
       id={`${groupId}__${sub_group_id}`}
       className={cn(
         "relative h-full min-h-[120px] transition-all",
+        isStagedGateScrumban && "@container",
         { "rounded-sm bg-layer-1": isDraggingOverColumn },
         { "vertical-scrollbar scrollbar-md": !sub_group_by && !shouldOverlayBeVisible }
       )}
@@ -300,20 +314,22 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
         isDraggingOverColumn={isDraggingOverColumn}
         isEpic={isEpic}
       />
-      <KanbanIssueBlocksList
-        sub_group_id={sub_group_id}
-        groupId={groupId}
-        issuesMap={issuesMap}
-        issueIds={issueIds || []}
-        displayProperties={displayProperties}
-        updateIssue={updateIssue}
-        quickActions={quickActions}
-        canEditProperties={canEditProperties}
-        scrollableContainerRef={scrollableContainerRef}
-        canDropOverIssue={!canOverlayBeVisible}
-        canDragIssuesInCurrentGrouping={canDragIssuesInCurrentGrouping}
-        isEpic={isEpic}
-      />
+      <div className={cn(isStagedGateScrumban && SCRUMBAN_KANBAN_CARD_GRID_CLASS)}>
+        <KanbanIssueBlocksList
+          sub_group_id={sub_group_id}
+          groupId={groupId}
+          issuesMap={issuesMap}
+          issueIds={issueIds || []}
+          displayProperties={displayProperties}
+          updateIssue={updateIssue}
+          quickActions={quickActions}
+          canEditProperties={canEditProperties}
+          scrollableContainerRef={scrollableContainerRef}
+          canDropOverIssue={!canOverlayBeVisible}
+          canDragIssuesInCurrentGrouping={canDragIssuesInCurrentGrouping}
+          isEpic={isEpic}
+        />
+      </div>
 
       {shouldLoadMore &&
         (isSubGroup ? (
@@ -330,17 +346,26 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
 
       {enableQuickIssueCreate &&
         !disableIssueCreation &&
-        !getIsWorkflowWorkItemCreationDisabled(groupId, sub_group_id) && (
-          <div className="sticky bottom-0 w-full bg-surface-2 py-0.5">
-            <QuickAddIssueRoot
-              layout={EIssueLayoutTypes.KANBAN}
-              QuickAddButton={KanbanQuickAddIssueButton}
-              prePopulatedData={{
-                ...(group_by && prePopulateQuickAddData(group_by, sub_group_by, groupId, sub_group_id)),
-              }}
-              quickAddCallback={quickAddCallback}
-              isEpic={isEpic}
-            />
+        !getIsWorkflowWorkItemCreationDisabled(groupId, sub_group_id) &&
+        (!isStagedGateScrumban || (isSubGroup && sub_group_id !== "None" && isScrumbanTodoColumn)) && (
+          <div className="sticky bottom-0 z-10 w-full bg-surface-2 py-0.5">
+            {isStagedGateScrumban ? (
+              <ScrumbanKanbanQuickAdd
+                parentIssueId={sub_group_id}
+                stateId={groupId}
+                quickAddCallback={quickAddCallback}
+              />
+            ) : (
+              <QuickAddIssueRoot
+                layout={EIssueLayoutTypes.KANBAN}
+                QuickAddButton={KanbanQuickAddIssueButton}
+                prePopulatedData={{
+                  ...(group_by && prePopulateQuickAddData(group_by, sub_group_by, groupId, sub_group_id)),
+                }}
+                quickAddCallback={quickAddCallback}
+                isEpic={isEpic}
+              />
+            )}
           </div>
         )}
     </div>

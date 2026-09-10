@@ -33,6 +33,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import { calculateIdentifierWidth } from "../utils";
 import { IssuePinLevelControls } from "./pin-level-controls";
 import type { TRenderQuickActions } from "./list-view-types";
@@ -85,7 +86,8 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
   const projectId = routerProjectId?.toString();
   // hooks
   const storeType = useIssueStoreType();
-  const isCompactList = storeType === EIssuesStoreType.CYCLE;
+  const isStagedGateScrumban = useIsStagedGateScrumban(projectId);
+  const isCompactList = isStagedGateScrumban && storeType === EIssuesStoreType.CYCLE;
   const { sidebarCollapsed: isSidebarCollapsed } = useAppTheme();
   const { getProjectIdentifierById, currentProjectNextSequenceId } = useProject();
   const {
@@ -247,8 +249,10 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
                   </div>
                 </Tooltip>
               )}
-              {/* Hierarchy type always visible next to identifier/title */}
-              <HierarchyTypeBadge issue={issue} disabled={!canEditIssueProperties} updateIssue={updateIssue} />
+              {/* Scrumban: hierarchy type always visible next to identifier/title */}
+              {isStagedGateScrumban && (
+                <HierarchyTypeBadge issue={issue} disabled={!canEditIssueProperties} updateIssue={updateIssue} />
+              )}
               {showPinControls && (
                 <IssuePinLevelControls issue={issue} canEdit={canEditIssueProperties} updateIssue={updateIssue} />
               )}

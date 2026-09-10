@@ -8,6 +8,7 @@
 import type { SyntheticEvent } from "react";
 import { useMemo } from "react";
 import { observer } from "mobx-react";
+import { isStagedGateScrumbanMode } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { StartDatePropertyIcon, DueDatePropertyIcon } from "@plane/propel/icons";
 import type { IIssueDisplayProperties, TIssue } from "@plane/types";
@@ -97,9 +98,10 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
   );
 
   const projectDetails = issue.project_id ? getProjectById(issue.project_id) : undefined;
+  const isStagedGateScrumban = isStagedGateScrumbanMode(projectDetails?.workflow_mode);
   const hierarchyLevel = getHierarchyLevel(issue);
   const hierarchyType = getCategoryById(issue.hierarchy_type_id ?? "");
-  const isL4 = hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
+  const isL4 = isStagedGateScrumban && hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
   const projectStateIds = getProjectStateIds(issue.project_id ?? undefined) ?? [];
   const eligibleStateIds = isL4
     ? filterStateIdsForL4(projectStateIds, getStateById, hierarchyType?.name)
@@ -109,8 +111,9 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
   const cycleId = canEditCycle(hierarchyLevel)
     ? (issue.cycle_id ?? null)
     : (issue.cycle_id ?? parentIssue?.cycle_id ?? null);
-  // Cycle is mandatory on L3/L4 rows in the sub-work section (always shown when cycles are enabled)
-  const showCycle = Boolean(projectDetails?.cycle_view) && shouldShowCycleProperty(hierarchyLevel);
+  // Scrumban surfaces cycle on every L3/L4 row; classic sub-item rows have no cycle column
+  const showCycle =
+    isStagedGateScrumban && Boolean(projectDetails?.cycle_view) && shouldShowCycleProperty(hierarchyLevel);
   const cycleEditable = canEdit && canEditCycle(hierarchyLevel);
 
   const handleCycleChange = async (nextCycleId: string | null) => {

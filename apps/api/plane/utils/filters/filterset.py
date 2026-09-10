@@ -215,12 +215,29 @@ class IssueFilterSet(BaseFilterSet):
 
     # Filter methods with soft delete exclusion for relations
 
+    def _is_scrumban_queryset(self, queryset) -> bool:
+        """Use Scrumban filter semantics only when every project in scope is Scrumban."""
+        from plane.db.models import Project
+
+        modes = list(
+            Project.objects.filter(id__in=queryset.values_list("project_id", flat=True).distinct()).values_list(
+                "workflow_mode", flat=True
+            ).distinct()
+        )
+        return len(modes) == 1 and modes[0] == "staged_gate_scrumban"
+
     def filter_assignee_id(self, queryset, name, value):
         """Filter by assignee ID, excluding soft deleted users.
 
-        L3 (delivery) matches only when an L4 child has the assignee — not when the
-        L3 itself is assigned. Other levels match on their own assignees.
+        Scrumban: L3 matches only via L4 child assignees.
+        Classic: match the issue's own assignees.
         """
+        if not self._is_scrumban_queryset(queryset):
+            return Q(
+                issue_assignee__assignee_id=value,
+                issue_assignee__deleted_at__isnull=True,
+            )
+
         from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
 
         l3_with_assigned_l4 = Issue.issue_objects.filter(
@@ -241,8 +258,14 @@ class IssueFilterSet(BaseFilterSet):
     def filter_assignee_id_in(self, queryset, name, value):
         """Filter by assignee IDs (in), excluding soft deleted users.
 
-        Same L3-via-L4 rule as filter_assignee_id.
+        Same mode-aware rule as filter_assignee_id.
         """
+        if not self._is_scrumban_queryset(queryset):
+            return Q(
+                issue_assignee__assignee_id__in=value,
+                issue_assignee__deleted_at__isnull=True,
+            )
+
         from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
 
         l3_with_assigned_l4 = Issue.issue_objects.filter(
@@ -263,9 +286,12 @@ class IssueFilterSet(BaseFilterSet):
     def filter_progress_status(self, queryset, name, value):
         """Filter by L3 progress status.
 
-        Matches delivery (L3) items with that status, and includes their L4 children
-        so board swimlanes still have cards under matching stories.
+        Scrumban: L3 match + include L4 children.
+        Classic: direct field match.
         """
+        if not self._is_scrumban_queryset(queryset):
+            return Q(progress_status=value)
+
         from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
 
         matching_l3 = Issue.issue_objects.filter(
@@ -280,8 +306,11 @@ class IssueFilterSet(BaseFilterSet):
     def filter_progress_status_in(self, queryset, name, value):
         """Filter by L3 progress statuses (in).
 
-        Same L3-match + include L4 children rule as filter_progress_status.
+        Same mode-aware rule as filter_progress_status.
         """
+        if not self._is_scrumban_queryset(queryset):
+            return Q(progress_status__in=value)
+
         from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
 
         matching_l3 = Issue.issue_objects.filter(
@@ -308,16 +337,29 @@ class IssueFilterSet(BaseFilterSet):
         )
 
     def filter_module_id(self, queryset, name, value):
-        """Filter by epic ID (legacy module_id key): epic itself or descendants under it."""
-        from plane.utils.issue_parent import epic_membership_q
+        """Filter by Plane module membership.
 
-        return epic_membership_q([value])
+        Scrumban also accepts the same key for L2 epic membership.
+        """
+        if self._is_scrumban_queryset(queryset):
+            from plane.utils.issue_parent import epic_membership_q
+
+            return epic_membership_q([value])
+        return Q(
+            issue_module__module_id=value,
+            issue_module__deleted_at__isnull=True,
+        )
 
     def filter_module_id_in(self, queryset, name, value):
-        """Filter by epic IDs (legacy module_id key): epics themselves or descendants under them."""
-        from plane.utils.issue_parent import epic_membership_q
+        """Filter by Plane module membership (in)."""
+        if self._is_scrumban_queryset(queryset):
+            from plane.utils.issue_parent import epic_membership_q
 
-        return epic_membership_q(value)
+            return epic_membership_q(value)
+        return Q(
+            issue_module__module_id__in=value,
+            issue_module__deleted_at__isnull=True,
+        )
 
     def filter_mention_id(self, queryset, name, value):
         """Filter by mention ID, excluding soft deleted users"""

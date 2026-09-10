@@ -355,53 +355,77 @@ def filter_cycle(params, issue_filter, method, prefix=""):
     return issue_filter
 
 
+def _params_are_scrumban(params) -> bool:
+    from plane.db.models import Project
+
+    project_id = params.get("project") or params.get("project_id")
+    if isinstance(project_id, list):
+        project_id = project_id[0] if project_id else None
+    if not project_id:
+        return False
+    return Project.objects.filter(id=project_id, workflow_mode="staged_gate_scrumban").exists()
+
+
 def filter_module(params, issue_filter, method, prefix=""):
-    """Filter by epic (legacy ``module`` param): epic itself or L3/L4 under it.
+    """Filter by Plane module membership.
 
-    Uses ``id__in`` so the result stays a flat ORM lookup dict for ``filter(**filters)``.
+    Scrumban reuses the same ``module`` param for L2 epic membership.
+    Missing/unknown project → classic ModuleIssue (safe default).
     """
-    from django.db.models import Q
+    if _params_are_scrumban(params):
+        from django.db.models import Q
 
-    from plane.db.models import Issue
-    from plane.utils.issue_parent import (
-        HIERARCHY_LEVEL_EPIC,
-        epic_membership_q,
-    )
-
-    include_none = False
-    epic_ids = []
-    if method == "GET":
-        raw = [item for item in params.get("module").split(",") if item != "null"]
-        include_none = "None" in raw
-        epic_ids = filter_valid_uuids([item for item in raw if item != "None"])
-    else:
-        raw = params.get("module", None)
-        if raw and len(raw) and raw != "null":
-            if isinstance(raw, list):
-                include_none = "None" in raw or None in raw
-                epic_ids = filter_valid_uuids([str(item) for item in raw if item not in ("None", None)])
-            else:
-                epic_ids = filter_valid_uuids([str(raw)])
-
-    membership_q = Q()
-    if epic_ids:
-        membership_q |= epic_membership_q(epic_ids)
-    if include_none:
-        # No epic ancestor and not an epic itself
-        membership_q |= ~(
-            Q(hierarchy_level=HIERARCHY_LEVEL_EPIC)
-            | Q(parent__hierarchy_level=HIERARCHY_LEVEL_EPIC)
-            | Q(parent__parent__hierarchy_level=HIERARCHY_LEVEL_EPIC)
+        from plane.db.models import Issue
+        from plane.utils.issue_parent import (
+            HIERARCHY_LEVEL_EPIC,
+            epic_membership_q,
         )
 
-    if membership_q:
-        matching_qs = Issue.issue_objects.filter(membership_q)
-        if prefix:
-            # Intake etc. use ``issue__`` prefix — match on related issue id
-            matching_ids = list(matching_qs.values_list("id", flat=True))
-            issue_filter[f"{prefix}id__in"] = matching_ids
+        include_none = False
+        epic_ids = []
+        if method == "GET":
+            raw = [item for item in params.get("module").split(",") if item != "null"]
+            include_none = "None" in raw
+            epic_ids = filter_valid_uuids([item for item in raw if item != "None"])
         else:
-            issue_filter["id__in"] = list(matching_qs.values_list("id", flat=True))
+            raw = params.get("module", None)
+            if raw and len(raw) and raw != "null":
+                if isinstance(raw, list):
+                    include_none = "None" in raw or None in raw
+                    epic_ids = filter_valid_uuids([str(item) for item in raw if item not in ("None", None)])
+                else:
+                    epic_ids = filter_valid_uuids([str(raw)])
+
+        membership_q = Q()
+        if epic_ids:
+            membership_q |= epic_membership_q(epic_ids)
+        if include_none:
+            membership_q |= ~(
+                Q(hierarchy_level=HIERARCHY_LEVEL_EPIC)
+                | Q(parent__hierarchy_level=HIERARCHY_LEVEL_EPIC)
+                | Q(parent__parent__hierarchy_level=HIERARCHY_LEVEL_EPIC)
+            )
+
+        if membership_q:
+            matching_qs = Issue.issue_objects.filter(membership_q)
+            if prefix:
+                matching_ids = list(matching_qs.values_list("id", flat=True))
+                issue_filter[f"{prefix}id__in"] = matching_ids
+            else:
+                issue_filter["id__in"] = list(matching_qs.values_list("id", flat=True))
+        return issue_filter
+
+    if method == "GET":
+        modules = [item for item in params.get("module").split(",") if item != "null"]
+        if "None" in modules:
+            issue_filter[f"{prefix}issue_module__module_id__isnull"] = True
+        modules = filter_valid_uuids(modules)
+        if len(modules) and "" not in modules:
+            issue_filter[f"{prefix}issue_module__module_id__in"] = modules
+    else:
+        if params.get("module", None) and len(params.get("module")) and params.get("module") != "null":
+            issue_filter[f"{prefix}issue_module__module_id__in"] = params.get("module")
+    issue_filter[f"{prefix}issue_module__deleted_at__isnull"] = True
     return issue_filter
 
 

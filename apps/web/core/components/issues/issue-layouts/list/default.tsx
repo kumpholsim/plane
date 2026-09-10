@@ -26,6 +26,7 @@ import type {
 import { MultipleSelectGroup } from "@/components/core/multiple-select";
 // hooks
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // plane web components
 import { IssueBulkOperationsRoot } from "@/components/issues/bulk-operations";
 // plane web hooks
@@ -82,6 +83,7 @@ export const List = observer(function List(props: IList) {
   } = props;
 
   const storeType = useIssueStoreType();
+  const isStagedGateScrumban = useIsStagedGateScrumban();
   // plane web hooks
   const isBulkOperationsEnabled = useBulkOperationStatus();
 
@@ -94,9 +96,10 @@ export const List = observer(function List(props: IList) {
     isEpic: isEpic,
   });
 
-  // Epic (legacy module) grouping: never show epics with no work items in this view
+  // Scrumban's module groups are epics: never show one with no work items in this view
+  const hideEmptyModuleGroups = isStagedGateScrumban && group_by === "module";
   const visibleGroups =
-    group_by === "module" && groups
+    hideEmptyModuleGroups && groups
       ? groups.filter((group) => {
           const ids = groupedIssueIds?.[group.id];
           if (Array.isArray(ids)) return ids.length > 0;
@@ -167,7 +170,7 @@ export const List = observer(function List(props: IList) {
                     handleOnDrop={handleOnDrop}
                     displayProperties={displayProperties}
                     enableIssueQuickAdd={enableIssueQuickAdd}
-                    showEmptyGroup={group_by === "module" ? false : showEmptyGroup}
+                    showEmptyGroup={hideEmptyModuleGroups ? false : showEmptyGroup}
                     canEditProperties={canEditProperties}
                     quickAddCallback={quickAddCallback}
                     disableIssueCreation={disableIssueCreation}

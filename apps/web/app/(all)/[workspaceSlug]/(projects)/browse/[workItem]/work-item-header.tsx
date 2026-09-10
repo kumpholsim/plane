@@ -8,6 +8,7 @@ import React from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane ui
+import { isStagedGateScrumbanMode } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { ModuleIcon, WorkItemsIcon } from "@plane/propel/icons";
 import { Breadcrumbs, Header } from "@plane/ui";
@@ -36,7 +37,8 @@ export const WorkItemDetailsHeader = observer(function WorkItemDetailsHeader() {
   const issueDetails = issueId ? getIssueById(issueId.toString()) : undefined;
   const projectId = issueDetails ? issueDetails?.project_id : undefined;
   const projectDetails = projectId ? getProjectById(projectId?.toString()) : undefined;
-  const isModulesItem = isModulesTabWorkItem(issueDetails);
+  // Only Scrumban routes epics and milestones through the Modules tab
+  const isModulesItem = isStagedGateScrumbanMode(projectDetails?.workflow_mode) && isModulesTabWorkItem(issueDetails);
   const sectionHref = isModulesItem
     ? `/${workspaceSlug}/projects/${projectId}/modules/`
     : `/${workspaceSlug}/projects/${projectId}/issues/`;

@@ -13,6 +13,8 @@ from plane.db.models import (
     Cycle,
     Issue,
     Label,
+    Module,
+    ModuleIssue,
     Project,
     ProjectMember,
     State,
@@ -26,6 +28,20 @@ from plane.utils.issue_parent import (
     HIERARCHY_LEVEL_SUB_TASK,
 )
 from typing import Optional, Dict, Any, Union, List
+
+
+def _queryset_is_scrumban(queryset: Optional[QuerySet] = None, project_id: Optional[str] = None) -> bool:
+    """Scrumban grouping only when every in-scope project is staged-gate Scrumban."""
+    if project_id:
+        return Project.objects.filter(id=project_id, workflow_mode="staged_gate_scrumban").exists()
+    if queryset is None:
+        return False
+    modes = list(
+        Project.objects.filter(id__in=queryset.values_list("project_id", flat=True).distinct())
+        .values_list("workflow_mode", flat=True)
+        .distinct()
+    )
+    return len(modes) == 1 and modes[0] == "staged_gate_scrumban"
 
 
 def _epic_id_annotation():
@@ -62,10 +78,15 @@ def issue_queryset_grouper(
     GROUP_FILTER_MAPPER: Dict[str, Q] = {
         "assignees__id": Q(issue_assignee__deleted_at__isnull=True),
         "labels__id": Q(label_issue__deleted_at__isnull=True),
+        "issue_module__module_id": Q(issue_module__deleted_at__isnull=True),
     }
+
+    is_scrumban = _queryset_is_scrumban(queryset)
 
     for group_key in [group_by, sub_group_by]:
         if group_key in GROUP_FILTER_MAPPER:
+            if group_key == "issue_module__module_id" and is_scrumban:
+                continue
             queryset = queryset.filter(GROUP_FILTER_MAPPER[group_key])
 
     def _as_uuid_array(field_expr):
@@ -81,10 +102,12 @@ def issue_queryset_grouper(
             output_field=ArrayField(UUIDField()),
         )
 
-    # Primary group-by module → epic columns
-    # Sub-group-by module (e.g. state × module) → L3 swimlanes with L4 cards
-    module_as_subgroup_only = sub_group_by == "issue_module__module_id" and group_by != "issue_module__module_id"
-    if group_by == "issue_module__module_id":
+    # Scrumban reuses the module group key for L2/L3 hierarchy columns.
+    # Classic groups by real Plane ModuleIssue membership.
+    module_as_subgroup_only = (
+        is_scrumban and sub_group_by == "issue_module__module_id" and group_by != "issue_module__module_id"
+    )
+    if is_scrumban and group_by == "issue_module__module_id":
         queryset = queryset.annotate(**{"issue_module__module_id": _epic_id_annotation()})
     elif module_as_subgroup_only:
         queryset = queryset.annotate(**{"issue_module__module_id": _delivery_parent_id_annotation()})
@@ -106,6 +129,17 @@ def issue_queryset_grouper(
         .values("arr")
     )
 
+    issue_module_subquery = Subquery(
+        ModuleIssue.objects.filter(
+            issue_id=OuterRef("pk"),
+            deleted_at__isnull=True,
+            module__archived_at__isnull=True,
+        )
+        .values("issue_id")
+        .annotate(arr=ArrayAgg("module_id", distinct=True))
+        .values("arr")
+    )
+
     epic_module_ids = Case(
         When(hierarchy_level=HIERARCHY_LEVEL_EPIC, then=_as_uuid_array(F("id"))),
         When(hierarchy_level=HIERARCHY_LEVEL_DELIVERY, then=_as_uuid_array(F("parent_id"))),
@@ -123,7 +157,13 @@ def issue_queryset_grouper(
     annotations_map: Dict[str, Any] = {
         "assignee_ids": Coalesce(issue_assignee_subquery, Value([], output_field=ArrayField(UUIDField()))),
         "label_ids": Coalesce(issue_label_subquery, Value([], output_field=ArrayField(UUIDField()))),
-        "module_ids": delivery_parent_module_ids if module_as_subgroup_only else epic_module_ids,
+        "module_ids": (
+            delivery_parent_module_ids
+            if module_as_subgroup_only
+            else epic_module_ids
+            if is_scrumban
+            else Coalesce(issue_module_subquery, Value([], output_field=ArrayField(UUIDField())))
+        ),
     }
 
     default_annotations: Dict[str, Any] = {}
@@ -235,8 +275,13 @@ def issue_group_values(
         )
 
     if field == "issue_module__module_id":
-        # Sub-group-by module → L3 delivery parents (board swimlanes for L4 cards).
-        # Primary group-by module → epics (L2).
+        if not _queryset_is_scrumban(queryset, project_id):
+            module_qs = Module.objects.filter(workspace__slug=slug).values_list("id", flat=True)
+            if project_id:
+                return list(module_qs.filter(project_id=project_id)) + ["None"]
+            return list(module_qs) + ["None"]
+
+        # Scrumban: sub-group-by module → L3 delivery parents; group-by module → L2 epics.
         if queryset is not None:
             if for_subgroup:
                 annotated_delivery = queryset.annotate(_group_delivery_id=_delivery_parent_id_annotation())

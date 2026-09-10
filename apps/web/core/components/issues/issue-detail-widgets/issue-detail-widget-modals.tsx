@@ -7,13 +7,15 @@
 import React from "react";
 import { observer } from "mobx-react";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
-import type { ISearchIssueResponse, TIssueServiceType, TWorkItemWidgets } from "@plane/types";
+import type { ISearchIssueResponse, TIssue, TIssueServiceType, TWorkItemWidgets } from "@plane/types";
 // components
 import { ExistingIssuesListModal } from "@/components/core/modals/existing-issues-list-modal";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // local imports
 import { IssueLinkCreateUpdateModal } from "../issue-detail/links/create-update-link-modal";
+import { CreateUpdateIssueModal } from "../issue-modal/modal";
 import { useLinkOperations } from "./links/helper";
 import { useSubIssueOperations } from "./sub-issues/helper";
 
@@ -32,6 +34,8 @@ export const IssueDetailWidgetModals = observer(function IssueDetailWidgetModals
     isIssueLinkModalOpen,
     toggleIssueLinkModal: toggleIssueLinkModalStore,
     setIssueLinkData,
+    isCreateIssueModalOpen,
+    toggleCreateIssueModal,
     isSubIssuesModalOpen,
     toggleSubIssuesModal,
     relationKey,
@@ -43,6 +47,8 @@ export const IssueDetailWidgetModals = observer(function IssueDetailWidgetModals
     issueCrudOperationState,
     setIssueCrudOperationState,
   } = useIssueDetail(issueServiceType);
+  // Scrumban creates sub-tasks inline with a hierarchy type instead of through this modal
+  const isStagedGateScrumban = useIsStagedGateScrumban(projectId);
 
   // helper hooks
   const subIssueOperations = useSubIssueOperations(issueServiceType);
@@ -73,6 +79,18 @@ export const IssueDetailWidgetModals = observer(function IssueDetailWidgetModals
       issueId,
       _issue.map((issue) => issue.id)
     );
+
+  const handleCreateUpdateModalClose = () => {
+    handleIssueCrudState("create", null);
+    toggleCreateIssueModal(false);
+    setLastWidgetAction("sub-work-items");
+  };
+
+  const handleCreateUpdateModalOnSubmit = async (_issue: TIssue) => {
+    if (_issue.parent_id) {
+      await subIssueOperations.addSubIssue(workspaceSlug, projectId, _issue.parent_id, [_issue.id]);
+    }
+  };
 
   const handleIssueLinkModalOnClose = () => {
     toggleIssueLinkModalStore(false);
@@ -109,6 +127,11 @@ export const IssueDetailWidgetModals = observer(function IssueDetailWidgetModals
   };
 
   // helpers
+  const createUpdateModalData: Partial<TIssue> = {
+    parent_id: issueCrudOperationState?.create?.parentIssueId,
+    project_id: projectId,
+  };
+
   const existingIssuesModalSearchParams = {
     sub_issue: true,
     issue_id: issueCrudOperationState?.existing?.parentIssueId,
@@ -121,6 +144,13 @@ export const IssueDetailWidgetModals = observer(function IssueDetailWidgetModals
     issueCrudOperationState?.existing?.parentIssueId &&
     isSubIssuesModalOpen;
 
+  const shouldRenderCreateUpdateModal =
+    !isStagedGateScrumban &&
+    !hideWidgets?.includes("sub-work-items") &&
+    issueCrudOperationState?.create?.toggle &&
+    issueCrudOperationState?.create?.parentIssueId &&
+    isCreateIssueModalOpen;
+
   return (
     <>
       {!hideWidgets?.includes("links") && (
@@ -129,6 +159,16 @@ export const IssueDetailWidgetModals = observer(function IssueDetailWidgetModals
           handleOnClose={handleIssueLinkModalOnClose}
           linkOperations={handleLinkOperations}
           issueServiceType={issueServiceType}
+        />
+      )}
+
+      {shouldRenderCreateUpdateModal && (
+        <CreateUpdateIssueModal
+          isOpen={issueCrudOperationState?.create?.toggle}
+          data={createUpdateModalData}
+          onClose={handleCreateUpdateModalClose}
+          onSubmit={handleCreateUpdateModalOnSubmit}
+          isProjectSelectionDisabled
         />
       )}
 

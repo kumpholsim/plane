@@ -19,6 +19,8 @@ import {
   HIERARCHY_BOARD_STATE_PREFIX,
   L4_BOARD_STATE_OPTIONS,
   boardStateKeyFromExternalId,
+  ISSUE_GROUP_BY_OPTIONS,
+  isStagedGateScrumbanMode,
 } from "@plane/constants";
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import type { ISvgIcons } from "@plane/propel/icons";
@@ -61,8 +63,6 @@ import { renderFormattedDate, getFileURL } from "@plane/utils";
 import { store } from "@/lib/store-context";
 import { ISSUE_FILTER_DEFAULT_DATA } from "@/store/issue/helpers/base-issues.store";
 import { DEFAULT_DISPLAY_PROPERTIES } from "@/store/issue/issue-details/sub_issues_filter.store";
-// constants
-import { ISSUE_GROUP_BY_OPTIONS } from "@plane/constants";
 // components
 import {
   SpreadsheetAssigneeColumn,
@@ -158,7 +158,10 @@ export const getGroupByColumns = ({
   > = {
     project: getProjectColumns,
     cycle: getCycleColumns,
-    module: asSubGroup ? () => getDeliveryParentColumns({ issueIds }) : getModuleColumns,
+    module:
+      asSubGroup && isStagedGateScrumbanMode(store.projectRoot.project.currentProjectDetails?.workflow_mode)
+        ? () => getDeliveryParentColumns({ issueIds })
+        : getModuleColumns,
     state: getStateColumns,
     "state_detail.group": getStateGroupColumns,
     priority: getPriorityColumns,
@@ -229,6 +232,7 @@ const getModuleColumns = (): IGroupByColumn[] | undefined => {
   // get current project details
   const { currentProjectDetails } = store.projectRoot.project;
   if (!currentProjectDetails || !currentProjectDetails?.id) return;
+  if (!isStagedGateScrumbanMode(currentProjectDetails.workflow_mode)) return getClassicModuleColumns();
   // Epics (L2) that have L3/L4 children in the currently loaded issue map
   // (cycle/project views only load related work items — avoids empty epic headers)
   const { issuesMap } = store.issue.issues;
@@ -285,6 +289,31 @@ const getModuleColumns = (): IGroupByColumn[] | undefined => {
       payload: {},
     });
   }
+  return modules;
+};
+
+/** Stock Plane module grouping — one column per project module plus None. */
+const getClassicModuleColumns = (): IGroupByColumn[] | undefined => {
+  const { currentProjectDetails } = store.projectRoot.project;
+  if (!currentProjectDetails?.id) return;
+  const { getProjectModuleDetails } = store.module;
+  const moduleDetails = getProjectModuleDetails(currentProjectDetails.id);
+
+  const modules: IGroupByColumn[] = [];
+  moduleDetails?.forEach((moduleDetail) => {
+    modules.push({
+      id: moduleDetail.id,
+      name: moduleDetail.name,
+      icon: <ModuleIcon className="h-3.5 w-3.5" />,
+      payload: { module_ids: [moduleDetail.id] },
+    });
+  });
+  modules.push({
+    id: "None",
+    name: "None",
+    icon: <ModuleIcon className="h-3.5 w-3.5" />,
+    payload: {},
+  });
   return modules;
 };
 
@@ -368,9 +397,9 @@ const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefin
   const { getProjectStates, projectStates } = store.state;
   const _states = projectId ? getProjectStates(projectId) : projectStates;
   if (!_states) return;
-  const hierarchyBoardStates = _states.filter((state) =>
-    Boolean(state.external_id?.startsWith(HIERARCHY_BOARD_STATE_PREFIX))
-  );
+  const hierarchyBoardStates = isStagedGateScrumbanMode(store.projectRoot.project.currentProjectDetails?.workflow_mode)
+    ? _states.filter((state) => Boolean(state.external_id?.startsWith(HIERARCHY_BOARD_STATE_PREFIX)))
+    : [];
   // Hierarchy board columns must follow fixed product order (To Do → … → Done),
   // not STATE_GROUPS (unstarted before started), which incorrectly puts QA To Do
   // before In Progress / Under Review.
@@ -1011,7 +1040,4 @@ export const useGroupByOptions = (
 ): {
   key: TIssueGroupByOptions;
   titleTranslationKey: string;
-}[] => {
-  const groupByOptions = ISSUE_GROUP_BY_OPTIONS.filter((option) => options.includes(option.key));
-  return groupByOptions;
-};
+}[] => ISSUE_GROUP_BY_OPTIONS.filter((option) => options.includes(option.key));

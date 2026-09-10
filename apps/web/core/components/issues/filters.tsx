@@ -8,15 +8,13 @@ import { useCallback, useState } from "react";
 import { observer } from "mobx-react";
 import { ChartNoAxesColumn, SlidersHorizontal } from "lucide-react";
 // plane imports
-import { EIssueFilterType, ISSUE_STORE_TO_FILTERS_MAP } from "@plane/constants";
+import { EIssueFilterType, ISSUE_STORE_TO_FILTERS_MAP, isStagedGateScrumbanMode } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
-import type { IIssueDisplayFilterOptions, IIssueDisplayProperties } from "@plane/types";
+import type { IIssueDisplayFilterOptions, IIssueDisplayProperties, TProject } from "@plane/types";
 import { EIssueLayoutTypes, EIssuesStoreType } from "@plane/types";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
-// plane web imports
-import type { TProject } from "@plane/types";
 // local imports
 import { WorkItemsModal } from "../analytics/work-items/modal";
 import { WorkItemFiltersToggle } from "../work-item-filters/filters-toggle";
@@ -61,6 +59,10 @@ export const HeaderFilters = observer(function HeaderFilters(props: Props) {
   // derived values
   const activeLayout = issueFilters?.displayFilters?.layout;
   const layoutDisplayFiltersOptions = ISSUE_STORE_TO_FILTERS_MAP[storeType]?.layoutOptions[activeLayout];
+  const isScrumban = isStagedGateScrumbanMode(currentProjectDetails?.workflow_mode);
+  // Scrumban locks list/board structure — hide Display there. Classic always shows Display.
+  const hideStructuralDisplayControls =
+    isScrumban && (activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN);
 
   const handleLayoutChange = useCallback(
     (layout: EIssueLayoutTypes) => {
@@ -108,10 +110,8 @@ export const HeaderFilters = observer(function HeaderFilters(props: Props) {
           activeLayout={activeLayout}
         />
       </div>
-      {activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
-        <WorkItemFiltersToggle entityType={storeType} entityId={projectId} />
-      )}
-      {activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
+      {!hideStructuralDisplayControls && <WorkItemFiltersToggle entityType={storeType} entityId={projectId} />}
+      {!hideStructuralDisplayControls && (
         <FiltersDropdown
           miniIcon={<SlidersHorizontal className="size-3.5" />}
           title={t("common.display")}

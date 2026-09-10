@@ -12,6 +12,7 @@ import { Row } from "@plane/ui";
 // plane utils
 import { cn } from "@plane/utils";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import { getRandomInt, getRandomLength } from "../utils";
 
 export const ListLoaderItemRow = forwardRef(function ListLoaderItemRow(
@@ -23,7 +24,7 @@ export const ListLoaderItemRow = forwardRef(function ListLoaderItemRow(
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
   const storeType = useIssueStoreType();
-  const isCompactList = storeType === EIssuesStoreType.CYCLE;
+  const isCompactList = useIsStagedGateScrumban() && storeType === EIssuesStoreType.CYCLE;
 
   return (
     <Row

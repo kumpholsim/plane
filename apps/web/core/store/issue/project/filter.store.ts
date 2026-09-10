@@ -9,7 +9,12 @@ import { action, computed, makeObservable, observable, runInAction } from "mobx"
 // base class
 import { computedFn } from "mobx-utils";
 import type { TSupportedFilterTypeForUpdate } from "@plane/constants";
-import { EIssueFilterType } from "@plane/constants";
+import {
+  CLASSIC_DEFAULT_DISPLAY_FILTERS,
+  EIssueFilterType,
+  SCRUMBAN_DEFAULT_DISPLAY_FILTERS,
+  isStagedGateScrumbanMode,
+} from "@plane/constants";
 import type {
   IIssueDisplayFilterOptions,
   IIssueDisplayProperties,
@@ -114,7 +119,8 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
     const filteredRouteParams: Partial<Record<TIssueParams, string | boolean>> = this.computedFilteredParams(
       userFilters?.richFilters,
       userFilters?.displayFilters,
-      filteredParams
+      filteredParams,
+      isStagedGateScrumbanMode(this.rootIssueStore.projectMap?.[projectId]?.workflow_mode)
     );
 
     return filteredRouteParams;
@@ -137,13 +143,11 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
   fetchFilters = async (workspaceSlug: string, projectId: string) => {
     const _filters = await this.projectService.getProjectUserProperties(workspaceSlug, projectId);
 
+    const isScrumban = isStagedGateScrumbanMode(this.rootIssueStore.projectMap?.[projectId]?.workflow_mode);
     const richFilters = _filters?.rich_filters;
-    const displayFilters = this.computedDisplayFilters(_filters?.display_filters, {
-      group_by: "module",
-      order_by: "sort_order",
-      layout: "list",
-      sub_issue: false,
-      show_empty_groups: false,
+    const displayFilters = this.computedDisplayFilters({
+      ...(isScrumban ? SCRUMBAN_DEFAULT_DISPLAY_FILTERS : CLASSIC_DEFAULT_DISPLAY_FILTERS),
+      ..._filters?.display_filters,
     });
     const displayProperties = this.computedDisplayProperties(_filters?.display_properties);
 
@@ -212,9 +216,12 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
         case EIssueFilterType.DISPLAY_FILTERS: {
           const updatedDisplayFilters = { ...(filters as IIssueDisplayFilterOptions) };
           const nextLayout = updatedDisplayFilters.layout ?? _filters.displayFilters.layout;
+          const locksStructuralFilters = isStagedGateScrumbanMode(
+            this.rootIssueStore.projectMap?.[projectId]?.workflow_mode
+          );
 
-          // List / board layouts are locked — don't persist view tweaks into shared display filters
-          if (nextLayout === "list" || nextLayout === "kanban") {
+          // Scrumban locks list / board structure — don't persist view tweaks into shared display filters
+          if (locksStructuralFilters && (nextLayout === "list" || nextLayout === "kanban")) {
             const layoutOnlyUpdate = Object.keys(updatedDisplayFilters).every((key) => key === "layout");
             if (!layoutOnlyUpdate) {
               delete updatedDisplayFilters.group_by;

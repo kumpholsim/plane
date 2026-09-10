@@ -161,7 +161,7 @@ export class IssueStore implements IIssueStore {
       module_ids: issue?.module_ids,
       type_id: issue?.type_id,
       hierarchy_type_id: issue?.hierarchy_type_id ?? issue?.sub_work_item_category_id ?? null,
-      hierarchy_level: issue?.hierarchy_level ?? 3,
+      hierarchy_level: issue?.hierarchy_level,
       sub_work_item_category_id: issue?.sub_work_item_category_id ?? issue?.hierarchy_type_id ?? null,
       created_at: issue?.created_at,
       updated_at: issue?.updated_at,

@@ -8,9 +8,11 @@ import { useState } from "react";
 import { observer } from "mobx-react";
 import { FormProvider, useForm } from "react-hook-form";
 // plane imports
+import { PROJECT_WORKFLOW_MODE } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { EFileAssetType } from "@plane/types";
+import type { TProject, TProjectWorkflowMode } from "@plane/types";
 // components
 import ProjectCommonAttributes from "@/components/project/create/common-attributes";
 import ProjectCreateHeader from "@/components/project/create/header";
@@ -20,9 +22,9 @@ import { getCoverImageType, uploadCoverImage } from "@/helpers/cover-image.helpe
 import { useProject } from "@/hooks/store/use-project";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web types
-import type { TProject } from "@plane/types";
 import { ProjectAttributes } from "./attributes";
 import { getProjectFormValues } from "./utils";
+import { ProjectWorkflowModePicker } from "./workflow-mode-picker";
 
 export type TCreateProjectFormProps = {
   setToFavorite?: boolean;
@@ -43,11 +45,27 @@ export const CreateProjectForm = observer(function CreateProjectForm(props: TCre
   const [shouldAutoSyncIdentifier, setShouldAutoSyncIdentifier] = useState(true);
   // form info
   const methods = useForm<TProject>({
-    defaultValues: { ...getProjectFormValues(), ...data },
+    defaultValues: { ...getProjectFormValues(PROJECT_WORKFLOW_MODE.SCRUM), ...data },
     reValidateMode: "onChange",
   });
-  const { handleSubmit, reset, setValue } = methods;
+  const { handleSubmit, reset, setValue, watch } = methods;
+  const workflowMode = (watch("workflow_mode") ?? PROJECT_WORKFLOW_MODE.SCRUM) as TProjectWorkflowMode;
   const { isMobile } = usePlatformOS();
+
+  const handleWorkflowModeChange = (mode: TProjectWorkflowMode) => {
+    const nextDefaults = getProjectFormValues(mode);
+    const preserved = {
+      name: watch("name"),
+      identifier: watch("identifier"),
+      description: watch("description"),
+      cover_image_url: watch("cover_image_url"),
+      logo_props: watch("logo_props"),
+      network: watch("network"),
+      project_lead: watch("project_lead"),
+    };
+    reset({ ...nextDefaults, ...preserved, workflow_mode: mode });
+  };
+
   const handleAddToFavorites = (projectId: string) => {
     if (!workspaceSlug) return;
 
@@ -178,6 +196,7 @@ export const CreateProjectForm = observer(function CreateProjectForm(props: TCre
 
       <form onSubmit={handleSubmit(onSubmit)} className="px-3">
         <div className="mt-9 space-y-6 pb-5">
+          <ProjectWorkflowModePicker value={workflowMode} onChange={handleWorkflowModeChange} />
           <ProjectCommonAttributes
             setValue={setValue}
             isMobile={isMobile}

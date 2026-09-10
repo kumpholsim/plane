@@ -305,6 +305,7 @@ class IssueCreateSerializer(BaseSerializer):
             allowed_board_keys_for_l4,
             board_state_key,
             is_qa_hierarchy_type,
+            l4_leave_todo_requirement_error,
         )
 
         level = attrs.get("hierarchy_level")
@@ -356,6 +357,28 @@ class IssueCreateSerializer(BaseSerializer):
             # Clear qa_outcome when leaving Done; require outcome labels via field when Done+QA
             if key != BOARD_STATE_DONE and "qa_outcome" not in attrs:
                 attrs["qa_outcome"] = None
+
+            # Dev/QA: cannot leave To Do without assignee + estimate
+            if self.instance is not None and "state" in attrs:
+                current_state = getattr(self.instance, "state", None)
+                if "assignee_ids" in attrs:
+                    has_assignee = bool(attrs.get("assignee_ids"))
+                else:
+                    has_assignee = self.instance.issue_assignee.filter(deleted_at__isnull=True).exists()
+                if "estimate_point" in attrs:
+                    has_estimate = attrs.get("estimate_point") is not None
+                else:
+                    has_estimate = getattr(self.instance, "estimate_point_id", None) is not None
+                leave_todo_error = l4_leave_todo_requirement_error(
+                    hierarchy_level=level,
+                    hierarchy_type=hierarchy_type,
+                    current_state=current_state,
+                    next_state=state,
+                    has_assignee=has_assignee,
+                    has_estimate=has_estimate,
+                )
+                if leave_todo_error:
+                    raise serializers.ValidationError({"state_id": leave_todo_error})
 
         return attrs
 

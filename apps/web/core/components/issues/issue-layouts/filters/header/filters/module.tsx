@@ -4,32 +4,17 @@
  * See the LICENSE file for details.
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { sortBy } from "lodash-es";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // components
 import { ModuleIcon } from "@plane/propel/icons";
-import type { TIssue, TIssuesResponse } from "@plane/types";
 import { Loader } from "@plane/ui";
 import { FilterHeader, FilterOption } from "@/components/issues/issue-layouts/filters";
-import { store } from "@/lib/store-context";
-import { IssueService } from "@/services/issue";
+import { useModule } from "@/hooks/store/use-module";
 
-const issueService = new IssueService();
-
-const normalizeIssueList = (response: TIssuesResponse | undefined): TIssue[] => {
-  const results = response?.results;
-  if (!results) return [];
-  if (Array.isArray(results)) return results;
-  const list: TIssue[] = [];
-  for (const groupId in results) {
-    const group = results[groupId];
-    if (Array.isArray(group?.results)) list.push(...group.results);
-    else if (Array.isArray(group)) list.push(...(group as TIssue[]));
-  }
-  return list;
-};
+type Option = { id: string; name: string };
 
 type Props = {
   appliedFilters: string[] | null;
@@ -39,41 +24,25 @@ type Props = {
 
 export const FilterModule = observer(function FilterModule(props: Props) {
   const { appliedFilters, handleUpdate, searchQuery } = props;
-  const { workspaceSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const { getModuleById, getProjectModuleIds } = useModule();
   const [itemsToRender, setItemsToRender] = useState(5);
   const [previewEnabled, setPreviewEnabled] = useState(true);
-  const [epics, setEpics] = useState<TIssue[] | null>(null);
 
-  useEffect(() => {
-    if (!workspaceSlug || !projectId) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const response = await issueService.getIssues(workspaceSlug.toString(), projectId.toString(), {
-          hierarchy_level: "2",
-          sub_issue: true,
-          per_page: 100,
-        });
-        const issues = normalizeIssueList(response as TIssuesResponse);
-        if (cancelled) return;
-        store.issue.issues.addIssue(issues);
-        setEpics(issues);
-      } catch {
-        if (!cancelled) setEpics([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceSlug, projectId]);
-
+  const moduleIds = projectId ? getProjectModuleIds(projectId.toString()) : undefined;
+  const options: Option[] | null = moduleIds?.map((moduleId) => getModuleById(moduleId)!) ?? null;
   const appliedFiltersCount = appliedFilters?.length ?? 0;
 
   const sortedOptions = useMemo(() => {
-    const filteredOptions = (epics || []).filter((epic) => epic.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filteredOptions = (options || []).filter((option) =>
+      option.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
-    return sortBy(filteredOptions, [(epic) => !appliedFilters?.includes(epic.id), (epic) => epic.name.toLowerCase()]);
-  }, [searchQuery, epics, appliedFilters]);
+    return sortBy(filteredOptions, [
+      (option) => !appliedFilters?.includes(option.id),
+      (option) => option.name.toLowerCase(),
+    ]);
+  }, [searchQuery, options, appliedFilters]);
 
   const handleViewToggle = () => {
     if (!sortedOptions) return;
@@ -85,22 +54,22 @@ export const FilterModule = observer(function FilterModule(props: Props) {
   return (
     <>
       <FilterHeader
-        title={`Epic ${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
+        title={`Module ${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
         isPreviewEnabled={previewEnabled}
         handleIsPreviewEnabled={() => setPreviewEnabled(!previewEnabled)}
       />
       {previewEnabled && (
         <div>
-          {epics ? (
+          {options ? (
             sortedOptions.length > 0 ? (
               <>
-                {sortedOptions.slice(0, itemsToRender).map((epic) => (
+                {sortedOptions.slice(0, itemsToRender).map((option) => (
                   <FilterOption
-                    key={epic.id}
-                    isChecked={appliedFilters?.includes(epic.id)}
-                    onClick={() => handleUpdate(epic.id)}
+                    key={option.id}
+                    isChecked={appliedFilters?.includes(option.id) ?? false}
+                    onClick={() => handleUpdate(option.id)}
                     icon={<ModuleIcon className="h-3 w-3 flex-shrink-0" />}
-                    title={epic.name}
+                    title={option.name}
                   />
                 ))}
                 {sortedOptions.length > 5 && (
@@ -114,7 +83,7 @@ export const FilterModule = observer(function FilterModule(props: Props) {
                 )}
               </>
             ) : (
-              <p className="text-xs text-placeholder italic">No matches found</p>
+              <p className="text-11 text-placeholder italic">No matches found</p>
             )
           ) : (
             <Loader className="space-y-2">

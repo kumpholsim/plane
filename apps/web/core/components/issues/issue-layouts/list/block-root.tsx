@@ -25,6 +25,7 @@ import { ListLoaderItemRow } from "@/components/ui/loader/layouts/list-layout-lo
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // types
 import { HIGHLIGHT_CLASS, getIssueBlockId, isIssueNew } from "../utils";
 import { IssueBlock } from "./block";
@@ -83,6 +84,7 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
   const { isMobile } = usePlatformOS();
   const { workspaceSlug } = useParams();
   const { listNestedExpand, level } = useIssueExpandCollapse();
+  const isStagedGateScrumban = useIsStagedGateScrumban();
   // store hooks
   const { subIssues: subIssuesStore } = useIssueDetail(isEpic ? EIssueServiceType.EPICS : EIssueServiceType.ISSUES);
 
@@ -93,7 +95,7 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
 
   // Sync L3→L4 nest expansion with the header expand/collapse cycle (list level 2)
   useEffect(() => {
-    if (isEpic || nestingLevel !== 0) return;
+    if (!isStagedGateScrumban || isEpic || nestingLevel !== 0) return;
 
     if (listNestedExpand) {
       setExpanded(true);
@@ -105,7 +107,17 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
 
     // Levels 0–1 keep nested rows collapsed
     if (level < 2) setExpanded(false);
-  }, [currentIssue?.project_id, isEpic, issueId, level, listNestedExpand, nestingLevel, subIssuesStore, workspaceSlug]);
+  }, [
+    currentIssue?.project_id,
+    isEpic,
+    isStagedGateScrumban,
+    issueId,
+    level,
+    listNestedExpand,
+    nestingLevel,
+    subIssuesStore,
+    workspaceSlug,
+  ]);
 
   useEffect(() => {
     const blockElement = issueBlockRef.current;
@@ -218,7 +230,7 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
             canEditProperties={canEditProperties}
             displayProperties={displayProperties}
             nestingLevel={nestingLevel + 1}
-            spacingLeft={spacingLeft + 24}
+            spacingLeft={spacingLeft + (isStagedGateScrumban ? 24 : 12)}
             containerRef={containerRef}
             selectionHelpers={selectionHelpers}
             groupId={groupId}

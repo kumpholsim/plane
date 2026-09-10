@@ -7,12 +7,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { EIssueFilterType } from "@plane/constants";
+import { EIssueFilterType, isStagedGateScrumbanMode } from "@plane/constants";
 import type { GroupByColumnTypes, TGroupedIssues, TIssueKanbanFilters } from "@plane/types";
 import { EIssueLayoutTypes } from "@plane/types";
 import { resolveDisplayFiltersForLayout } from "@plane/utils";
 import { collectGroupedIssueIds, getGroupByColumns, isWorkspaceLevel } from "@/components/issues/issue-layouts/utils";
 import { useIssues } from "@/hooks/store/use-issues";
+import { useProject } from "@/hooks/store/use-project";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { useIssuesActions } from "@/hooks/use-issues-actions";
 
@@ -78,8 +79,14 @@ export const IssueExpandCollapseProvider = observer(function IssueExpandCollapse
   const storeType = useIssueStoreType();
   const { issuesFilter, issues } = useIssues(storeType);
   const { updateFilters } = useIssuesActions(storeType);
+  const { getProjectById } = useProject();
 
-  const displayFilters = resolveDisplayFiltersForLayout(issuesFilter?.issueFilters?.displayFilters);
+  const lockStructuralFilters = isStagedGateScrumbanMode(
+    projectId ? getProjectById(projectId.toString())?.workflow_mode : undefined
+  );
+  const displayFilters = resolveDisplayFiltersForLayout(issuesFilter?.issueFilters?.displayFilters, {
+    lockStructuralFilters,
+  });
   const layout = displayFilters?.layout ?? issuesFilter?.issueFilters?.displayFilters?.layout;
   const group_by = displayFilters?.group_by ?? null;
   const sub_group_by = displayFilters?.sub_group_by ?? null;
@@ -129,8 +136,8 @@ export const IssueExpandCollapseProvider = observer(function IssueExpandCollapse
         .map((column) => column.id);
     }
 
-    // List epic/"module" grouping: collapse groups that currently have issues.
-    if (group_by === "module") {
+    // Scrumban's list epic ("module") grouping: collapse groups that currently have issues.
+    if (lockStructuralFilters && group_by === "module") {
       const groupedIssueIds = (issues?.groupedIssueIds ?? {}) as TGroupedIssues;
       const withIssues = columns
         .filter((column) => {
@@ -148,7 +155,7 @@ export const IssueExpandCollapseProvider = observer(function IssueExpandCollapse
     }
 
     return columns.map((column) => column.id);
-  }, [columnGroupBy, group_by, isEpic, issues, showEmptyGroup, storeType, sub_group_by]);
+  }, [columnGroupBy, group_by, isEpic, issues, lockStructuralFilters, showEmptyGroup, storeType, sub_group_by]);
 
   const applyGroupCollapse = useCallback(
     (collapsed: boolean) => {

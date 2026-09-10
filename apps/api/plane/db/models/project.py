@@ -37,6 +37,7 @@ class ProjectNetwork(Enum):
 
 
 def get_default_props():
+    # Classic Plane defaults (baseline 5f7d92784c). Scrumban locks layouts at runtime.
     return {
         "filters": {
             "priority": None,
@@ -50,11 +51,11 @@ def get_default_props():
             "subscriber": None,
         },
         "display_filters": {
-            "group_by": "module",
-            "order_by": "sort_order",
+            "group_by": None,
+            "order_by": "-created_at",
             "type": None,
-            "sub_issue": False,
-            "show_empty_groups": False,
+            "sub_issue": True,
+            "show_empty_groups": True,
             "layout": "list",
             "calendar_date_range": "",
         },
@@ -90,11 +91,20 @@ class Project(BaseModel):
     )
     emoji = models.CharField(max_length=255, null=True, blank=True)
     icon_prop = models.JSONField(null=True)
-    module_view = models.BooleanField(default=True)
-    cycle_view = models.BooleanField(default=True)
-    issue_views_view = models.BooleanField(default=True)
+    module_view = models.BooleanField(default=False)
+    cycle_view = models.BooleanField(default=False)
+    issue_views_view = models.BooleanField(default=False)
     page_view = models.BooleanField(default=True)
-    intake_view = models.BooleanField(default=True)
+    intake_view = models.BooleanField(default=False)
+    # scrum = classic Plane; staged_gate_scrumban = L1–L4 hierarchy product
+    workflow_mode = models.CharField(
+        max_length=64,
+        default="scrum",
+        choices=(
+            ("scrum", "Scrum"),
+            ("staged_gate_scrumban", "Staged-gate Scrumban"),
+        ),
+    )
     is_time_tracking_enabled = models.BooleanField(default=False)
     is_issue_type_enabled = models.BooleanField(default=False)
     guest_view_all_features = models.BooleanField(default=False)

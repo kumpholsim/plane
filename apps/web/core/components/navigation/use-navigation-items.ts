@@ -6,7 +6,7 @@
 
 import { useMemo, useCallback } from "react";
 // plane imports
-import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
+import { EUserPermissions, EUserPermissionsLevel, isStagedGateScrumbanMode } from "@plane/constants";
 import { CycleIcon, IntakeIcon, LayersIcon, ModuleIcon, PageIcon, ViewsIcon, WorkItemsIcon } from "@plane/propel/icons";
 import type { EUserProjectRoles, IPartialProject } from "@plane/types";
 import type { TNavigationItem } from "@/components/navigation/tab-navigation-root";
@@ -40,7 +40,7 @@ export const useNavigationItems = ({
         href: `/${workspaceSlug}/projects/${projectId}/issues`,
         icon: WorkItemsIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: false,
+        shouldRender: !isStagedGateScrumbanMode(project?.workflow_mode),
         sortOrder: 1,
       },
       {
@@ -100,7 +100,7 @@ export const useNavigationItems = ({
         href: `/${workspaceSlug}/projects/${projectId}/hierarchy`,
         icon: LayersIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: false,
+        shouldRender: isStagedGateScrumbanMode(project?.workflow_mode),
         sortOrder: 7,
       },
     ],

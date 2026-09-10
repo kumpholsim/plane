@@ -9,7 +9,12 @@ import { action, computed, makeObservable, observable, runInAction } from "mobx"
 // base class
 import { computedFn } from "mobx-utils";
 import type { TSupportedFilterTypeForUpdate } from "@plane/constants";
-import { EIssueFilterType } from "@plane/constants";
+import {
+  CLASSIC_DEFAULT_DISPLAY_FILTERS,
+  EIssueFilterType,
+  SCRUMBAN_DEFAULT_DISPLAY_FILTERS,
+  isStagedGateScrumbanMode,
+} from "@plane/constants";
 import type {
   IIssueDisplayFilterOptions,
   IIssueDisplayProperties,
@@ -116,10 +121,12 @@ export class CycleIssuesFilter extends IssueFilterHelperStore implements ICycleI
 
     if (filteredParams.includes("cycle")) filteredParams.splice(filteredParams.indexOf("cycle"), 1);
 
+    const projectId = this.rootIssueStore.projectId;
     const filteredRouteParams: Partial<Record<TIssueParams, string | boolean>> = this.computedFilteredParams(
       userFilters?.richFilters,
       userFilters?.displayFilters,
-      filteredParams
+      filteredParams,
+      isStagedGateScrumbanMode(projectId ? this.rootIssueStore.projectMap?.[projectId]?.workflow_mode : undefined)
     );
 
     return filteredRouteParams;
@@ -148,14 +155,11 @@ export class CycleIssuesFilter extends IssueFilterHelperStore implements ICycleI
   fetchFilters = async (workspaceSlug: string, projectId: string, cycleId: string) => {
     const _filters = await this.issueFilterService.fetchCycleIssueFilters(workspaceSlug, projectId, cycleId);
 
+    const isScrumban = isStagedGateScrumbanMode(this.rootIssueStore.projectMap?.[projectId]?.workflow_mode);
     const richFilters: TWorkItemFilterExpression = _filters?.rich_filters;
-    const displayFilters: IIssueDisplayFilterOptions = this.computedDisplayFilters(_filters?.display_filters, {
-      // List layout defaults: Epic grouping, manual order, hide L4 / empty groups
-      group_by: "module",
-      order_by: "sort_order",
-      layout: "list",
-      sub_issue: false,
-      show_empty_groups: false,
+    const displayFilters: IIssueDisplayFilterOptions = this.computedDisplayFilters({
+      ...(isScrumban ? SCRUMBAN_DEFAULT_DISPLAY_FILTERS : CLASSIC_DEFAULT_DISPLAY_FILTERS),
+      ..._filters?.display_filters,
     });
     const displayProperties: IIssueDisplayProperties = this.computedDisplayProperties(_filters?.display_properties);
 
@@ -225,10 +229,13 @@ export class CycleIssuesFilter extends IssueFilterHelperStore implements ICycleI
         case EIssueFilterType.DISPLAY_FILTERS: {
           const updatedDisplayFilters = { ...(filters as IIssueDisplayFilterOptions) };
           const nextLayout = updatedDisplayFilters.layout ?? _filters.displayFilters.layout;
+          const locksStructuralFilters = isStagedGateScrumbanMode(
+            this.rootIssueStore.projectMap?.[projectId]?.workflow_mode
+          );
 
-          // List / board layouts are locked — don't persist view tweaks into shared display filters
+          // Scrumban locks list / board structure — don't persist view tweaks into shared display filters
           // so other layouts' settings stay independent.
-          if (nextLayout === "list" || nextLayout === "kanban") {
+          if (locksStructuralFilters && (nextLayout === "list" || nextLayout === "kanban")) {
             const layoutOnlyUpdate = Object.keys(updatedDisplayFilters).every((key) => key === "layout");
             if (!layoutOnlyUpdate) {
               delete updatedDisplayFilters.group_by;

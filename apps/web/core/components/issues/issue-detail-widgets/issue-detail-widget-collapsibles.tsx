@@ -10,6 +10,7 @@ import { observer } from "mobx-react";
 import type { TIssueServiceType, TWorkItemWidgets } from "@plane/types";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import { useTimeLineRelationOptions } from "@/components/relations";
 // local imports
 import { AttachmentsCollapsible } from "./attachments";
@@ -31,15 +32,19 @@ export const IssueDetailWidgetCollapsibles = observer(function IssueDetailWidget
   // store hooks
   const {
     issue: { getIssueById },
+    subIssues: { subIssuesByIssueId },
     attachment: { getAttachmentsCountByIssueId, getAttachmentsUploadStatusByIssueId },
     relation: { getRelationCountByIssueId },
   } = useIssueDetail(issueServiceType);
+  const isStagedGateScrumban = useIsStagedGateScrumban(projectId);
   // derived values
   const issue = getIssueById(issueId);
+  const subIssues = subIssuesByIssueId(issueId);
   const ISSUE_RELATION_OPTIONS = useTimeLineRelationOptions();
   const issueRelationsCount = getRelationCountByIssueId(issueId, ISSUE_RELATION_OPTIONS);
-  // Always show Sub-tasks section (unless explicitly hidden)
-  const shouldRenderSubIssues = !hideWidgets?.includes("sub-work-items");
+  // Scrumban keeps the sub-task section always available; classic reveals it once sub-items exist
+  const shouldRenderSubIssues =
+    (isStagedGateScrumban || (!!subIssues && subIssues.length > 0)) && !hideWidgets?.includes("sub-work-items");
   const shouldRenderRelations = issueRelationsCount > 0 && !hideWidgets?.includes("relations");
   const shouldRenderLinks = !!issue?.link_count && issue?.link_count > 0 && !hideWidgets?.includes("links");
   const attachmentUploads = getAttachmentsUploadStatusByIssueId(issueId);

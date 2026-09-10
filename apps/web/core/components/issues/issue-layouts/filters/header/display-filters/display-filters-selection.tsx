@@ -21,6 +21,7 @@ import {
   FilterOrderBy,
   FilterSubGroupBy,
 } from "@/components/issues/issue-layouts/filters";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 
 type Props = {
   displayFilters: IIssueDisplayFilterOptions | undefined;
@@ -46,6 +47,8 @@ export const DisplayFiltersSelection = observer(function DisplayFiltersSelection
     moduleViewDisabled = false,
     isEpic = false,
   } = props;
+  // Scrumban defaults these off; stock Plane defaults them on
+  const isStagedGateScrumban = useIsStagedGateScrumban();
 
   const isDisplayFilterEnabled = (displayFilter: keyof IIssueDisplayFilterOptions) =>
     Object.keys(layoutDisplayFiltersOptions?.display_filters ?? {}).includes(displayFilter);
@@ -128,8 +131,8 @@ export const DisplayFiltersSelection = observer(function DisplayFiltersSelection
         <div className="py-2">
           <FilterExtraOptions
             selectedExtraOptions={{
-              show_empty_groups: displayFilters?.show_empty_groups ?? false,
-              sub_issue: displayFilters?.sub_issue ?? false,
+              show_empty_groups: displayFilters?.show_empty_groups ?? !isStagedGateScrumban,
+              sub_issue: displayFilters?.sub_issue ?? !isStagedGateScrumban,
             }}
             handleUpdate={(key, val) =>
               handleDisplayFiltersUpdate({

@@ -21,10 +21,11 @@ interface IHeaderSubGroupByCard {
   sub_group_by: TIssueGroupByOptions | undefined;
   handleCollapsedGroups: (toggle: "group_by" | "sub_group_by", value: string) => void;
   className?: string;
+  leading?: React.ReactNode;
 }
 
 export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props: IHeaderSubGroupByCard) {
-  const { icon, title, count, column_id, collapsedGroups, handleCollapsedGroups, className } = props;
+  const { icon, title, count, column_id, collapsedGroups, handleCollapsedGroups, className, leading } = props;
   return (
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
     <div
@@ -42,9 +43,13 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
         )}
       </div>
 
-      <div className="flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center overflow-hidden rounded-xs">
-        {icon ? icon : <Circle width={14} strokeWidth={2} />}
-      </div>
+      {leading}
+
+      {!leading && (
+        <div className="flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center overflow-hidden rounded-xs">
+          {icon ? icon : <Circle width={14} strokeWidth={2} />}
+        </div>
+      )}
 
       <div className="flex min-w-0 items-center gap-1 text-13">
         <div className="truncate text-primary">{title}</div>

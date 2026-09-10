@@ -16,6 +16,7 @@ import {
   EUserPermissionsLevel,
   ISSUE_DISPLAY_FILTERS_BY_PAGE,
   WORK_ITEM_TRACKER_ELEMENTS,
+  isStagedGateScrumbanMode,
 } from "@plane/constants";
 import { usePlatformOS } from "@plane/hooks";
 import { useTranslation } from "@plane/i18n";
@@ -72,6 +73,9 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
   const { allowPermissions } = useUserPermissions();
 
   const activeLayout = issueFilters?.displayFilters?.layout;
+  const hideStructuralDisplayControls =
+    isStagedGateScrumbanMode(currentProjectDetails?.workflow_mode) &&
+    (activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN);
 
   const { setValue, storedValue } = useLocalStorage("cycle_sidebar_collapsed", false);
 
@@ -211,10 +215,10 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
                 activeLayout={activeLayout}
               />
             </div>
-            {activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
+            {!hideStructuralDisplayControls && (
               <WorkItemFiltersToggle entityType={EIssuesStoreType.CYCLE} entityId={cycleId} />
             )}
-            {activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
+            {!hideStructuralDisplayControls && (
               <FiltersDropdown
                 title={t("common.display")}
                 placement="bottom-end"

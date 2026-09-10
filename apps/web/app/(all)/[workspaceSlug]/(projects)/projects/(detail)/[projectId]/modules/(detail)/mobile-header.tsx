@@ -8,7 +8,12 @@ import { useCallback, useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
-import { EIssueFilterType, ISSUE_LAYOUTS, ISSUE_DISPLAY_FILTERS_BY_PAGE } from "@plane/constants";
+import {
+  EIssueFilterType,
+  ISSUE_LAYOUTS,
+  ISSUE_DISPLAY_FILTERS_BY_PAGE,
+  isStagedGateScrumbanMode,
+} from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { CalendarLayoutIcon, BoardLayoutIcon, ListLayoutIcon, ChevronDownIcon } from "@plane/propel/icons";
 import type { IIssueDisplayFilterOptions, IIssueDisplayProperties } from "@plane/types";
@@ -44,6 +49,9 @@ export const ModuleIssuesMobileHeader = observer(function ModuleIssuesMobileHead
   } = useIssues(EIssuesStoreType.MODULE);
   // derived values
   const activeLayout = issueFilters?.displayFilters?.layout;
+  const hideStructuralDisplayControls =
+    isStagedGateScrumbanMode(currentProjectDetails?.workflow_mode) &&
+    (activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN);
   const moduleDetails = moduleId ? getModuleById(moduleId.toString()) : undefined;
 
   const handleLayoutChange = useCallback(
@@ -101,7 +109,7 @@ export const ModuleIssuesMobileHeader = observer(function ModuleIssuesMobileHead
           ))}
         </CustomMenu>
         <div className="flex flex-grow items-center justify-center border-l border-subtle text-13 text-secondary">
-          {activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
+          {!hideStructuralDisplayControls && (
             <FiltersDropdown
               title="Display"
               placement="bottom-end"

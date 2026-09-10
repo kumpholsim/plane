@@ -25,14 +25,17 @@ import { Row } from "@plane/ui";
 import { cn } from "@plane/utils";
 // hooks
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import { ProgressStatusDropdown } from "@/components/dropdowns/progress-status";
 import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
+import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 // plane web imports
 import { useWorkFlowFDragNDrop } from "@/components/workflow";
 // local imports
 import type { TRenderQuickActions } from "../list/list-view-types";
 import type { GroupDropLocation } from "../utils";
 import { collectGroupedIssueIds, getGroupByColumns, isWorkspaceLevel } from "../utils";
+import { CLASSIC_KANBAN_COLUMN_CLASS, SCRUMBAN_KANBAN_COLUMN_CLASS } from "./scrumban-board-layout";
 import { KanBan } from "./default";
 import { HeaderGroupByCard } from "./headers/group-by-card";
 import { HeaderSubGroupByCard } from "./headers/sub-group-by-card";
@@ -75,6 +78,7 @@ const SubGroupSwimlaneHeader = observer(function SubGroupSwimlaneHeader({
   sub_group_by,
 }: ISubGroupSwimlaneHeader) {
   const { getIsWorkflowWorkItemCreationDisabled } = useWorkFlowFDragNDrop(group_by, sub_group_by);
+  const isStagedGateScrumban = useIsStagedGateScrumban();
 
   return (
     <div className="relative flex h-max min-h-full w-full items-center gap-4">
@@ -88,7 +92,13 @@ const SubGroupSwimlaneHeader = observer(function SubGroupSwimlaneHeader({
           if (subGroupByVisibilityToggle === false) return <></>;
 
           return (
-            <div key={`${sub_group_by}_${_list.id}`} className="flex w-[228px] flex-shrink-0 flex-col">
+            <div
+              key={`${sub_group_by}_${_list.id}`}
+              className={cn(
+                "flex flex-col",
+                isStagedGateScrumban ? SCRUMBAN_KANBAN_COLUMN_CLASS : CLASSIC_KANBAN_COLUMN_CLASS
+              )}
+            >
               <HeaderGroupByCard
                 sub_group_by={sub_group_by}
                 group_by={group_by}
@@ -161,6 +171,8 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
     updateIssue,
   } = props;
 
+  const isStagedGateScrumban = useIsStagedGateScrumban();
+
   const visibilitySubGroupBy = (
     _list: IGroupByColumn,
     subGroupCount: number
@@ -188,7 +200,9 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
           if (subGroupByVisibilityToggle.showGroup === false) return <></>;
 
           const l3Issue = issuesMap[_list.id];
+          // Scrumban sub-groups by L3 delivery item and surfaces its progress on the swimlane header
           const isL3Swimlane =
+            isStagedGateScrumban &&
             !!l3Issue &&
             _list.id !== "None" &&
             Number(l3Issue.hierarchy_level ?? HIERARCHY_LEVEL_DELIVERY) === HIERARCHY_LEVEL_DELIVERY;
@@ -202,11 +216,14 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
           return (
             <div key={_list.id} className="flex flex-shrink-0 flex-col">
               <div className="sticky top-[50px] z-[3] flex w-full items-center border-y-[0.5px] border-subtle bg-layer-1 py-1">
-                <Row className="sticky left-0 flex min-w-0 items-center">
+                <Row
+                  className={cn("sticky left-0", isStagedGateScrumban ? "flex min-w-0 items-center" : "flex-shrink-0")}
+                >
                   <div
                     className={cn(
                       "flex max-w-2xl min-w-0 items-center gap-2",
-                      isFullyDoneL3ForCycleHighlight(l3Issue ?? { id: _list.id }, issuesMap) &&
+                      isStagedGateScrumban &&
+                        isFullyDoneL3ForCycleHighlight(l3Issue ?? { id: _list.id }, issuesMap) &&
                         "rounded-md bg-success-subtle px-1.5 py-0.5"
                     )}
                   >
@@ -218,6 +235,11 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                       collapsedGroups={collapsedGroups}
                       handleCollapsedGroups={handleCollapsedGroups}
                       sub_group_by={sub_group_by}
+                      leading={
+                        isL3Swimlane ? (
+                          <HierarchyTypeBadge issue={l3Issue} disabled={!canEditL3} updateIssue={updateIssue} />
+                        ) : undefined
+                      }
                     />
                     {isL3Swimlane && (
                       // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
@@ -356,7 +378,7 @@ export const KanBanSwimLanes = observer(function KanBanSwimLanes(props: IKanBanS
   if (!groupByList || !subGroupByList) return null;
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <Row className="sticky top-0 z-[4] h-[50px] bg-surface-2">
         <SubGroupSwimlaneHeader
           getGroupIssueCount={getGroupIssueCount}

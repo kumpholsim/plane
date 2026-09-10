@@ -16,6 +16,7 @@ import {
   EUserPermissions,
   EUserPermissionsLevel,
   WORK_ITEM_TRACKER_ELEMENTS,
+  isStagedGateScrumbanMode,
 } from "@plane/constants";
 import { Button } from "@plane/propel/button";
 import { ModuleIcon } from "@plane/propel/icons";
@@ -76,6 +77,9 @@ export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
   // derived values
   const isSidebarCollapsed = storedValue ? storedValue === "true" : false;
   const activeLayout = issueFilters?.displayFilters?.layout;
+  const hideStructuralDisplayControls =
+    isStagedGateScrumbanMode(currentProjectDetails?.workflow_mode) &&
+    (activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN);
   const moduleDetails = moduleId ? getModuleById(moduleId) : undefined;
   const canUserCreateIssue = allowPermissions(
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
@@ -205,10 +209,10 @@ export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
                 activeLayout={activeLayout}
               />
             </div>
-            {moduleId && activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
+            {moduleId && !hideStructuralDisplayControls && (
               <WorkItemFiltersToggle entityType={EIssuesStoreType.MODULE} entityId={moduleId} />
             )}
-            {activeLayout !== EIssueLayoutTypes.LIST && activeLayout !== EIssueLayoutTypes.KANBAN && (
+            {!hideStructuralDisplayControls && (
               <FiltersDropdown
                 title="Display"
                 placement="bottom-end"

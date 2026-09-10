@@ -7,6 +7,7 @@
 import { useEffect, useMemo } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
+import { isStagedGateScrumbanMode } from "@plane/constants";
 import {
   HIERARCHY_LEVEL_LABELS,
   HIERARCHY_LEVEL_MILESTONE,
@@ -20,6 +21,7 @@ import { CustomMenu, Tooltip } from "@plane/ui";
 import { cn } from "@plane/utils";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useIssues } from "@/hooks/store/use-issues";
+import { useProject } from "@/hooks/store/use-project";
 import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 
@@ -64,9 +66,12 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
   const {
     issue: { getIssueById },
   } = useIssueDetail();
+  const { getProjectById } = useProject();
   const { getTypeById, getActiveProjectTypes, fetchProjectTypes, fetchedMap } = useProjectHierarchyType();
 
   const projectId = issue.project_id;
+  const isScrumban = isStagedGateScrumbanMode(projectId ? getProjectById(projectId)?.workflow_mode : undefined);
+
   const typeId = issue.hierarchy_type_id ?? issue.sub_work_item_category_id ?? null;
   const hierarchyType = typeId ? getTypeById(typeId) : null;
   const currentLevel = (hierarchyType?.level ?? issue.hierarchy_level ?? 3) as 1 | 2 | 3 | 4;
@@ -75,9 +80,9 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
   const color = diluteHierarchyBadgeColor(hierarchyType?.color || "#6B7280", currentLevel);
 
   useEffect(() => {
-    if (!workspaceSlug || !projectId || fetchedMap[projectId]) return;
+    if (!isScrumban || !workspaceSlug || !projectId || fetchedMap[projectId]) return;
     void fetchProjectTypes(workspaceSlug.toString(), projectId);
-  }, [workspaceSlug, projectId, fetchedMap, fetchProjectTypes]);
+  }, [isScrumban, workspaceSlug, projectId, fetchedMap, fetchProjectTypes]);
 
   const allowedLevels = useMemo(() => {
     if (issue.parent_id) {
@@ -134,6 +139,9 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
       });
     }
   };
+
+  // Classic Scrum has no hierarchy type chips (Milestone / Epic / Story / …)
+  if (!isScrumban) return null;
 
   const badgeButton = (
     <button

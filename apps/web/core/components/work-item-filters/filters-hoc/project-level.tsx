@@ -19,6 +19,7 @@ import { CreateUpdateProjectViewModal } from "@/components/views/modal";
 import { useCycle } from "@/hooks/store/use-cycle";
 import { useLabel } from "@/hooks/store/use-label";
 import { useMember } from "@/hooks/store/use-member";
+import { useModule } from "@/hooks/store/use-module";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useProjectView } from "@/hooks/store/use-project-view";
@@ -51,6 +52,7 @@ export const ProjectLevelWorkItemFiltersHOC = observer(function ProjectLevelWork
   const {
     project: { getProjectMemberIds },
   } = useMember();
+  const { getProjectModuleIds } = useModule();
   const { getProjectStateIds } = useProjectState();
   // derived values
   const hasProjectMemberLevelPermissions = allowPermissions(
@@ -204,6 +206,7 @@ export const ProjectLevelWorkItemFiltersHOC = observer(function ProjectLevelWork
         cycleIds={getProjectCycleIds(projectId) ?? undefined}
         labelIds={getProjectLabelIds(projectId)}
         memberIds={getProjectMemberIds(projectId, false) ?? undefined}
+        moduleIds={getProjectModuleIds(projectId) ?? undefined}
         stateIds={getProjectStateIds(projectId)}
         saveViewOptions={saveViewOptions}
         updateViewOptions={updateViewOptions}

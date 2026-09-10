@@ -14,6 +14,8 @@ import {
   ISSUE_DISPLAY_FILTERS_BY_PAGE,
   PROJECT_VIEW_TRACKER_ELEMENTS,
   PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES,
+  EMPTY_PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES,
+  isStagedGateScrumbanMode,
 } from "@plane/constants";
 import type { TWorkItemFilterProperty } from "@plane/types";
 import { EIssuesStoreType, EIssueLayoutTypes } from "@plane/types";
@@ -28,6 +30,7 @@ import { BoardFullscreenProvider } from "@/components/issues/issue-layouts/kanba
 import { BoardFullscreenShell } from "@/components/issues/issue-layouts/kanban/board-fullscreen-shell";
 import { useCycle } from "@/hooks/store/use-cycle";
 import { useIssues } from "@/hooks/store/use-issues";
+import { useProject } from "@/hooks/store/use-project";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 // local imports
 import { IssuePeekOverview } from "../../peek-overview";
@@ -66,19 +69,20 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
   // store hooks
   const { issuesFilter } = useIssues(EIssuesStoreType.CYCLE);
   const { getCycleById } = useCycle();
+  const { getProjectById } = useProject();
   // state
   const [transferIssuesModal, setTransferIssuesModal] = useState(false);
   // derived values
   const workItemFilters = cycleId ? issuesFilter?.getIssueFilters(cycleId) : undefined;
   const activeLayout = workItemFilters?.displayFilters?.layout;
-  const isPinnedFilterLayout = activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN;
+  const isScrumban = isStagedGateScrumbanMode(projectId ? getProjectById(projectId)?.workflow_mode : undefined);
+  const isPinnedFilterLayout =
+    isScrumban && (activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN);
   const filtersToShowByLayout: TWorkItemFilterProperty[] = isPinnedFilterLayout
-    ? [
-        ...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters.filter(
-          (property): property is TWorkItemFilterProperty => !["state_id", "assignee_id"].includes(property as string)
-        ),
-        "progress_status",
-      ]
+    ? ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters.filter(
+        (property): property is TWorkItemFilterProperty =>
+          !["state_id", "assignee_id", "progress_status"].includes(property as string)
+      )
     : [...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters];
   const suppressedProperties: TWorkItemFilterProperty[] = ["state_id", "progress_status", "assignee_id"];
 
@@ -114,7 +118,11 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
           updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId, cycleId)}
           projectId={projectId}
           workspaceSlug={workspaceSlug}
-          pinnedProperties={isPinnedFilterLayout ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES : []}
+          pinnedProperties={
+            isPinnedFilterLayout
+              ? PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES
+              : EMPTY_PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES
+          }
         >
           {({ filter: cycleWorkItemsFilter }) => (
             <>

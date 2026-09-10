@@ -11,7 +11,7 @@ import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element
 import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { EIssueFilterType, EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
+import { EIssueFilterType, EUserPermissions, EUserPermissionsLevel, isStagedGateScrumbanMode } from "@plane/constants";
 import type { EIssuesStoreType } from "@plane/types";
 import { EIssueServiceType, EIssueLayoutTypes } from "@plane/types";
 import { resolveDisplayFiltersForLayout } from "@plane/utils";
@@ -19,6 +19,7 @@ import { resolveDisplayFiltersForLayout } from "@plane/utils";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useIssues } from "@/hooks/store/use-issues";
 import { useKanbanView } from "@/hooks/store/use-kanban-view";
+import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
 import { useGroupIssuesDragNDrop } from "@/hooks/use-group-dragndrop";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
@@ -67,6 +68,7 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
   // store hooks
   const storeType = useIssueStoreType() as KanbanStoreType;
   const { allowPermissions } = useUserPermissions();
+  const { getProjectById } = useProject();
   const { issueMap, issuesFilter, issues } = useIssues(storeType);
   const {
     issue: { getIssueById },
@@ -88,7 +90,12 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
 
   const { isDragging } = useKanbanView();
 
-  const displayFilters = resolveDisplayFiltersForLayout(issuesFilter?.issueFilters?.displayFilters);
+  const lockStructuralFilters = isStagedGateScrumbanMode(
+    projectId ? getProjectById(projectId.toString())?.workflow_mode : undefined
+  );
+  const displayFilters = resolveDisplayFiltersForLayout(issuesFilter?.issueFilters?.displayFilters, {
+    lockStructuralFilters,
+  });
   const displayProperties = issuesFilter?.issueFilters?.displayProperties;
 
   const sub_group_by = displayFilters?.sub_group_by;
@@ -265,8 +272,8 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
           className={`horizontal-scrollbar relative flex scrollbar-lg h-full w-full bg-surface-2 ${sub_group_by ? "vertical-scrollbar overflow-y-auto" : "overflow-x-auto overflow-y-hidden"}`}
           ref={scrollableContainerRef}
         >
-          <div className="relative h-full w-max min-w-full bg-surface-2">
-            <div className="h-full w-max">
+          <div className={`relative h-full min-w-full bg-surface-2 ${lockStructuralFilters ? "w-full" : "w-max"}`}>
+            <div className={`h-full ${lockStructuralFilters ? "w-full" : "w-max"}`}>
               <KanBanView
                 issuesMap={issueMap}
                 groupedIssueIds={groupedIssueIds ?? {}}

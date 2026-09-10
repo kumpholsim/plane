@@ -110,8 +110,11 @@ class TestEpicMembershipFilter:
             hierarchy_level=HIERARCHY_LEVEL_DELIVERY,
         )
 
+        project.workflow_mode = "staged_gate_scrumban"
+        project.save(update_fields=["workflow_mode"])
+
         issue_filter = {}
-        filter_module({"module": str(epic.id)}, issue_filter, method="GET")
+        filter_module({"module": str(epic.id), "project": str(project.id)}, issue_filter, method="GET")
         assert "id__in" in issue_filter
         matched = set(issue_filter["id__in"])
         assert epic.id in matched

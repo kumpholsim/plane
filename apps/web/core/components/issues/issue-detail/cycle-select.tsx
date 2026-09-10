@@ -29,10 +29,20 @@ type TIssueCycleSelect = {
   issueId: string;
   issueOperations: TIssueOperations;
   disabled?: boolean;
+  /** Scrumban only: restrict cycle to L3/L4 and let L4 inherit its parent's cycle. */
+  enforceHierarchyRules?: boolean;
 };
 
 export const IssueCycleSelect = observer(function IssueCycleSelect(props: TIssueCycleSelect) {
-  const { className = "", workspaceSlug, projectId, issueId, issueOperations, disabled = false } = props;
+  const {
+    className = "",
+    workspaceSlug,
+    projectId,
+    issueId,
+    issueOperations,
+    disabled = false,
+    enforceHierarchyRules = false,
+  } = props;
   const { t } = useTranslation();
   // states
   const [isUpdating, setIsUpdating] = useState(false);
@@ -45,8 +55,8 @@ export const IssueCycleSelect = observer(function IssueCycleSelect(props: TIssue
   const level = getHierarchyLevel(issue);
   const parent = issue?.parent_id ? getIssueById(issue.parent_id) : undefined;
   // Prefer own cycle; fall back to parent when L4 has not been assigned yet
-  const cycleId = issue?.cycle_id ?? parent?.cycle_id ?? null;
-  const cycleEditable = canEditCycle(level) && !disabled;
+  const cycleId = enforceHierarchyRules ? (issue?.cycle_id ?? parent?.cycle_id ?? null) : (issue?.cycle_id ?? null);
+  const cycleEditable = (!enforceHierarchyRules || canEditCycle(level)) && !disabled;
   const disableSelect = disabled || isUpdating || !cycleEditable;
 
   const handleIssueCycleChange = async (nextCycleId: string | null) => {
@@ -57,7 +67,7 @@ export const IssueCycleSelect = observer(function IssueCycleSelect(props: TIssue
     setIsUpdating(false);
   };
 
-  if (!shouldShowCycleProperty(level)) return null;
+  if (enforceHierarchyRules && !shouldShowCycleProperty(level)) return null;
 
   return (
     <div className={cn("flex h-full items-center gap-1", className)}>

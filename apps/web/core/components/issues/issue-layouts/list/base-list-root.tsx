@@ -9,7 +9,7 @@ import { useCallback, useEffect } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane constants
-import { EIssueFilterType, EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
+import { EIssueFilterType, EUserPermissions, EUserPermissionsLevel, isStagedGateScrumbanMode } from "@plane/constants";
 // types
 import type { EIssuesStoreType, GroupByColumnTypes, TGroupedIssues, TIssueKanbanFilters } from "@plane/types";
 import { EIssueLayoutTypes } from "@plane/types";
@@ -17,6 +17,7 @@ import { resolveDisplayFiltersForLayout } from "@plane/utils";
 // constants
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
+import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
 // hooks
 import { useGroupIssuesDragNDrop } from "@/hooks/use-group-dragndrop";
@@ -73,16 +74,22 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
   } = useIssuesActions(storeType);
   // mobx store
   const { allowPermissions } = useUserPermissions();
+  const { getProjectById } = useProject();
   const { issueMap } = useIssues();
 
-  const displayFilters = resolveDisplayFiltersForLayout(issuesFilter?.issueFilters?.displayFilters);
+  const { workspaceSlug, projectId } = useParams();
+  const lockStructuralFilters = isStagedGateScrumbanMode(
+    projectId ? getProjectById(projectId.toString())?.workflow_mode : undefined
+  );
+  const displayFilters = resolveDisplayFiltersForLayout(issuesFilter?.issueFilters?.displayFilters, {
+    lockStructuralFilters,
+  });
   const displayProperties = issuesFilter?.issueFilters?.displayProperties;
   const orderBy = displayFilters?.order_by || undefined;
 
   const group_by = (displayFilters?.group_by || null) as GroupByColumnTypes | null;
   const showEmptyGroup = displayFilters?.show_empty_groups ?? false;
 
-  const { workspaceSlug, projectId } = useParams();
   const { updateFilters } = useIssuesActions(storeType);
   const collapsedGroups =
     issuesFilter?.issueFilters?.kanbanFilters || ({ group_by: [], sub_group_by: [] } as TIssueKanbanFilters);

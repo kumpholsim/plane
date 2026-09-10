@@ -6,6 +6,7 @@
 
 import { observer } from "mobx-react";
 import Link from "next/link";
+import { isStagedGateScrumbanMode } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 // ui
 import { Button, getButtonStyling } from "@plane/propel/button";
@@ -33,6 +34,10 @@ export const ProjectFeatureUpdate = observer(function ProjectFeatureUpdate(props
   const currentProjectDetails = getProjectById(projectId);
   if (!currentProjectDetails) return null;
 
+  const openPath = isStagedGateScrumbanMode(currentProjectDetails.workflow_mode)
+    ? `/${workspaceSlug}/projects/${projectId}/cycles`
+    : `/${workspaceSlug}/projects/${projectId}/issues`;
+
   return (
     <>
       <Row className="py-6">
@@ -50,7 +55,7 @@ export const ProjectFeatureUpdate = observer(function ProjectFeatureUpdate(props
             {t("close")}
           </Button>
           <Link
-            href={`/${workspaceSlug}/projects/${projectId}/cycles`}
+            href={openPath}
             onClick={onClose}
             className={getButtonStyling("primary", "lg")}
             // oxlint-disable-next-line jsx-a11y/tabindex-no-positive

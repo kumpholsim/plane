@@ -7,7 +7,7 @@
 import { observer } from "mobx-react";
 // hooks
 import { CloseIcon, ModuleIcon } from "@plane/propel/icons";
-import { useIssues } from "@/hooks/store/use-issues";
+import { useModule } from "@/hooks/store/use-module";
 
 type Props = {
   handleRemove: (val: string) => void;
@@ -17,24 +17,25 @@ type Props = {
 
 export const AppliedModuleFilters = observer(function AppliedModuleFilters(props: Props) {
   const { handleRemove, values, editable } = props;
-  const { issueMap } = useIssues();
+  // store hooks
+  const { getModuleById } = useModule();
 
   return (
     <>
-      {values.map((epicId) => {
-        const epicDetails = issueMap[epicId] ?? null;
+      {values.map((moduleId) => {
+        const moduleDetails = getModuleById(moduleId) ?? null;
 
-        if (!epicDetails) return null;
+        if (!moduleDetails) return null;
 
         return (
-          <div key={epicId} className="flex items-center gap-1 truncate rounded-sm bg-layer-1 p-1 text-11">
+          <div key={moduleId} className="flex items-center gap-1 truncate rounded-sm bg-layer-1 p-1 text-11">
             <ModuleIcon className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate normal-case">{epicDetails.name}</span>
+            <span className="truncate normal-case">{moduleDetails.name}</span>
             {editable && (
               <button
                 type="button"
                 className="grid place-items-center text-tertiary hover:text-secondary"
-                onClick={() => handleRemove(epicId)}
+                onClick={() => handleRemove(moduleId)}
               >
                 <CloseIcon height={10} width={10} strokeWidth={2} />
               </button>

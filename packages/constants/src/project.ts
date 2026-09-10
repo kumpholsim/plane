@@ -129,3 +129,14 @@ export enum EProjectFeatureKey {
   PAGES = "pages",
   INTAKE = "intake",
 }
+
+export const PROJECT_WORKFLOW_MODE = {
+  SCRUM: "scrum",
+  STAGED_GATE_SCRUMBAN: "staged_gate_scrumban",
+} as const;
+
+export type TProjectWorkflowModeConstant = (typeof PROJECT_WORKFLOW_MODE)[keyof typeof PROJECT_WORKFLOW_MODE];
+
+/** Missing/unknown mode → classic (safe default for existing projects). */
+export const isStagedGateScrumbanMode = (mode?: string | null): boolean =>
+  mode === PROJECT_WORKFLOW_MODE.STAGED_GATE_SCRUMBAN;

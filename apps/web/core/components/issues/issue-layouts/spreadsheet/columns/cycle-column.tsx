@@ -18,6 +18,7 @@ import {
 } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { useIssuesStore } from "@/hooks/use-issue-layout-store";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 
 type Props = {
   issue: TIssue;
@@ -34,9 +35,11 @@ export const SpreadsheetCycleColumn = observer(function SpreadsheetCycleColumn(p
     issues: { addCycleToIssue, removeCycleFromIssue },
   } = useIssuesStore();
 
+  // Scrumban restricts cycles to L3/L4; classic allows them on any work item
+  const isStagedGateScrumban = useIsStagedGateScrumban(issue.project_id);
   const level = getHierarchyLevel(issue);
-  const showCycle = shouldShowCycleProperty(level);
-  const cycleEditable = canEditCycle(level) && !disabled;
+  const showCycle = !isStagedGateScrumban || shouldShowCycleProperty(level);
+  const cycleEditable = (!isStagedGateScrumban || canEditCycle(level)) && !disabled;
 
   const handleCycle = useCallback(
     async (cycleId: string | null) => {

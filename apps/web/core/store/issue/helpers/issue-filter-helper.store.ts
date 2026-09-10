@@ -93,9 +93,10 @@ export class IssueFilterHelperStore implements IIssueFilterHelperStore {
   computedFilteredParams = (
     richFilters: TWorkItemFilterExpression,
     displayFilters: IIssueDisplayFilterOptions | undefined,
-    acceptableParamsByLayout: TIssueParams[]
+    acceptableParamsByLayout: TIssueParams[],
+    lockStructuralFilters: boolean = false
   ): Partial<Record<TIssueParams, string | boolean>> => {
-    const effectiveDisplayFilters = resolveDisplayFiltersForLayout(displayFilters);
+    const effectiveDisplayFilters = resolveDisplayFiltersForLayout(displayFilters, { lockStructuralFilters });
     const computedDisplayFilters: Partial<Record<TIssueParams, undefined | string[] | boolean | string>> = {
       group_by: effectiveDisplayFilters?.group_by
         ? EIssueGroupByToServerOptions[effectiveDisplayFilters.group_by]
