@@ -256,12 +256,14 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
               the track always includes 30% headroom past that line.
             </p>
             <label
+              htmlFor="capacity-public-holidays"
               className="flex items-center justify-between gap-2 text-13"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
             >
               <span className="text-secondary">Team public holidays</span>
               <input
+                id="capacity-public-holidays"
                 type="number"
                 min={0}
                 step={0.5}
