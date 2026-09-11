@@ -252,19 +252,11 @@ class Issue(ChangeTrackerMixin, ProjectBaseModel):
             from plane.utils.hierarchy_status import (
                 BOARD_STATE_DESIGN_DEV_TODO,
                 BOARD_STATE_EXTERNAL_PREFIX,
-                BOARD_STATE_QA_TODO,
-                is_qa_hierarchy_type,
             )
 
             has_parent = self.parent_id is not None
             if has_parent:
-                prefer_qa = False
-                if self.hierarchy_type_id:
-                    prefer_qa = is_qa_hierarchy_type(self.hierarchy_type)
-                elif self.hierarchy_type is not None:
-                    prefer_qa = is_qa_hierarchy_type(self.hierarchy_type)
-
-                preferred_key = BOARD_STATE_QA_TODO if prefer_qa else BOARD_STATE_DESIGN_DEV_TODO
+                preferred_key = BOARD_STATE_DESIGN_DEV_TODO
                 todo_state = State.objects.filter(
                     ~models.Q(is_triage=True),
                     project=self.project,
@@ -274,13 +266,13 @@ class Issue(ChangeTrackerMixin, ProjectBaseModel):
                     todo_state = State.objects.filter(
                         ~models.Q(is_triage=True),
                         project=self.project,
-                        name__iexact="To Do" if not prefer_qa else "QA To Do",
+                        name__iexact="To Do",
                     ).first()
                 if todo_state is None:
                     todo_state = State.objects.filter(
                         ~models.Q(is_triage=True),
                         project=self.project,
-                        name__iexact="Design/Dev To do" if not prefer_qa else "QA To do",
+                        name__iexact="Design/Dev To do",
                     ).first()
                 if todo_state is None:
                     todo_state = State.objects.filter(

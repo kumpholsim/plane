@@ -5,7 +5,9 @@
  */
 
 import type { MutableRefObject } from "react";
+import { useRef } from "react";
 import { observer } from "mobx-react";
+import { useParams } from "next/navigation";
 // plane imports
 import type {
   GroupByColumnTypes,
@@ -25,10 +27,13 @@ import { Row } from "@plane/ui";
 import { cn } from "@plane/utils";
 // hooks
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-redirection";
+import { usePlatformOS } from "@/hooks/use-platform-os";
 import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import { ProgressStatusDropdown } from "@/components/dropdowns/progress-status";
 import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
 import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
+import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 // plane web imports
 import { useWorkFlowFDragNDrop } from "@/components/workflow";
 // local imports
@@ -172,6 +177,12 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
   } = props;
 
   const isStagedGateScrumban = useIsStagedGateScrumban();
+  const { workspaceSlug } = useParams();
+  const { handleRedirection } = useIssuePeekOverviewRedirection(isEpic);
+  const { isMobile } = usePlatformOS();
+  // Keep swimlane boards mounted after first expand so collapse/expand is instant
+  // (avoids remounting through RenderIfVisible gray placeholders).
+  const mountedSwimlaneIdsRef = useRef(new Set<string>());
 
   const visibilitySubGroupBy = (
     _list: IGroupByColumn,
@@ -199,6 +210,12 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
           const subGroupByVisibilityToggle = visibilitySubGroupBy(_list, issueCount);
           if (subGroupByVisibilityToggle.showGroup === false) return <></>;
 
+          if (subGroupByVisibilityToggle.showIssues) {
+            mountedSwimlaneIdsRef.current.add(_list.id);
+          }
+          const shouldMountIssues =
+            subGroupByVisibilityToggle.showIssues || mountedSwimlaneIdsRef.current.has(_list.id);
+
           const l3Issue = issuesMap[_list.id];
           // Scrumban sub-groups by L3 delivery item and surfaces its progress on the swimlane header
           const isL3Swimlane =
@@ -215,7 +232,11 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
 
           return (
             <div key={_list.id} className="flex flex-shrink-0 flex-col">
-              <div className="sticky top-[50px] z-[3] flex w-full items-center border-y-[0.5px] border-subtle bg-layer-1 py-1">
+              {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
+              <div
+                className="sticky top-[50px] z-[3] flex w-full cursor-pointer items-center border-y-[0.5px] border-subtle bg-layer-3 py-1"
+                onClick={() => handleCollapsedGroups("sub_group_by", _list.id)}
+              >
                 <Row
                   className={cn("sticky left-0", isStagedGateScrumban ? "flex min-w-0 items-center" : "flex-shrink-0")}
                 >
@@ -235,10 +256,25 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                       collapsedGroups={collapsedGroups}
                       handleCollapsedGroups={handleCollapsedGroups}
                       sub_group_by={sub_group_by}
+                      emphasizeTitle={isL3Swimlane}
                       leading={
                         isL3Swimlane ? (
-                          <HierarchyTypeBadge issue={l3Issue} disabled={!canEditL3} updateIssue={updateIssue} />
+                          // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
+                          <div className="flex min-w-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <HierarchyTypeBadge issue={l3Issue} disabled={!canEditL3} updateIssue={updateIssue} />
+                            {l3Issue.project_id && (
+                              <IssueIdentifier
+                                issueId={l3Issue.id}
+                                projectId={l3Issue.project_id}
+                                size="xs"
+                                variant="tertiary"
+                              />
+                            )}
+                          </div>
                         ) : undefined
+                      }
+                      onTitleClick={
+                        isL3Swimlane ? () => handleRedirection(workspaceSlug?.toString(), l3Issue, isMobile) : undefined
                       }
                     />
                     {isL3Swimlane && (
@@ -266,8 +302,8 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                 </Row>
               </div>
 
-              {subGroupByVisibilityToggle.showIssues && (
-                <div className="relative">
+              {shouldMountIssues && (
+                <div className={cn("relative", !subGroupByVisibilityToggle.showIssues && "hidden")}>
                   <KanBan
                     issuesMap={issuesMap}
                     groupedIssueIds={groupedIssueIds}

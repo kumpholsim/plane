@@ -40,7 +40,9 @@ import { useProjectState } from "@/hooks/store/use-project-state";
 import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 // plane web components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
+import { L3TotalSPValue } from "@/components/issues/l3-total-sp";
 import {
+  canChangeParent,
   canHaveParent,
   getHierarchyLevel,
   shouldShowCycleProperty,
@@ -91,6 +93,7 @@ export const ScrumbanPeekOverviewProperties = observer(function ScrumbanPeekOver
   const hierarchyType = getCategoryById(issue.hierarchy_type_id ?? "");
   const showCycle = projectDetails?.cycle_view && shouldShowCycleProperty(hierarchyLevel);
   const showParent = canHaveParent(issue);
+  const parentEditable = !disabled && canChangeParent(issue);
   const isL3 = hierarchyLevel === HIERARCHY_LEVEL_DELIVERY;
   const isL4 = hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
   const isQaL4 = isL4 && isQaHierarchyTypeName(hierarchyType?.name);
@@ -299,6 +302,12 @@ export const ScrumbanPeekOverviewProperties = observer(function ScrumbanPeekOver
           </SidebarPropertyListItem>
         )}
 
+        {isL3 && (
+          <SidebarPropertyListItem icon={EstimatePropertyIcon} label="Total SP">
+            <L3TotalSPValue issue={issue} />
+          </SidebarPropertyListItem>
+        )}
+
         {projectDetails?.module_view && (
           <SidebarPropertyListItem icon={ModuleIcon} label={t("common.modules")}>
             <IssueModuleSelect
@@ -330,7 +339,7 @@ export const ScrumbanPeekOverviewProperties = observer(function ScrumbanPeekOver
           <SidebarPropertyListItem icon={ParentPropertyIcon} label={t("common.parent")}>
             <IssueParentSelectRoot
               className="h-7.5 w-full grow"
-              disabled={disabled}
+              disabled={!parentEditable}
               issueId={issueId}
               issueOperations={issueOperations}
               projectId={projectId}

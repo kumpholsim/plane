@@ -28,7 +28,7 @@ import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
 import { HIGHLIGHT_CLASS, getIssueBlockId } from "@/components/issues/issue-layouts/utils";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
-import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
+import { diluteHierarchyBadgeColor, HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 import { getHierarchyLevel } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
@@ -36,6 +36,7 @@ import { useEstimate } from "@/hooks/store/estimates/use-estimate";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useKanbanView } from "@/hooks/store/use-kanban-view";
 import { useProject } from "@/hooks/store/use-project";
+import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-redirection";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -122,11 +123,7 @@ const KanbanCardFooter = observer(function KanbanCardFooter(props: {
 
   return (
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
-    <div
-      className="absolute inset-x-0 bottom-0 z-[1] flex items-center gap-2"
-      onFocus={stopPropagation}
-      onClick={stopPropagation}
-    >
+    <div className="mt-1.5 flex items-center gap-2" onFocus={stopPropagation} onClick={stopPropagation}>
       {showAssignee && issue.project_id && (
         <div className="min-w-0 shrink">
           <MemberDropdown
@@ -139,7 +136,6 @@ const KanbanCardFooter = observer(function KanbanCardFooter(props: {
             buttonClassName={issue.assignee_ids?.length > 0 ? "hover:bg-transparent px-0" : ""}
             showTooltip={issue.assignee_ids?.length === 0}
             placeholder={t("common.assignees")}
-            optionsClassName="z-10"
             tooltipContent=""
             renderByDefault={isMobile}
           />
@@ -184,6 +180,14 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
   // hooks
   const { isMobile } = usePlatformOS();
   const isStagedGateScrumban = useIsStagedGateScrumban(issue.project_id);
+  const { getTypeById } = useProjectHierarchyType();
+  const hierarchyLevel = getHierarchyLevel(issue);
+  const isL4Card = isStagedGateScrumban && hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
+  const hierarchyTypeId = issue.hierarchy_type_id ?? issue.sub_work_item_category_id ?? null;
+  const hierarchyType = hierarchyTypeId ? getTypeById(hierarchyTypeId) : null;
+  const l4IdAccentColor = isL4Card
+    ? diluteHierarchyBadgeColor(hierarchyType?.color || "#6B7280", HIERARCHY_LEVEL_SUB_TASK)
+    : undefined;
   // Scrumban pins assignee/estimate to the card footer instead of the properties row
   const showCardFooter = isStagedGateScrumban && Boolean(displayProperties?.assignee || displayProperties?.estimate);
 
@@ -209,7 +213,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
   useOutsideClickDetector(menuActionRef, () => setIsMenuActive(false));
 
   return (
-    <div className={cn("relative", showCardFooter ? "pb-6" : undefined)}>
+    <div className="relative">
       <div className={cn("relative", isStagedGateScrumban && "flex items-center gap-1.5")}>
         {issue.project_id && (
           <IssueIdentifier
@@ -218,9 +222,12 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
             size="xs"
             variant="tertiary"
             displayProperties={displayProperties}
+            accentColor={l4IdAccentColor}
           />
         )}
-        {isStagedGateScrumban && <HierarchyTypeBadge issue={issue} disabled={isReadOnly} updateIssue={updateIssue} />}
+        {isStagedGateScrumban && !isL4Card && (
+          <HierarchyTypeBadge issue={issue} disabled={isReadOnly} updateIssue={updateIssue} />
+        )}
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
         <div
           className={cn("absolute -top-1 right-0", {
@@ -241,16 +248,10 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
         <div
           className={cn(
             "w-full text-body-sm-medium text-primary",
-            isStagedGateScrumban && getHierarchyLevel(issue) === HIERARCHY_LEVEL_SUB_TASK
-              ? "py-3 leading-5 break-words whitespace-normal"
-              : "line-clamp-1"
+            isL4Card ? "py-3 leading-5 break-words whitespace-normal" : "line-clamp-1"
           )}
         >
-          <span>
-            {isStagedGateScrumban && getHierarchyLevel(issue) === HIERARCHY_LEVEL_SUB_TASK && issue.name.length > 100
-              ? `${issue.name.slice(0, 100)}…`
-              : issue.name}
-          </span>
+          <span>{isL4Card && issue.name.length > 100 ? `${issue.name.slice(0, 100)}…` : issue.name}</span>
         </div>
       </Tooltip>
 
@@ -435,7 +436,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
               displayProperties={displayProperties}
               updateIssue={updateIssue}
               quickActions={quickActions}
-              isReadOnly={!canEditIssueProperties}
+              isReadOnly={!canEditIssueProperties || !!issue?.tempId}
               isEpic={isEpic}
               isCompact={isCompact}
             />

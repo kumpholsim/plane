@@ -170,6 +170,7 @@ export const SUB_ISSUES_DISPLAY_PROPERTIES_KEYS: (keyof IIssueDisplayProperties)
   "due_date",
   "priority",
   "state",
+  "estimate",
   "cycle",
 ];
 

@@ -231,6 +231,13 @@ class IssueCreateSerializer(BaseSerializer):
                 raise serializers.ValidationError("Milestones cannot have a parent.")
             attrs["parent"] = None
 
+        # L4 sub-tasks keep a fixed L3 parent — do not allow reparent / unlink
+        if self.instance is not None and get_hierarchy_level(self.instance) >= 4 and "parent" in attrs:
+            new_parent = attrs.get("parent")
+            new_parent_id = getattr(new_parent, "id", None) if new_parent is not None else None
+            if new_parent_id != self.instance.parent_id:
+                raise serializers.ValidationError("Sub-tasks cannot change parent.")
+
         if (
             parent is not None
             and resolved_level != HIERARCHY_LEVEL_MILESTONE
@@ -1005,6 +1012,10 @@ class IssueSerializer(DynamicBaseSerializer):
     sub_issues_count = serializers.IntegerField(read_only=True)
     attachment_count = serializers.IntegerField(read_only=True)
     link_count = serializers.IntegerField(read_only=True)
+    # Scrumban L3: Σ L4 estimate_point.value by Design / Dev / QA (annotated)
+    design_estimate_points = serializers.FloatField(read_only=True, required=False, default=0)
+    dev_estimate_points = serializers.FloatField(read_only=True, required=False, default=0)
+    qa_estimate_points = serializers.FloatField(read_only=True, required=False, default=0)
     # Back-compat alias
     sub_work_item_category_id = serializers.UUIDField(source="hierarchy_type_id", read_only=True, allow_null=True)
 
@@ -1042,8 +1053,18 @@ class IssueSerializer(DynamicBaseSerializer):
             "qa_outcome",
             "sub_work_item_category_id",
             "pin_level",
+            "design_estimate_points",
+            "dev_estimate_points",
+            "qa_estimate_points",
         ]
         read_only_fields = fields
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["design_estimate_points"] = float(getattr(instance, "design_estimate_points", 0) or 0)
+        data["dev_estimate_points"] = float(getattr(instance, "dev_estimate_points", 0) or 0)
+        data["qa_estimate_points"] = float(getattr(instance, "qa_estimate_points", 0) or 0)
+        return data
 
     def validate(self, data):
         if (
@@ -1099,13 +1120,16 @@ class IssueListDetailSerializer(serializers.Serializer):
             "is_draft": instance.is_draft,
             "archived_at": instance.archived_at,
             # Computed fields
-            "cycle_id": instance.cycle_id,
+            "cycle_id": getattr(instance, "cycle_id", None),
             "module_ids": self.get_module_ids(instance),
             "label_ids": self.get_label_ids(instance),
             "assignee_ids": self.get_assignee_ids(instance),
-            "sub_issues_count": instance.sub_issues_count,
-            "attachment_count": instance.attachment_count,
-            "link_count": instance.link_count,
+            "sub_issues_count": getattr(instance, "sub_issues_count", 0) or 0,
+            "attachment_count": getattr(instance, "attachment_count", 0) or 0,
+            "link_count": getattr(instance, "link_count", 0) or 0,
+            "design_estimate_points": float(getattr(instance, "design_estimate_points", 0) or 0),
+            "dev_estimate_points": float(getattr(instance, "dev_estimate_points", 0) or 0),
+            "qa_estimate_points": float(getattr(instance, "qa_estimate_points", 0) or 0),
         }
 
         # Handle expanded fields only when requested - using direct field access

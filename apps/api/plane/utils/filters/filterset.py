@@ -165,6 +165,9 @@ class IssueFilterSet(BaseFilterSet):
     progress_status = filters.CharFilter(method="filter_progress_status")
     progress_status__in = CharInFilter(method="filter_progress_status_in", lookup_expr="in")
 
+    hierarchy_type_id = filters.UUIDFilter(method="filter_hierarchy_type_id")
+    hierarchy_type_id__in = UUIDInFilter(method="filter_hierarchy_type_id_in", lookup_expr="in")
+
     project_id = filters.UUIDFilter(field_name="project_id")
     project_id__in = UUIDInFilter(field_name="project_id", lookup_expr="in")
 
@@ -318,6 +321,45 @@ class IssueFilterSet(BaseFilterSet):
             progress_status__in=value,
         ).values("id")
         return Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY, progress_status__in=value) | Q(
+            hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+            parent_id__in=matching_l3,
+        )
+
+    def filter_hierarchy_type_id(self, queryset, name, value):
+        """Filter by L3 hierarchy type (Story / Task / Bug / Story-bug).
+
+        Scrumban: L3 match + include L4 children.
+        Classic: direct field match.
+        """
+        if not self._is_scrumban_queryset(queryset):
+            return Q(hierarchy_type_id=value)
+
+        from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
+
+        matching_l3 = Issue.issue_objects.filter(
+            hierarchy_level=HIERARCHY_LEVEL_DELIVERY,
+            hierarchy_type_id=value,
+        ).values("id")
+        return Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY, hierarchy_type_id=value) | Q(
+            hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+            parent_id__in=matching_l3,
+        )
+
+    def filter_hierarchy_type_id_in(self, queryset, name, value):
+        """Filter by L3 hierarchy types (in).
+
+        Same mode-aware rule as filter_hierarchy_type_id.
+        """
+        if not self._is_scrumban_queryset(queryset):
+            return Q(hierarchy_type_id__in=value)
+
+        from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK
+
+        matching_l3 = Issue.issue_objects.filter(
+            hierarchy_level=HIERARCHY_LEVEL_DELIVERY,
+            hierarchy_type_id__in=value,
+        ).values("id")
+        return Q(hierarchy_level=HIERARCHY_LEVEL_DELIVERY, hierarchy_type_id__in=value) | Q(
             hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
             parent_id__in=matching_l3,
         )

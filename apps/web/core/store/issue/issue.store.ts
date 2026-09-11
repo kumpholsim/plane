@@ -68,8 +68,17 @@ export class IssueStore implements IIssueStore {
         const issueIdentifier = `${projectIdentifier}-${workItemSequenceId}`;
         set(this.issuesIdentifierMap, issueIdentifier, issue.id);
 
-        if (!this.issuesMap[issue.id]) set(this.issuesMap, issue.id, issue);
-        else update(this.issuesMap, issue.id, (prevIssue) => ({ ...prevIssue, ...issue }));
+        if (!this.issuesMap[issue.id]) {
+          const next = { ...issue };
+          if (!next.tempId) delete next.tempId;
+          set(this.issuesMap, issue.id, next);
+        } else
+          update(this.issuesMap, issue.id, (prevIssue) => {
+            const merged = { ...prevIssue, ...issue };
+            // Server payloads omit tempId — drop the optimistic flag so cards stay clickable/editable
+            if (!issue.tempId) delete merged.tempId;
+            return merged;
+          });
       });
     });
   };

@@ -7,7 +7,7 @@
 import { ArrowLeft } from "lucide-react";
 import { observer } from "mobx-react";
 // plane imports
-import { ROLE_DETAILS } from "@plane/constants";
+import { ROLE_DETAILS, isStagedGateScrumbanMode } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import { IconButton } from "@plane/propel/icon-button";
@@ -34,20 +34,24 @@ export const ProjectSettingsSidebarHeader = observer(function ProjectSettingsSid
   const currentProjectRole = currentWorkspace?.slug
     ? getProjectRoleByWorkspaceSlugAndProjectId(currentWorkspace.slug, projectId)
     : undefined;
+  const isScrumban = isStagedGateScrumbanMode(projectDetails?.workflow_mode);
   // translation
   const { t } = useTranslation();
 
   if (!currentProjectRole) return null;
 
+  const handleBack = () => {
+    if (!currentWorkspace?.slug) return;
+    const destination = isScrumban
+      ? `/${currentWorkspace.slug}/projects/${projectId}/cycles/`
+      : `/${currentWorkspace.slug}/projects/${projectId}/issues/`;
+    router.push(destination);
+  };
+
   return (
     <div className="shrink-0">
       <div className="flex items-center gap-1 py-3 pr-5 pl-4 text-body-md-medium">
-        <IconButton
-          variant="ghost"
-          size="base"
-          icon={ArrowLeft}
-          onClick={() => router.push(`/${currentWorkspace?.slug}/projects/${projectId}/issues/`)}
-        />
+        <IconButton variant="ghost" size="base" icon={ArrowLeft} onClick={handleBack} />
         <p>Project settings</p>
       </div>
       <div className="mt-1.5 flex items-center gap-2 truncate px-5 py-0.5">

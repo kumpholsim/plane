@@ -101,6 +101,7 @@ export const WORK_ITEM_FILTER_PROPERTY_KEYS = [
   "start_date",
   "target_date",
   "progress_status",
+  "hierarchy_type_id",
   "assignee_id",
   "mention_id",
   "created_by_id",

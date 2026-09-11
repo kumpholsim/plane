@@ -30,6 +30,7 @@ import { EIssueServiceType, EIssueLayoutTypes, HIERARCHY_LEVEL_SUB_TASK } from "
 // helpers
 import { convertToISODateString, areSubIssuesIncludedInView, resolveDisplayFiltersForLayout } from "@plane/utils";
 // plane web imports
+import { l3EstimateRollupKeyForTypeName, parseEstimatePointNumericValue } from "@/components/issues/hierarchy-status";
 // services
 import { CycleService } from "@/services/cycle.service";
 import { IssueArchiveService, IssueService } from "@/services/issue";
@@ -45,14 +46,16 @@ import {
   getSubGroupIssueKeyActions,
 } from "./base-issues-utils";
 import type { IBaseIssueFilterStore } from "./issue-filter-helper.store";
+import {
+  EIssueGroupedAction,
+  ISSUE_FILTER_DEFAULT_DATA,
+  ISSUE_GROUP_BY_KEY,
+  type TIssueDisplayFilterOptions,
+} from "./base-issues.constants";
 
-export type TIssueDisplayFilterOptions = Exclude<TIssueGroupByOptions, null> | "target_date";
+export { EIssueGroupedAction, ISSUE_FILTER_DEFAULT_DATA, ISSUE_GROUP_BY_KEY };
+export type { TIssueDisplayFilterOptions };
 
-export enum EIssueGroupedAction {
-  ADD = "ADD",
-  DELETE = "DELETE",
-  REORDER = "REORDER",
-}
 export interface IBaseIssuesStore {
   // observable
   loader: Record<string, TLoader>;
@@ -110,35 +113,6 @@ export interface IBaseIssuesStore {
   ): Promise<void>;
   updateIssueDates(workspaceSlug: string, updates: IBlockUpdateDependencyData[], projectId?: string): Promise<void>;
 }
-
-// This constant maps the group by keys to the respective issue property that the key relies on
-export const ISSUE_GROUP_BY_KEY: Record<TIssueDisplayFilterOptions, keyof TIssue> = {
-  project: "project_id",
-  state: "state_id",
-  "state_detail.group": "state_id", // state_detail.group is only being used for state_group display,
-  priority: "priority",
-  labels: "label_ids",
-  created_by: "created_by",
-  assignees: "assignee_ids",
-  target_date: "target_date",
-  cycle: "cycle_id",
-  module: "module_ids",
-  team_project: "project_id",
-};
-
-export const ISSUE_FILTER_DEFAULT_DATA: Record<TIssueDisplayFilterOptions, keyof TIssue> = {
-  project: "project_id",
-  cycle: "cycle_id",
-  module: "module_ids",
-  state: "state_id",
-  "state_detail.group": "state__group", // state_detail.group is only being used for state_group display,
-  priority: "priority",
-  labels: "label_ids",
-  created_by: "created_by",
-  assignees: "assignee_ids",
-  target_date: "target_date",
-  team_project: "project_id",
-};
 
 // This constant maps the order by keys to the respective issue property that the key relies on
 const ISSUE_ORDERBY_KEY: Record<TIssueOrderByOptions, keyof TIssue> = {
@@ -546,17 +520,37 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     id?: string,
     shouldUpdateList = true
   ) {
+    // Strip client-only optimistic fields before the API call
+    const {
+      tempId: _tempId,
+      sourceIssueId: _sourceIssueId,
+      parent: _parent,
+      ...apiData
+    } = data as TIssue & {
+      parent?: unknown;
+    };
+
     // perform an API call
-    const response = await this.issueService.createIssue(workspaceSlug, projectId, data);
+    const response = await this.issueService.createIssue(workspaceSlug, projectId, apiData);
+
+    // Preserve create-payload hierarchy fields for board/list grouping (Scrumban L4 swimlanes)
+    const stored = {
+      ...response,
+      parent_id: response.parent_id ?? apiData.parent_id ?? null,
+      hierarchy_level: response.hierarchy_level ?? apiData.hierarchy_level ?? undefined,
+      hierarchy_type_id: response.hierarchy_type_id ?? apiData.hierarchy_type_id ?? undefined,
+      state_id: response.state_id ?? apiData.state_id ?? null,
+      assignee_ids: response.assignee_ids?.length ? response.assignee_ids : (apiData.assignee_ids ?? []),
+    } as TIssue;
 
     // add Issue to Store
-    this.addIssue(response, shouldUpdateList);
+    this.addIssue(stored, shouldUpdateList);
 
     // If shouldUpdateList is true, call fetchParentStats
     // oxlint-disable-next-line no-unused-expressions
     shouldUpdateList && (await this.fetchParentStats(workspaceSlug, projectId));
 
-    return response;
+    return stored;
   }
 
   /**
@@ -581,6 +575,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       // Update the Respective Stores
       this.rootIssueStore.issues.updateIssue(issueId, data);
       this.updateIssueList({ ...issueBeforeUpdate, ...data } as TIssue, issueBeforeUpdate);
+      this.adjustL3EstimateRollupsOnL4EstimateChange(issueBeforeUpdate, data);
 
       // Check if should Sync
       if (!shouldSync) return;
@@ -600,8 +595,51 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       // If errored out update store again to revert the change
       this.rootIssueStore.issues.updateIssue(issueId, issueBeforeUpdate ?? {});
       this.updateIssueList(issueBeforeUpdate, { ...issueBeforeUpdate, ...data } as TIssue);
+      // Revert L3 Total Estimate delta applied above
+      if (issueBeforeUpdate && "estimate_point" in data) {
+        this.adjustL3EstimateRollupsOnL4EstimateChange({ ...issueBeforeUpdate, ...data } as TIssue, {
+          estimate_point: issueBeforeUpdate.estimate_point,
+        });
+      }
       throw error;
     }
+  }
+
+  /**
+   * Scrumban: when an L4 estimate changes, adjust the L3 parent's Design/Dev/QA rollups in-memory.
+   */
+  private adjustL3EstimateRollupsOnL4EstimateChange(issueBeforeUpdate: TIssue | undefined, data: Partial<TIssue>) {
+    if (!issueBeforeUpdate?.parent_id || !("estimate_point" in data)) return;
+    if (Number(issueBeforeUpdate.hierarchy_level ?? 0) < HIERARCHY_LEVEL_SUB_TASK) return;
+
+    const projectId = issueBeforeUpdate.project_id;
+    if (!isStagedGateScrumbanMode(projectId ? this.rootIssueStore.projectMap?.[projectId]?.workflow_mode : undefined)) {
+      return;
+    }
+
+    const typeId = issueBeforeUpdate.hierarchy_type_id ?? issueBeforeUpdate.sub_work_item_category_id ?? "";
+    const typeName = typeId ? this.rootIssueStore.rootStore.projectHierarchyType.getTypeById(typeId)?.name : undefined;
+    const rollupKey = l3EstimateRollupKeyForTypeName(typeName);
+    if (!rollupKey) return;
+
+    const resolveValue = (estimatePointId: string | null | undefined): number => {
+      if (!estimatePointId || !projectId) return 0;
+      const estimateId = this.rootIssueStore.rootStore.projectEstimate.currentActiveEstimateIdByProjectId(projectId);
+      if (!estimateId) return 0;
+      const estimate = this.rootIssueStore.rootStore.projectEstimate.estimateById(estimateId);
+      return parseEstimatePointNumericValue(estimate?.estimatePointById(estimatePointId)?.value);
+    };
+
+    const delta = resolveValue(data.estimate_point) - resolveValue(issueBeforeUpdate.estimate_point);
+    if (delta === 0) return;
+
+    const parent = this.rootIssueStore.issues.getIssueById(issueBeforeUpdate.parent_id);
+    if (!parent) return;
+
+    const current = Number(parent[rollupKey] ?? 0);
+    this.rootIssueStore.issues.updateIssue(issueBeforeUpdate.parent_id, {
+      [rollupKey]: Math.max(0, current + delta),
+    });
   }
 
   /**
@@ -615,6 +653,8 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     const issueBeforeRemoval = clone(this.rootIssueStore.issues.getIssueById(issueId));
     // update parent stats optimistically
     this.updateParentStats(issueBeforeRemoval, undefined);
+    // Scrumban: drop this L4's estimate from the L3 Total Estimate rollup
+    this.adjustL3EstimateRollupsOnL4EstimateChange(issueBeforeRemoval, { estimate_point: null });
 
     // Male API call
     await this.issueService.deleteIssue(workspaceSlug, projectId, issueId);
@@ -660,28 +700,38 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
    * @returns
    */
   async issueQuickAdd(workspaceSlug: string, projectId: string, data: TIssue) {
-    // Add issue to store with a temporary Id
-    this.addIssue(data);
-    // call Create issue method
-    const response = await this.createIssue(workspaceSlug, projectId, data);
-    runInAction(() => {
-      this.removeIssueFromList(data.id);
-      this.rootIssueStore.issues.removeIssue(data.id);
-    });
-    const currentCycleId = data.cycle_id !== "" && data.cycle_id === "None" ? undefined : data.cycle_id;
-    const currentModuleIds =
-      data.module_ids && data.module_ids.length > 0 ? data.module_ids.filter((moduleId) => moduleId != "None") : [];
-    const promiseRequests = [];
-    if (currentCycleId) {
-      promiseRequests.push(this.addCycleToIssue(workspaceSlug, projectId, currentCycleId, response.id));
+    // Clone so the store observable and the API payload do not share one object
+    const optimistic = { ...data };
+    this.addIssue(optimistic);
+    try {
+      // call Create issue method
+      const response = await this.createIssue(workspaceSlug, projectId, data);
+      runInAction(() => {
+        this.removeIssueFromList(optimistic.id);
+        this.rootIssueStore.issues.removeIssue(optimistic.id);
+      });
+      const currentCycleId = data.cycle_id !== "" && data.cycle_id === "None" ? undefined : data.cycle_id;
+      const currentModuleIds =
+        data.module_ids && data.module_ids.length > 0 ? data.module_ids.filter((moduleId) => moduleId != "None") : [];
+      const promiseRequests = [];
+      if (currentCycleId) {
+        promiseRequests.push(this.addCycleToIssue(workspaceSlug, projectId, currentCycleId, response.id));
+      }
+      if (currentModuleIds.length > 0) {
+        promiseRequests.push(this.changeModulesInIssue(workspaceSlug, projectId, response.id, currentModuleIds, []));
+      }
+      if (promiseRequests && promiseRequests.length > 0) {
+        await Promise.all(promiseRequests);
+      }
+      return response;
+    } catch (error) {
+      // Never leave an unclickable optimistic card on the board
+      runInAction(() => {
+        this.removeIssueFromList(optimistic.id);
+        this.rootIssueStore.issues.removeIssue(optimistic.id);
+      });
+      throw error;
     }
-    if (currentModuleIds.length > 0) {
-      promiseRequests.push(this.changeModulesInIssue(workspaceSlug, projectId, response.id, currentModuleIds, []));
-    }
-    if (promiseRequests && promiseRequests.length > 0) {
-      await Promise.all(promiseRequests);
-    }
-    return response;
   }
 
   /**

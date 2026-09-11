@@ -222,6 +222,9 @@ def issue_on_results(
         "progress_status",
         "qa_outcome",
         "pin_level",
+        "design_estimate_points",
+        "dev_estimate_points",
+        "qa_estimate_points",
     ]
 
     if group_by in FIELD_MAPPER:
@@ -240,6 +243,13 @@ def issue_on_results(
             original_list.append(sub_group_by)
 
     required_fields.extend(original_list)
+
+    # L3 Total Estimate rollups (Design/Dev/QA Σ of L4 estimate_point.value)
+    from plane.utils.hierarchy_status import annotate_l4_estimate_rollups
+
+    if "design_estimate_points" not in issues.query.annotations:
+        issues = annotate_l4_estimate_rollups(issues)
+
     return list(issues.values(*required_fields))
 
 

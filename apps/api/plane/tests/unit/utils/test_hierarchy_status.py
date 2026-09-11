@@ -10,7 +10,6 @@ from plane.utils.hierarchy_status import (
     BOARD_STATE_DONE,
     BOARD_STATE_DESIGN_DEV_TODO,
     BOARD_STATE_EXTERNAL_PREFIX,
-    BOARD_STATE_QA_TODO,
     L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE,
     PROGRESS_DESIGN_DONE_NO_DEV,
     PROGRESS_DESIGN_TODO,
@@ -114,8 +113,7 @@ def test_transfer_skips_fully_done_l3(monkeypatch):
 def test_dev_and_qa_cannot_leave_todo_without_assignee_and_estimate():
     todo = _state(BOARD_STATE_DESIGN_DEV_TODO, group="unstarted", name="To Do")
     in_progress = _state("design_dev_in_progress", group="started", name="In Progress")
-    qa_todo = _state(BOARD_STATE_QA_TODO, group="started", name="QA To Do")
-    qa_in_progress = _state("qa_in_progress", group="started", name="QA In Progress")
+    under_review = _state("design_dev_under_review", group="started", name="Under Review")
     dev_type = SimpleNamespace(name="Dev")
     qa_type = SimpleNamespace(name="QA")
     design_type = SimpleNamespace(name="Design")
@@ -155,13 +153,13 @@ def test_dev_and_qa_cannot_leave_todo_without_assignee_and_estimate():
         )
         is None
     )
-    # QA blocked without both
+    # QA shares To Do — blocked without both
     assert (
         l4_leave_todo_requirement_error(
             hierarchy_level=4,
             hierarchy_type=qa_type,
-            current_state=qa_todo,
-            next_state=qa_in_progress,
+            current_state=todo,
+            next_state=under_review,
             has_assignee=False,
             has_estimate=True,
         )

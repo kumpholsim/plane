@@ -13,7 +13,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { IdentifierText } from "@/components/issues/issue-detail/identifier-text";
 
 export const IssueIdentifier = observer(function IssueIdentifier(props: TIssueIdentifierProps) {
-  const { projectId, variant, size, displayProperties, enableClickToCopyIdentifier = false } = props;
+  const { projectId, variant, size, displayProperties, enableClickToCopyIdentifier = false, accentColor } = props;
   // store hooks
   const { getProjectIdentifierById } = useProject();
   const {
@@ -28,6 +28,7 @@ export const IssueIdentifier = observer(function IssueIdentifier(props: TIssueId
   const shouldRenderIssueID = displayProperties ? displayProperties.key : true;
 
   if (!shouldRenderIssueID) return null;
+  if (issueSequenceId === undefined || issueSequenceId === null) return null;
 
   return (
     <div className="flex shrink-0 items-center space-x-2">
@@ -36,6 +37,7 @@ export const IssueIdentifier = observer(function IssueIdentifier(props: TIssueId
         enableClickToCopyIdentifier={enableClickToCopyIdentifier}
         variant={variant}
         size={size}
+        accentColor={accentColor}
       />
     </div>
   );

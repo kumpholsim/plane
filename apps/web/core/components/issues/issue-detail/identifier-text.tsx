@@ -26,7 +26,7 @@ const VARIANT_MAP: Record<TIdentifierTextVariant, string> = {
 };
 
 export function IdentifierText(props: TIdentifierTextProps) {
-  const { identifier, enableClickToCopyIdentifier = false, size = "lg", variant = "default" } = props;
+  const { identifier, enableClickToCopyIdentifier = false, size = "lg", variant = "default", accentColor } = props;
   // handlers
   const handleCopyIssueIdentifier = () => {
     if (enableClickToCopyIdentifier) {
@@ -46,7 +46,7 @@ export function IdentifierText(props: TIdentifierTextProps) {
   };
 
   const textSizeClassName = SIZE_MAP[size];
-  const variantClassName = VARIANT_MAP[variant];
+  const variantClassName = accentColor ? "text-primary" : VARIANT_MAP[variant];
 
   return (
     <Tooltip tooltipContent="Click to copy" disabled={!enableClickToCopyIdentifier} position="top">
@@ -54,7 +54,9 @@ export function IdentifierText(props: TIdentifierTextProps) {
         type="button"
         className={cn("text-12 font-medium whitespace-nowrap text-tertiary", textSizeClassName, variantClassName, {
           "cursor-pointer": enableClickToCopyIdentifier,
+          "rounded-sm px-1.5 py-0.5": !!accentColor,
         })}
+        style={accentColor ? { backgroundColor: accentColor } : undefined}
         onClick={handleCopyIssueIdentifier}
         disabled={!enableClickToCopyIdentifier}
       >

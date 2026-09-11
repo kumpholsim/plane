@@ -8,8 +8,10 @@ import type { ReactElement } from "react";
 import { createContext } from "react";
 // plane web store
 import { RootStore } from "@/store/root.store";
+import { setRootStoreRef } from "@/store/store-ref";
 
 export let rootStore = new RootStore();
+setRootStoreRef(rootStore);
 
 export const StoreContext = createContext<RootStore>(rootStore);
 
@@ -17,6 +19,7 @@ const initializeStore = () => {
   const newRootStore = rootStore ?? new RootStore();
   if (typeof window === "undefined") return newRootStore;
   if (!rootStore) rootStore = newRootStore;
+  setRootStoreRef(newRootStore);
   return newRootStore;
 };
 

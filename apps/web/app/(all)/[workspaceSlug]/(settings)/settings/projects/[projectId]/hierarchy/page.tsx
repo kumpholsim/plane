@@ -259,9 +259,8 @@ function HierarchyStatusesPanel(props: { projectId: string; workspaceSlug: strin
         <div>
           <h3 className="text-14 font-semibold text-primary">L4 board states (columns)</h3>
           <p className="text-12 text-tertiary">
-            These six project states are the board columns for sub-tasks only. Groups: Unstarted → To Do; Started → In
-            Progress, Under Review, QA To Do, QA In Progress; Completed → Done. Design/Dev use To Do → Under Review →
-            Done; QA uses QA To Do → QA In Progress → Done.
+            These four project states are the board columns for sub-tasks (Design, Dev, and QA share them). Groups:
+            Unstarted → To Do; Started → In Progress, Under Review; Completed → Done.
           </p>
         </div>
         <ol className="divide-y divide-subtle rounded-md border border-subtle">

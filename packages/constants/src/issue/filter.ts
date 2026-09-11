@@ -82,7 +82,11 @@ export const LOCKED_BOARD_LAYOUT_DISPLAY_FILTERS = {
 };
 
 /** Always-visible filter chips on list / board filter bars. */
-export const PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES = ["progress_status", "assignee_id"] as const;
+export const PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES = [
+  "hierarchy_type_id",
+  "progress_status",
+  "assignee_id",
+] as const;
 
 /** Stable empty list — avoid `[]` / spreads that break filter HOC memoization. */
 export const EMPTY_PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES: readonly string[] = [];

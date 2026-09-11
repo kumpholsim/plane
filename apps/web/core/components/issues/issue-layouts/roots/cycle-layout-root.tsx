@@ -81,10 +81,15 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
   const filtersToShowByLayout: TWorkItemFilterProperty[] = isPinnedFilterLayout
     ? ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters.filter(
         (property): property is TWorkItemFilterProperty =>
-          !["state_id", "assignee_id", "progress_status"].includes(property as string)
+          !["state_id", "assignee_id", "progress_status", "hierarchy_type_id"].includes(property as string)
       )
     : [...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters];
-  const suppressedProperties: TWorkItemFilterProperty[] = ["state_id", "progress_status", "assignee_id"];
+  const suppressedProperties: TWorkItemFilterProperty[] = [
+    "state_id",
+    "progress_status",
+    "assignee_id",
+    "hierarchy_type_id",
+  ];
 
   useSWR(
     workspaceSlug && projectId && cycleId ? `CYCLE_ISSUES_${workspaceSlug}_${projectId}_${cycleId}` : null,

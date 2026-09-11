@@ -70,6 +70,12 @@ export type TBaseIssue = {
   label_ids: string[];
   assignee_ids: string[];
   estimate_point: string | null;
+  /** Scrumban L3: Σ Design L4 estimate_point.value (API annotation) */
+  design_estimate_points?: number | null;
+  /** Scrumban L3: Σ Dev L4 estimate_point.value (API annotation) */
+  dev_estimate_points?: number | null;
+  /** Scrumban L3: Σ QA L4 estimate_point.value (API annotation) */
+  qa_estimate_points?: number | null;
 
   sub_issues_count: number;
   attachment_count: number;

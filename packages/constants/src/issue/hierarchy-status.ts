@@ -11,25 +11,28 @@ export const HIERARCHY_BOARD_STATE_KEYS = {
   DESIGN_DEV_TODO: "design_dev_todo",
   DESIGN_DEV_IN_PROGRESS: "design_dev_in_progress",
   DESIGN_DEV_UNDER_REVIEW: "design_dev_under_review",
-  QA_TODO: "qa_todo",
-  QA_IN_PROGRESS: "qa_in_progress",
   DONE: "done",
+  /** @deprecated Soft-deleted; kept for legacy external_id parsing */
+  QA_TODO: "qa_todo",
+  /** @deprecated Soft-deleted; kept for legacy external_id parsing */
+  QA_IN_PROGRESS: "qa_in_progress",
 } as const;
 
 export type THierarchyBoardStateKey = (typeof HIERARCHY_BOARD_STATE_KEYS)[keyof typeof HIERARCHY_BOARD_STATE_KEYS];
 
-export const DESIGN_DEV_BOARD_KEYS: THierarchyBoardStateKey[] = [
+/** Shared L4 board columns for Design, Dev, and QA */
+export const L4_BOARD_KEYS: THierarchyBoardStateKey[] = [
   HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO,
   HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_IN_PROGRESS,
   HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_UNDER_REVIEW,
   HIERARCHY_BOARD_STATE_KEYS.DONE,
 ];
 
-export const QA_BOARD_KEYS: THierarchyBoardStateKey[] = [
-  HIERARCHY_BOARD_STATE_KEYS.QA_TODO,
-  HIERARCHY_BOARD_STATE_KEYS.QA_IN_PROGRESS,
-  HIERARCHY_BOARD_STATE_KEYS.DONE,
-];
+/** @deprecated Use L4_BOARD_KEYS — all L4 types share the same columns */
+export const DESIGN_DEV_BOARD_KEYS = L4_BOARD_KEYS;
+
+/** @deprecated Use L4_BOARD_KEYS — all L4 types share the same columns */
+export const QA_BOARD_KEYS = L4_BOARD_KEYS;
 
 export const L3_PROGRESS_STATUS_OPTIONS = [
   { value: "design_todo", label: "Design To Do", phase: "design" },
@@ -59,8 +62,6 @@ export const L4_BOARD_STATE_OPTIONS = [
   { key: "design_dev_todo", label: "To Do" },
   { key: "design_dev_in_progress", label: "In Progress" },
   { key: "design_dev_under_review", label: "Under Review" },
-  { key: "qa_todo", label: "QA To Do" },
-  { key: "qa_in_progress", label: "QA In Progress" },
   { key: "done", label: "Done" },
 ] as const;
 

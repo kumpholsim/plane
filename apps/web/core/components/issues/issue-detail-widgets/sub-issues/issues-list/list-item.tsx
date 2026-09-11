@@ -27,7 +27,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 // components
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 // local components
-import { getHierarchyLevel, getIssueDepth } from "../depth";
+import { getHierarchyLevel, getIssueDepth, canChangeParent } from "../depth";
 import { SubIssuesListItemProperties } from "./properties";
 import { SubIssuesListRoot } from "./root";
 
@@ -112,6 +112,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
     projectIdentifier: projectDetail?.identifier,
     sequenceId: issue?.sequence_id,
   });
+  const canRemoveFromParent = canEdit && canChangeParent(issue);
 
   return (
     <div key={issueId}>
@@ -228,7 +229,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                   </div>
                 </CustomMenu.MenuItem>
 
-                {canEdit && (
+                {canRemoveFromParent && (
                   <CustomMenu.MenuItem
                     onClick={() => {
                       if (issue.project_id)

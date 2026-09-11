@@ -289,8 +289,19 @@ export class CycleIssues extends BaseIssuesStore implements ICycleIssues {
    * @returns
    */
   override createIssue = async (workspaceSlug: string, projectId: string, data: Partial<TIssue>, cycleId: string) => {
+    // shouldUpdateList=false — list insert happens after cycle attach (and always as a fallback)
     const response = await super.createIssue(workspaceSlug, projectId, data, cycleId, false);
-    await this.addIssueToCycle(workspaceSlug, projectId, cycleId, [response.id], false);
+
+    try {
+      await this.addIssueToCycle(workspaceSlug, projectId, cycleId, [response.id], false);
+    } catch {
+      // Already on the cycle via inherit_cycle_from_parent, or cycle add failed — still show on board
+      this.addIssueToList(response.id);
+    }
+
+    // Guarantee the card appears in the current board grouping (idempotent via uniq)
+    this.addIssueToList(response.id);
+
     return response;
   };
 
@@ -406,26 +417,32 @@ export class CycleIssues extends BaseIssuesStore implements ICycleIssues {
    * @returns
    */
   quickAddIssue = async (workspaceSlug: string, projectId: string, data: TIssue, cycleId: string) => {
-    // add temporary issue to store list
-    this.addIssue(data);
+    const optimistic = { ...data };
+    this.addIssue(optimistic);
 
-    // call overridden create issue
-    const response = await this.createIssue(workspaceSlug, projectId, data, cycleId);
+    try {
+      const response = await this.createIssue(workspaceSlug, projectId, data, cycleId);
 
-    // remove temp Issue from store list
-    runInAction(() => {
-      this.removeIssueFromList(data.id);
-      this.rootIssueStore.issues.removeIssue(data.id);
-    });
+      runInAction(() => {
+        this.removeIssueFromList(optimistic.id);
+        this.rootIssueStore.issues.removeIssue(optimistic.id);
+      });
 
-    const currentModuleIds =
-      data.module_ids && data.module_ids.length > 0 ? data.module_ids.filter((moduleId) => moduleId != "None") : [];
+      const currentModuleIds =
+        data.module_ids && data.module_ids.length > 0 ? data.module_ids.filter((moduleId) => moduleId != "None") : [];
 
-    if (currentModuleIds.length > 0) {
-      await this.changeModulesInIssue(workspaceSlug, projectId, response.id, currentModuleIds, []);
+      if (currentModuleIds.length > 0) {
+        await this.changeModulesInIssue(workspaceSlug, projectId, response.id, currentModuleIds, []);
+      }
+
+      return response;
+    } catch (error) {
+      runInAction(() => {
+        this.removeIssueFromList(optimistic.id);
+        this.rootIssueStore.issues.removeIssue(optimistic.id);
+      });
+      throw error;
     }
-
-    return response;
   };
 
   // Using aliased names as they cannot be overridden in other stores

@@ -7,6 +7,7 @@
 import { useParams } from "next/navigation";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { EIssuesStoreType, TIssue, TIssueGroupByOptions, TIssueOrderByOptions } from "@plane/types";
+import { HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 import { getL4LeaveTodoRequirementError } from "@/components/issues/hierarchy-status";
 import { filterIssueIdsByPinBand, getIssuePinLevel } from "@/components/issues/issue-layouts/list/epic-list-sections";
 import type { GroupDropLocation } from "@/components/issues/issue-layouts/utils";
@@ -18,6 +19,8 @@ import { useProjectHierarchyType } from "./store/use-project-hierarchy-type";
 import { useProjectState } from "./store/use-project-state";
 import { useIssuesActions } from "./use-issues-actions";
 import { useIsStagedGateScrumban } from "./use-workflow-mode";
+
+const L4_PARENT_LOCKED_MESSAGE = "Sub-tasks cannot change parent.";
 
 type DNDStoreType =
   | EIssuesStoreType.PROJECT
@@ -93,12 +96,18 @@ export const useGroupIssuesDragNDrop = (
 
     if (isModuleChanged && workspaceSlug && issueUpdates[moduleKey]) {
       if (isStagedGateScrumban) {
-        // Group-by "module" is Epic (L2) in Scrumban — moving between columns reparents the item
-        const addIds = issueUpdates[moduleKey].ADD;
-        const newEpicId = addIds.find((id) => id && id !== "None") ?? null;
-        data.parent_id = newEpicId;
-        // Keep module_ids as the epic id so client-side epic grouping stays in sync
-        data.module_ids = newEpicId ? [newEpicId] : [];
+        const issue = getIssueById(issueId);
+        // L4 swimlane drops must not reparent — parent is fixed to the L3 delivery item
+        if (Number(issue?.hierarchy_level ?? 0) >= HIERARCHY_LEVEL_SUB_TASK) {
+          delete data[moduleKey];
+        } else {
+          // Group-by "module" is Epic (L2) in Scrumban — moving between columns reparents the item
+          const addIds = issueUpdates[moduleKey].ADD;
+          const newEpicId = addIds.find((id) => id && id !== "None") ?? null;
+          data.parent_id = newEpicId;
+          // Keep module_ids as the epic id so client-side epic grouping stays in sync
+          data.module_ids = newEpicId ? [newEpicId] : [];
+        }
       } else {
         changeModulesInIssue(
           workspaceSlug.toString(),
@@ -137,6 +146,24 @@ export const useGroupIssuesDragNDrop = (
 
     const sourceIssue = source.id ? getIssueById(source.id) : undefined;
     const destinationIssue = destination.id ? getIssueById(destination.id) : undefined;
+
+    // Scrumban: L4 cannot move to another L3 swimlane (parent is locked)
+    if (
+      isStagedGateScrumban &&
+      sourceIssue &&
+      subGroupBy &&
+      source.subGroupId &&
+      destination.subGroupId &&
+      source.subGroupId !== destination.subGroupId &&
+      Number(sourceIssue.hierarchy_level ?? 0) >= HIERARCHY_LEVEL_SUB_TASK
+    ) {
+      setToast({
+        type: TOAST_TYPE.WARNING,
+        title: "Cannot move work item",
+        message: L4_PARENT_LOCKED_MESSAGE,
+      });
+      return;
+    }
 
     // Scrumban: Dev/QA cannot leave To Do without assignee + estimate
     if (

@@ -22,26 +22,50 @@ interface IHeaderSubGroupByCard {
   handleCollapsedGroups: (toggle: "group_by" | "sub_group_by", value: string) => void;
   className?: string;
   leading?: React.ReactNode;
+  /** When set, title opens this instead of collapsing the swimlane */
+  onTitleClick?: () => void;
+  /** Scrumban L3: slightly smaller title (no bold) */
+  emphasizeTitle?: boolean;
 }
 
 export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props: IHeaderSubGroupByCard) {
-  const { icon, title, count, column_id, collapsedGroups, handleCollapsedGroups, className, leading } = props;
+  const {
+    icon,
+    title,
+    count,
+    column_id,
+    collapsedGroups,
+    handleCollapsedGroups,
+    className,
+    leading,
+    onTitleClick,
+    emphasizeTitle = false,
+  } = props;
+
+  const toggleCollapsed = () => handleCollapsedGroups("sub_group_by", column_id);
+
   return (
-    // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
     <div
       className={cn(
-        "relative flex max-w-md min-w-0 flex-shrink cursor-pointer flex-row items-center gap-1 rounded-xs py-1.5",
+        "relative flex max-w-md min-w-0 flex-shrink flex-row items-center gap-1 rounded-xs py-1.5",
         className
       )}
-      onClick={() => handleCollapsedGroups("sub_group_by", column_id)}
     >
-      <div className="flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center overflow-hidden rounded-xs transition-all hover:bg-layer-1">
+      <button
+        type="button"
+        className="flex h-[20px] w-[20px] flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xs transition-all hover:bg-layer-1"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleCollapsed();
+        }}
+        aria-label={collapsedGroups?.sub_group_by.includes(column_id) ? "Expand" : "Collapse"}
+      >
         {collapsedGroups?.sub_group_by.includes(column_id) ? (
           <ChevronDownIcon width={14} strokeWidth={2} />
         ) : (
           <ChevronUpIcon width={14} strokeWidth={2} />
         )}
-      </div>
+      </button>
 
       {leading}
 
@@ -51,9 +75,40 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
         </div>
       )}
 
-      <div className="flex min-w-0 items-center gap-1 text-13">
-        <div className="truncate text-primary">{title}</div>
-        <div className="shrink-0 pl-2 text-13 font-medium text-tertiary">{count || 0}</div>
+      <div
+        className={cn(
+          "flex min-w-0 items-center gap-1",
+          // 0.975rem * 0.75 ≈ 0.731rem (25% smaller than prior L3 size)
+          emphasizeTitle ? "font-normal text-[0.731rem] leading-snug" : "text-13"
+        )}
+      >
+        {onTitleClick ? (
+          <button
+            type="button"
+            className="font-normal truncate text-left text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onTitleClick();
+            }}
+            title={title}
+          >
+            {title}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="font-normal truncate text-left text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleCollapsed();
+            }}
+          >
+            {title}
+          </button>
+        )}
+        <div className={cn("shrink-0 pl-2 font-medium text-tertiary", emphasizeTitle ? "text-[0.731rem]" : "text-13")}>
+          {count || 0}
+        </div>
       </div>
     </div>
   );

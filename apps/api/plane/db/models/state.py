@@ -66,7 +66,7 @@ DEFAULT_STATES_SCRUM = [
 ]
 
 
-# Staged-gate Scrumban — L4 board columns + Triage
+# Staged-gate Scrumban — L4 board columns + Triage (Design/Dev/QA share these)
 DEFAULT_STATES_STAGED_GATE_SCRUMBAN = [
     {
         "name": "To Do",
@@ -91,30 +91,16 @@ DEFAULT_STATES_STAGED_GATE_SCRUMBAN = [
         "external_id": "hierarchy_board:design_dev_under_review",
     },
     {
-        "name": "QA To Do",
-        "color": "#60646C",
-        "sequence": 45000,
-        "group": StateGroup.STARTED.value,
-        "external_id": "hierarchy_board:qa_todo",
-    },
-    {
-        "name": "QA In Progress",
-        "color": "#F59E0B",
-        "sequence": 55000,
-        "group": StateGroup.STARTED.value,
-        "external_id": "hierarchy_board:qa_in_progress",
-    },
-    {
         "name": "Done",
         "color": "#46A758",
-        "sequence": 65000,
+        "sequence": 45000,
         "group": StateGroup.COMPLETED.value,
         "external_id": "hierarchy_board:done",
     },
     {
         "name": "Triage",
         "color": "#4E5355",
-        "sequence": 75000,
+        "sequence": 55000,
         "group": StateGroup.TRIAGE.value,
     },
 ]

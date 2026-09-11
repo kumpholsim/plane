@@ -16,6 +16,8 @@ export type TIssueIdentifierBaseProps = {
   variant?: TIdentifierTextVariant;
   displayProperties?: IIssueDisplayProperties | undefined;
   enableClickToCopyIdentifier?: boolean;
+  /** Optional fill behind the ID (e.g. Scrumban L4 type color) */
+  accentColor?: string;
 };
 
 export type TIssueIdentifierFromStore = TIssueIdentifierBaseProps & {
@@ -40,4 +42,6 @@ export type TIdentifierTextProps = {
   enableClickToCopyIdentifier?: boolean;
   size?: TIssueIdentifierSize;
   variant?: TIdentifierTextVariant;
+  /** Optional fill behind the ID text */
+  accentColor?: string;
 };

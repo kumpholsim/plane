@@ -18,6 +18,7 @@ import { getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from
 import { CycleDropdown } from "@/components/dropdowns/cycle";
 import { DateDropdown } from "@/components/dropdowns/date";
 import { DateRangeDropdown } from "@/components/dropdowns/date-range";
+import { EstimateDropdown } from "@/components/dropdowns/estimate";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
@@ -29,6 +30,7 @@ import {
 } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { WithDisplayPropertiesHOC } from "@/components/issues/issue-layouts/properties/with-display-properties-HOC";
+import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
@@ -63,6 +65,7 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
   const { getStateById, getProjectStateIds } = useProjectState();
   const { getProjectById } = useProject();
   const { getCategoryById } = useProjectHierarchyType();
+  const { areEstimateEnabledByProjectId } = useProjectEstimates();
   const {
     issue: { getIssueById },
   } = useIssueDetail();
@@ -273,6 +276,27 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
           />
         </div>
       </WithDisplayPropertiesHOC>
+
+      {issue.project_id && areEstimateEnabledByProjectId(issue.project_id) && (
+        <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="estimate">
+          {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
+          <div className="h-5 flex-shrink-0" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+            <EstimateDropdown
+              value={issue.estimate_point ?? undefined}
+              onChange={(val) =>
+                issue.project_id &&
+                updateSubIssue(workspaceSlug, issue.project_id, parentIssueId, issueId, {
+                  estimate_point: val,
+                })
+              }
+              projectId={issue.project_id}
+              disabled={!canEdit}
+              buttonVariant="border-with-text"
+              showTooltip
+            />
+          </div>
+        </WithDisplayPropertiesHOC>
+      )}
 
       {showCycle && (
         <>

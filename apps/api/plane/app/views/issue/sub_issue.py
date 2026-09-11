@@ -250,7 +250,100 @@ class SubIssuesEndpoint(BaseAPIView):
         for sub_issue in Issue.issue_objects.filter(id__in=sub_issue_ids):
             inherit_cycle_from_parent(sub_issue, request.user.id)
 
-        updated_sub_issues = Issue.issue_objects.filter(id__in=sub_issue_ids).annotate(state_group=F("state__group"))
+        updated_sub_issues = (
+            Issue.issue_objects.filter(id__in=sub_issue_ids)
+            .annotate(
+                cycle_id=Subquery(
+                    CycleIssue.objects.filter(issue=OuterRef("id"), deleted_at__isnull=True).values("cycle_id")[:1]
+                )
+            )
+            .annotate(
+                link_count=Coalesce(
+                    Subquery(
+                        IssueLink.objects.filter(issue=OuterRef("id"))
+                        .order_by()
+                        .values("issue")
+                        .annotate(count=Count("id"))
+                        .values("count"),
+                        output_field=IntegerField(),
+                    ),
+                    0,
+                )
+            )
+            .annotate(
+                attachment_count=Coalesce(
+                    Subquery(
+                        FileAsset.objects.filter(
+                            issue_id=OuterRef("id"),
+                            entity_type=FileAsset.EntityTypeContext.ISSUE_ATTACHMENT,
+                        )
+                        .order_by()
+                        .values("issue_id")
+                        .annotate(count=Count("id"))
+                        .values("count"),
+                        output_field=IntegerField(),
+                    ),
+                    0,
+                )
+            )
+            .annotate(
+                sub_issues_count=Coalesce(
+                    Subquery(
+                        Issue.issue_objects.filter(parent=OuterRef("id"))
+                        .order_by()
+                        .values("parent")
+                        .annotate(count=Count("id"))
+                        .values("count"),
+                        output_field=IntegerField(),
+                    ),
+                    0,
+                )
+            )
+            .annotate(
+                label_ids=Coalesce(
+                    Subquery(
+                        IssueLabel.objects.filter(issue_id=OuterRef("id"), deleted_at__isnull=True)
+                        .order_by()
+                        .values("issue_id")
+                        .annotate(arr=ArrayAgg("label_id", distinct=True))
+                        .values("arr"),
+                        output_field=ArrayField(UUIDField()),
+                    ),
+                    Value([], output_field=ArrayField(UUIDField())),
+                ),
+                assignee_ids=Coalesce(
+                    Subquery(
+                        IssueAssignee.objects.filter(
+                            issue_id=OuterRef("id"),
+                            assignee__member_project__is_active=True,
+                            deleted_at__isnull=True,
+                        )
+                        .order_by()
+                        .values("issue_id")
+                        .annotate(arr=ArrayAgg("assignee_id", distinct=True))
+                        .values("arr"),
+                        output_field=ArrayField(UUIDField()),
+                    ),
+                    Value([], output_field=ArrayField(UUIDField())),
+                ),
+                module_ids=Coalesce(
+                    Subquery(
+                        ModuleIssue.objects.filter(
+                            issue_id=OuterRef("id"),
+                            module__archived_at__isnull=True,
+                            deleted_at__isnull=True,
+                        )
+                        .order_by()
+                        .values("issue_id")
+                        .annotate(arr=ArrayAgg("module_id", distinct=True))
+                        .values("arr"),
+                        output_field=ArrayField(UUIDField()),
+                    ),
+                    Value([], output_field=ArrayField(UUIDField())),
+                ),
+            )
+            .annotate(state_group=F("state__group"))
+        )
 
         # Track the issue
         _ = [

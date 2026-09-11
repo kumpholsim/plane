@@ -19,7 +19,6 @@ import { CustomMenu } from "@plane/ui";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
-import { isQaHierarchyTypeName } from "@/components/issues/hierarchy-status";
 import { canAddSubTasks, childCreateLabelKey, getChildHierarchyLevel, getHierarchyLevel, getIssueDepth } from "./depth";
 
 type Props = {
@@ -30,18 +29,16 @@ type Props = {
   issueServiceType: TIssueServiceType;
 };
 
-/** Default board column for a new L4 sub-task (QA → QA To Do, else Design/Dev To Do). */
+/** Default board column for a new L4 sub-task (shared To Do for Design / Dev / QA). */
 export const resolveTodoStateId = (
   getProjectStates: (projectId: string | null | undefined) => IState[] | undefined,
   projectId: string | null | undefined,
-  hierarchyTypeName?: string | null
+  _hierarchyTypeName?: string | null
 ): string | undefined => {
   const states = getProjectStates(projectId);
   if (!states?.length) return undefined;
 
-  const preferredKey = isQaHierarchyTypeName(hierarchyTypeName)
-    ? HIERARCHY_BOARD_STATE_KEYS.QA_TODO
-    : HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO;
+  const preferredKey = HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO;
   const preferredExternalId = `${HIERARCHY_BOARD_STATE_PREFIX}${preferredKey}`;
 
   const byExternalId = states.find((state) => state.external_id === preferredExternalId);
@@ -50,18 +47,14 @@ export const resolveTodoStateId = (
   const byKey = states.find((state) => boardStateKeyFromExternalId(state.external_id) === preferredKey);
   if (byKey) return byKey.id;
 
-  const preferredName = isQaHierarchyTypeName(hierarchyTypeName) ? "qa to do" : "to do";
-  const byName = states.find((state) => (state.name ?? "").trim().toLowerCase() === preferredName);
+  const byName = states.find((state) => (state.name ?? "").trim().toLowerCase() === "to do");
   if (byName) return byName.id;
 
-  // Last resort: first unstarted that is allowed for this L4 type
+  // Last resort: first unstarted shared To Do (or any unstarted)
   const unstarted = states.find((state) => {
     if (state.group !== "unstarted") return false;
     const key = boardStateKeyFromExternalId(state.external_id);
     if (!key) return true;
-    if (isQaHierarchyTypeName(hierarchyTypeName)) {
-      return key === HIERARCHY_BOARD_STATE_KEYS.QA_TODO;
-    }
     return key === HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO;
   });
   return unstarted?.id;

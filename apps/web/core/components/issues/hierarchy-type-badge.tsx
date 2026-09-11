@@ -28,7 +28,7 @@ import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 const mixColorChannel = (channel: number) => Math.round(channel + (255 - channel) * 0.5);
 
 /** Dilute L4 (sub-task) badge colors 50% toward white — keeps hue, softer fill */
-const diluteHierarchyBadgeColor = (hex: string, level: number): string => {
+export const diluteHierarchyBadgeColor = (hex: string, level: number): string => {
   if (level !== HIERARCHY_LEVEL_SUB_TASK) return hex;
   const raw = hex.startsWith("#") ? hex : `#${hex}`;
   const normalized = raw.length === 4 ? `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}` : raw.slice(0, 7);
@@ -182,7 +182,15 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
         e.stopPropagation();
       }}
     >
-      <CustomMenu placement="bottom-start" closeOnSelect className="flex-shrink-0" customButton={badgeButton}>
+      <CustomMenu
+        placement="bottom-start"
+        closeOnSelect
+        className="flex-shrink-0"
+        portalElement={typeof document !== "undefined" ? document.body : null}
+        menuItemsClassName="z-[100]"
+        optionsClassName="z-[100]"
+        customButton={badgeButton}
+      >
         {groupedOptions.map((group) => (
           <div key={group.level}>
             {groupedOptions.length > 1 && (

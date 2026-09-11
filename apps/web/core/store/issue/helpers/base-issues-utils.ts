@@ -16,8 +16,8 @@ import type {
   TIssueOrderByOptions,
 } from "@plane/types";
 import { checkDateCriteria, convertToISODateString, parseDateFilter } from "@plane/utils";
-import { store } from "@/lib/store-context";
-import { EIssueGroupedAction, ISSUE_GROUP_BY_KEY } from "./base-issues.store";
+import { getRootStoreRef } from "@/store/store-ref";
+import { EIssueGroupedAction, ISSUE_GROUP_BY_KEY } from "./base-issues.constants";
 
 /**
  * returns,
@@ -204,7 +204,7 @@ export const sortSubWorkItemsByHierarchyType = (workItems: TIssue[]): TIssue[] =
   const getTypeSortOrder = (item: TIssue) => {
     const typeId = item.hierarchy_type_id ?? item.sub_work_item_category_id;
     if (!typeId) return Number.MAX_SAFE_INTEGER;
-    const type = store.projectHierarchyType?.getTypeById?.(typeId);
+    const type = getRootStoreRef().projectHierarchyType?.getTypeById?.(typeId);
     if (type?.sort_order != null) return type.sort_order;
     const nameKey = type?.name?.toLowerCase?.() ?? "";
     return FALLBACK_SUBTASK_TYPE_ORDER[nameKey] ?? Number.MAX_SAFE_INTEGER;
@@ -251,8 +251,9 @@ export const getPreviousIssuesState = (issues: TIssue[]) => {
   const issueIds = issues.map((issue) => issue.id);
   const issuesPreviousState: Record<string, TIssue> = {};
   issueIds.forEach((issueId) => {
-    if (store.issue.issues.issuesMap[issueId]) {
-      issuesPreviousState[issueId] = cloneDeep(store.issue.issues.issuesMap[issueId]);
+    const existing = getRootStoreRef().issue.issues.issuesMap[issueId];
+    if (existing) {
+      issuesPreviousState[issueId] = cloneDeep(existing);
     }
   });
   return issuesPreviousState;

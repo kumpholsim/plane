@@ -401,8 +401,7 @@ const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefin
     ? _states.filter((state) => Boolean(state.external_id?.startsWith(HIERARCHY_BOARD_STATE_PREFIX)))
     : [];
   // Hierarchy board columns must follow fixed product order (To Do → … → Done),
-  // not STATE_GROUPS (unstarted before started), which incorrectly puts QA To Do
-  // before In Progress / Under Review.
+  // not STATE_GROUPS order alone.
   const boardOrder = L4_BOARD_STATE_OPTIONS.map((opt) => opt.key);
   const statesForColumns =
     hierarchyBoardStates.length > 0

@@ -33,6 +33,7 @@ export const DEFAULT_DISPLAY_PROPERTIES = {
   labels: true,
   priority: true,
   state: true,
+  estimate: true,
   cycle: true,
 };
 export interface IWorkItemSubIssueFiltersStore {
@@ -80,6 +81,10 @@ export class WorkItemSubIssueFiltersStore implements IWorkItemSubIssueFiltersSto
     // Backfill cycle for sessions initialized before it was a sub-issue display property
     if (filters.displayProperties && filters.displayProperties.cycle === undefined) {
       set(filters, ["displayProperties", "cycle"], true);
+    }
+    // Backfill estimate so L4 rows can set story points from the sub-work items list
+    if (filters.displayProperties && filters.displayProperties.estimate === undefined) {
+      set(filters, ["displayProperties", "estimate"], true);
     }
     // Default chronological order so newly created sub-tasks append at the bottom
     if (!filters.displayFilters?.order_by) {

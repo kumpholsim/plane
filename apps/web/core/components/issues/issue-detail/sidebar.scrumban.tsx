@@ -41,8 +41,10 @@ import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-typ
 import { useProjectState } from "@/hooks/store/use-project-state";
 // components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
+import { L3TotalSPValue } from "@/components/issues/l3-total-sp";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
 import {
+  canChangeParent,
   canHaveParent,
   getHierarchyLevel,
   shouldShowCycleProperty,
@@ -90,6 +92,7 @@ export const ScrumbanIssueDetailsSidebar = observer(function ScrumbanIssueDetail
   const hierarchyType = getCategoryById(issue.hierarchy_type_id ?? "");
   const showCycle = projectDetails?.cycle_view && shouldShowCycleProperty(hierarchyLevel);
   const showParent = canHaveParent(issue);
+  const parentEditable = isEditable && canChangeParent(issue);
   const isL3 = hierarchyLevel === HIERARCHY_LEVEL_DELIVERY;
   const isL4 = hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
   const isQaL4 = isL4 && isQaHierarchyTypeName(hierarchyType?.name);
@@ -295,6 +298,12 @@ export const ScrumbanIssueDetailsSidebar = observer(function ScrumbanIssueDetail
               </SidebarPropertyListItem>
             )}
 
+            {isL3 && (
+              <SidebarPropertyListItem icon={EstimatePropertyIcon} label="Total SP">
+                <L3TotalSPValue issue={issue} />
+              </SidebarPropertyListItem>
+            )}
+
             {projectDetails?.module_view && (
               <SidebarPropertyListItem icon={ModuleIcon} label={t("common.modules")}>
                 <IssueModuleSelect
@@ -330,7 +339,7 @@ export const ScrumbanIssueDetailsSidebar = observer(function ScrumbanIssueDetail
                   projectId={projectId}
                   issueId={issueId}
                   issueOperations={issueOperations}
-                  disabled={!isEditable}
+                  disabled={!parentEditable}
                 />
               </SidebarPropertyListItem>
             )}

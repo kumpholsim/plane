@@ -7,10 +7,15 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { observer } from "mobx-react";
 import { ChevronDownIcon } from "lucide-react";
-import { MembersPropertyIcon, StatePropertyIcon } from "@plane/propel/icons";
+import { MembersPropertyIcon, StatePropertyIcon, WorkItemsIcon } from "@plane/propel/icons";
 import type { IWorkItemFilterInstance } from "@plane/shared-state";
 import type { ICustomSearchSelectOption, TWorkItemFilterProperty } from "@plane/types";
-import { COLLECTION_OPERATOR, HIERARCHY_LEVEL_SUB_TASK, LOGICAL_OPERATOR } from "@plane/types";
+import {
+  COLLECTION_OPERATOR,
+  HIERARCHY_LEVEL_DELIVERY,
+  HIERARCHY_LEVEL_SUB_TASK,
+  LOGICAL_OPERATOR,
+} from "@plane/types";
 import { Avatar, CustomSearchSelect } from "@plane/ui";
 import { cn, getFileURL, toFilterArray } from "@plane/utils";
 import { L3_PROGRESS_PHASE_FALLBACK_COLORS, L3_PROGRESS_STATUS_OPTIONS } from "@plane/constants";
@@ -78,6 +83,9 @@ export const WorkItemPinnedFilters = observer(function WorkItemPinnedFilters(pro
 
   // Read via computed display conditions so MobX tracks expression updates.
   const conditions = filter.allConditionsForDisplay;
+  const categoryCondition = conditions.find(
+    (condition) => condition.property === "hierarchy_type_id" && condition.operator === COLLECTION_OPERATOR.IN
+  );
   const assigneeCondition = conditions.find(
     (condition) => condition.property === "assignee_id" && condition.operator === COLLECTION_OPERATOR.IN
   );
@@ -91,6 +99,10 @@ export const WorkItemPinnedFilters = observer(function WorkItemPinnedFilters(pro
     if (condition) filter.removeCondition(condition.id);
   }, [filter]);
 
+  const l3CategoryTypes = useMemo(
+    () => getActiveProjectTypes(projectId, HIERARCHY_LEVEL_DELIVERY) ?? [],
+    [getActiveProjectTypes, projectId]
+  );
   const projectTypes = useMemo(
     () => getActiveProjectTypes(projectId, HIERARCHY_LEVEL_SUB_TASK) ?? [],
     [getActiveProjectTypes, projectId]
@@ -113,6 +125,25 @@ export const WorkItemPinnedFilters = observer(function WorkItemPinnedFilters(pro
   }, [projectTypes]);
 
   const memberIds = useMemo(() => getProjectMemberIds(projectId, false) ?? [], [getProjectMemberIds, projectId]);
+
+  const categoryOptions: ICustomSearchSelectOption[] = useMemo(
+    () =>
+      l3CategoryTypes.map((type) => ({
+        value: type.id,
+        query: type.name.toLowerCase(),
+        content: (
+          <span className="flex w-full items-center gap-2">
+            <span
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: type.color || "#6B7280" }}
+              aria-hidden
+            />
+            <span className="truncate">{type.name}</span>
+          </span>
+        ),
+      })),
+    [l3CategoryTypes]
+  );
 
   const l3StatusOptions: ICustomSearchSelectOption[] = useMemo(
     () =>
@@ -159,6 +190,13 @@ export const WorkItemPinnedFilters = observer(function WorkItemPinnedFilters(pro
     [filter]
   );
 
+  const handleCategoryChange = useCallback(
+    (values: string[]) => {
+      updateCollectionFilter("hierarchy_type_id", toFilterArray(values).map(String));
+    },
+    [updateCollectionFilter]
+  );
+
   const handleStoryStatusChange = useCallback(
     (values: string[]) => {
       updateCollectionFilter("progress_status", toFilterArray(values).map(String));
@@ -172,6 +210,19 @@ export const WorkItemPinnedFilters = observer(function WorkItemPinnedFilters(pro
     },
     [updateCollectionFilter]
   );
+
+  const selectedCategoryValues = toFilterArray(categoryCondition?.value).map(String);
+
+  const categoryValueLabel = useMemo(() => {
+    const labelMap = new Map(l3CategoryTypes.map((type) => [type.id, type.name]));
+    const selected = selectedCategoryValues
+      .map((value) => labelMap.get(value))
+      .filter((value): value is string => !!value);
+    if (selected.length === 0) return "Any";
+    if (selected.length === 1) return selected[0] ?? "Any";
+    if (selected.length === 2) return selected.join(", ");
+    return `${selected[0]}, +${selected.length - 1}`;
+  }, [l3CategoryTypes, selectedCategoryValues]);
 
   const selectedStatusValues = toFilterArray(l3StatusCondition?.value).map(String);
 
@@ -211,6 +262,20 @@ export const WorkItemPinnedFilters = observer(function WorkItemPinnedFilters(pro
     <>
       <GroupExpandCollapseControls />
       <div className="flex flex-wrap items-center gap-2">
+        <FilterChipShell>
+          <FilterChipLabel icon={WorkItemsIcon} label="Category" />
+          <CustomSearchSelect
+            value={selectedCategoryValues}
+            onChange={(values: string[] | string) => handleCategoryChange(toFilterArray(values).map(String))}
+            options={categoryOptions}
+            multiple
+            className="min-w-0"
+            customButton={<FilterChipTrigger>{categoryValueLabel}</FilterChipTrigger>}
+            customButtonClassName="h-full min-w-[7rem] text-13 font-regular"
+            optionsClassName="w-56"
+          />
+        </FilterChipShell>
+
         <FilterChipShell>
           <FilterChipLabel icon={StatePropertyIcon} label="State" />
           <CustomSearchSelect

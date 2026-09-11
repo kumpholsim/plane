@@ -68,6 +68,7 @@ from plane.utils.grouper import (
     issue_on_results,
     issue_queryset_grouper,
 )
+from plane.utils.hierarchy_status import annotate_l4_estimate_rollups
 from plane.utils.host import base_host
 from plane.utils.issue_cycle import inherit_cycle_from_parent
 from plane.utils.issue_filters import issue_filters
@@ -265,7 +266,7 @@ class IssueViewSet(BaseViewSet):
             )
         )
 
-        return issues
+        return annotate_l4_estimate_rollups(issues)
 
     @method_decorator(gzip_page)
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
@@ -600,7 +601,8 @@ class IssueViewSet(BaseViewSet):
                     )
                 )
             )
-        ).first()
+        )
+        issue = annotate_l4_estimate_rollups(issue).first()
         if not issue:
             return Response(
                 {"error": "The required object does not exist."},
@@ -1000,7 +1002,7 @@ class IssueDetailEndpoint(BaseAPIView):
     filterset_class = IssueFilterSet
 
     def apply_annotations(self, issues):
-        return (
+        issues = (
             issues.annotate(
                 cycle_id=Subquery(
                     CycleIssue.objects.filter(issue=OuterRef("id"), deleted_at__isnull=True).values("cycle_id")[:1]
@@ -1046,6 +1048,7 @@ class IssueDetailEndpoint(BaseAPIView):
                 )
             )
         )
+        return annotate_l4_estimate_rollups(issues)
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def get(self, request, slug, project_id):
@@ -1347,7 +1350,8 @@ class IssueDetailIdentifierEndpoint(BaseAPIView):
                     )
                 )
             )
-        ).first()
+        )
+        issue = annotate_l4_estimate_rollups(issue).first()
 
         # Check if the issue exists
         if not issue:

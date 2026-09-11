@@ -396,7 +396,7 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
       <>
         {!isEpic && (
           <>
-            {projectDetails?.module_view && (
+            {projectDetails?.module_view && !hideBoardSubTaskMeta && (
               <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="modules">
                 {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
                 <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>

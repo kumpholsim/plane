@@ -110,6 +110,10 @@ export const shouldShowCycleProperty = (level: number | null | undefined): boole
 export const canHaveParent = (issue: TIssue | undefined | null): boolean =>
   getHierarchyLevel(issue) > HIERARCHY_LEVEL_MILESTONE;
 
+/** L4 sub-tasks keep a fixed L3 parent — show parent, but do not allow changing it. */
+export const canChangeParent = (issue: TIssue | undefined | null): boolean =>
+  canHaveParent(issue) && getHierarchyLevel(issue) < HIERARCHY_LEVEL_SUB_TASK;
+
 /**
  * Resolve ancestor epic id for display/filter: self (L2), parent (L3), or grandparent (L4).
  * Falls back to ``module_ids[0]`` when present (API may annotate epic id there).

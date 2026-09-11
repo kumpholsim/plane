@@ -347,27 +347,28 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
       {enableQuickIssueCreate &&
         !disableIssueCreation &&
         !getIsWorkflowWorkItemCreationDisabled(groupId, sub_group_id) &&
-        (!isStagedGateScrumban || (isSubGroup && sub_group_id !== "None" && isScrumbanTodoColumn)) && (
-          <div className="sticky bottom-0 z-10 w-full bg-surface-2 py-0.5">
-            {isStagedGateScrumban ? (
-              <ScrumbanKanbanQuickAdd
-                parentIssueId={sub_group_id}
-                stateId={groupId}
-                quickAddCallback={quickAddCallback}
-              />
-            ) : (
-              <QuickAddIssueRoot
-                layout={EIssueLayoutTypes.KANBAN}
-                QuickAddButton={KanbanQuickAddIssueButton}
-                prePopulatedData={{
-                  ...(group_by && prePopulateQuickAddData(group_by, sub_group_by, groupId, sub_group_id)),
-                }}
-                quickAddCallback={quickAddCallback}
-                isEpic={isEpic}
-              />
-            )}
+        (!isStagedGateScrumban || (isSubGroup && sub_group_id !== "None" && isScrumbanTodoColumn)) &&
+        (isStagedGateScrumban ? (
+          <div className="sticky bottom-0 z-[1] w-full">
+            <ScrumbanKanbanQuickAdd
+              parentIssueId={sub_group_id}
+              stateId={groupId}
+              quickAddCallback={quickAddCallback}
+            />
           </div>
-        )}
+        ) : (
+          <div className="sticky bottom-0 z-[1] w-full bg-surface-2 py-0.5">
+            <QuickAddIssueRoot
+              layout={EIssueLayoutTypes.KANBAN}
+              QuickAddButton={KanbanQuickAddIssueButton}
+              prePopulatedData={{
+                ...(group_by && prePopulateQuickAddData(group_by, sub_group_by, groupId, sub_group_id)),
+              }}
+              quickAddCallback={quickAddCallback}
+              isEpic={isEpic}
+            />
+          </div>
+        ))}
     </div>
   );
 });

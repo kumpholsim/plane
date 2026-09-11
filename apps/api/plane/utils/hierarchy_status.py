@@ -9,26 +9,25 @@ from plane.db.models.state import StateGroup
 # Stable external_id prefixes so renames don't break lookups
 BOARD_STATE_EXTERNAL_PREFIX = "hierarchy_board:"
 
-# Board column keys (6) — map 1:1 to State.external_id suffix
+# Board column keys (4 shared) — map 1:1 to State.external_id suffix
 BOARD_STATE_DESIGN_DEV_TODO = "design_dev_todo"
 BOARD_STATE_DESIGN_DEV_IN_PROGRESS = "design_dev_in_progress"
 BOARD_STATE_DESIGN_DEV_UNDER_REVIEW = "design_dev_under_review"
+BOARD_STATE_DONE = "done"
+# Legacy QA-only columns (soft-deleted by migration; kept for remaps / parsing)
 BOARD_STATE_QA_TODO = "qa_todo"
 BOARD_STATE_QA_IN_PROGRESS = "qa_in_progress"
-BOARD_STATE_DONE = "done"
 
-DESIGN_DEV_BOARD_KEYS = (
+L4_BOARD_KEYS = (
     BOARD_STATE_DESIGN_DEV_TODO,
     BOARD_STATE_DESIGN_DEV_IN_PROGRESS,
     BOARD_STATE_DESIGN_DEV_UNDER_REVIEW,
     BOARD_STATE_DONE,
 )
 
-QA_BOARD_KEYS = (
-    BOARD_STATE_QA_TODO,
-    BOARD_STATE_QA_IN_PROGRESS,
-    BOARD_STATE_DONE,
-)
+# Back-compat aliases — all L4 types share L4_BOARD_KEYS
+DESIGN_DEV_BOARD_KEYS = L4_BOARD_KEYS
+QA_BOARD_KEYS = L4_BOARD_KEYS
 
 # L3 progress (not board columns)
 PROGRESS_DESIGN_TODO = "design_todo"
@@ -101,25 +100,9 @@ HIERARCHY_BOARD_STATES = [
         "external_id": f"{BOARD_STATE_EXTERNAL_PREFIX}{BOARD_STATE_DESIGN_DEV_UNDER_REVIEW}",
     },
     {
-        "name": "QA To Do",
-        "color": "#60646C",
-        "sequence": 45000,
-        "group": StateGroup.STARTED.value,
-        "default": False,
-        "external_id": f"{BOARD_STATE_EXTERNAL_PREFIX}{BOARD_STATE_QA_TODO}",
-    },
-    {
-        "name": "QA In Progress",
-        "color": "#F59E0B",
-        "sequence": 55000,
-        "group": StateGroup.STARTED.value,
-        "default": False,
-        "external_id": f"{BOARD_STATE_EXTERNAL_PREFIX}{BOARD_STATE_QA_IN_PROGRESS}",
-    },
-    {
         "name": "Done",
         "color": "#46A758",
-        "sequence": 65000,
+        "sequence": 45000,
         "group": StateGroup.COMPLETED.value,
         "default": False,
         "external_id": f"{BOARD_STATE_EXTERNAL_PREFIX}{BOARD_STATE_DONE}",
@@ -127,7 +110,7 @@ HIERARCHY_BOARD_STATES = [
     {
         "name": "Triage",
         "color": "#4E5355",
-        "sequence": 75000,
+        "sequence": 55000,
         "group": StateGroup.TRIAGE.value,
         "default": False,
         "external_id": None,
@@ -164,9 +147,7 @@ def is_design_or_dev_hierarchy_type(hierarchy_type) -> bool:
 
 
 def todo_board_key_for_l4(hierarchy_type) -> str:
-    """Dev uses Design/Dev To Do; QA uses QA To Do."""
-    if is_qa_hierarchy_type(hierarchy_type):
-        return BOARD_STATE_QA_TODO
+    """All L4 types (Design / Dev / QA) share the same To Do column."""
     return BOARD_STATE_DESIGN_DEV_TODO
 
 
@@ -207,9 +188,7 @@ def l4_leave_todo_requirement_error(
 
 
 def allowed_board_keys_for_l4(hierarchy_type) -> tuple[str, ...]:
-    if is_qa_hierarchy_type(hierarchy_type):
-        return QA_BOARD_KEYS
-    return DESIGN_DEV_BOARD_KEYS
+    return L4_BOARD_KEYS
 
 
 def get_project_board_states_by_key(project_id):
@@ -225,7 +204,7 @@ def get_project_board_states_by_key(project_id):
 
 
 def ensure_hierarchy_board_states(project, created_by=None):
-    """Idempotently seed the 6 board columns (+ Triage) for a project."""
+    """Idempotently seed the 4 board columns (+ Triage) for a project."""
     from plane.db.models import State
 
     existing = {
@@ -406,3 +385,39 @@ def issue_ids_to_transfer_from_cycle(cycle_issues_qs):
             transfer_ids.add(iid)
 
     return transfer_ids
+
+
+def l4_estimate_rollup_subquery(type_name: str):
+    """Sum of L4 child estimate_point.value for a given hierarchy type name (design/dev/qa)."""
+    from django.db.models import FloatField, OuterRef, Subquery, Sum, Value
+    from django.db.models.functions import Cast, Coalesce
+
+    from plane.db.models import Issue
+    from plane.utils.issue_parent import HIERARCHY_LEVEL_SUB_TASK
+
+    return Coalesce(
+        Subquery(
+            Issue.issue_objects.filter(
+                parent_id=OuterRef("id"),
+                hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+                hierarchy_type__name__iexact=type_name,
+                estimate_point__isnull=False,
+            )
+            .order_by()
+            .values("parent_id")
+            .annotate(total=Sum(Cast("estimate_point__value", FloatField())))
+            .values("total")[:1],
+            output_field=FloatField(),
+        ),
+        Value(0.0),
+        output_field=FloatField(),
+    )
+
+
+def annotate_l4_estimate_rollups(queryset):
+    """Attach design/dev/qa estimate rollups onto an Issue queryset (for L3 parents)."""
+    return queryset.annotate(
+        design_estimate_points=l4_estimate_rollup_subquery("design"),
+        dev_estimate_points=l4_estimate_rollup_subquery("dev"),
+        qa_estimate_points=l4_estimate_rollup_subquery("qa"),
+    )

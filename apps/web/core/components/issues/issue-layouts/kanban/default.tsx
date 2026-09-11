@@ -33,7 +33,11 @@ import { useWorkFlowFDragNDrop } from "@/components/workflow";
 import type { TRenderQuickActions } from "../list/list-view-types";
 import type { GroupDropLocation } from "../utils";
 import { getGroupByColumns, isWorkspaceLevel, getApproximateCardHeight } from "../utils";
-import { CLASSIC_KANBAN_COLUMN_CLASS, SCRUMBAN_KANBAN_COLUMN_CLASS } from "./scrumban-board-layout";
+import {
+  CLASSIC_KANBAN_COLUMN_CLASS,
+  SCRUMBAN_KANBAN_COLUMN_BODY_CLASS,
+  SCRUMBAN_KANBAN_COLUMN_CLASS,
+} from "./scrumban-board-layout";
 // components
 import { HeaderGroupByCard } from "./headers/group-by-card";
 import { KanbanGroup } from "./kanban-group";
@@ -146,6 +150,8 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
   const isGroupByCreatedBy = group_by === "created_by";
   const approximateCardHeight = getApproximateCardHeight(displayProperties);
   const isSubGroup = !!sub_group_id && sub_group_id !== "null";
+  // Swimlanes remount often on expand; skip idle placeholders so cards show immediately.
+  const isSwimlaneColumn = !!sub_group_by;
 
   return (
     <ContentWrapper className={`relative w-full flex-row gap-4 !pt-2 !pb-0`}>
@@ -168,7 +174,7 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
               className={`group relative flex flex-col ${
                 groupByVisibilityToggle.showIssues
                   ? isStagedGateScrumban
-                    ? SCRUMBAN_KANBAN_COLUMN_CLASS
+                    ? `${SCRUMBAN_KANBAN_COLUMN_CLASS} ${SCRUMBAN_KANBAN_COLUMN_BODY_CLASS}`
                     : CLASSIC_KANBAN_COLUMN_CLASS
                   : ``
               } `}
@@ -204,15 +210,18 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
                   classNames="h-full min-h-[120px]"
                   defaultHeight={`${groupHeight}px`}
                   placeholderChildren={
-                    <KanbanColumnLoader
-                      ignoreHeader
-                      cardHeight={approximateCardHeight}
-                      cardsInColumn={issueLength !== undefined && issueLength < 3 ? issueLength : 3}
-                      shouldAnimate={false}
-                    />
+                    isSwimlaneColumn ? undefined : (
+                      <KanbanColumnLoader
+                        ignoreHeader
+                        cardHeight={approximateCardHeight}
+                        cardsInColumn={issueLength !== undefined && issueLength < 3 ? issueLength : 3}
+                        shouldAnimate={false}
+                      />
+                    )
                   }
-                  defaultValue={groupIndex < 5 && subGroupIndex < 2}
-                  useIdleTime
+                  defaultValue={isSwimlaneColumn || (groupIndex < 5 && subGroupIndex < 2)}
+                  useIdleTime={!isSwimlaneColumn}
+                  forceRender={isSwimlaneColumn}
                 >
                   <KanbanGroup
                     groupId={subList.id}
