@@ -32,6 +32,7 @@ import { cn } from "@plane/utils";
 import { WorkItemsModal } from "@/components/analytics/work-items/modal";
 import { BreadcrumbLink } from "@/components/common/breadcrumb-link";
 import { SwitcherLabel } from "@/components/common/switcher-label";
+import { CycleCapacityModal } from "@/components/cycles/capacity/modal";
 import { CycleQuickActions } from "@/components/cycles/quick-actions";
 import {
   DisplayFiltersSelection,
@@ -56,6 +57,7 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
   const parentRef = useRef<HTMLDivElement>(null);
   // states
   const [analyticsModal, setAnalyticsModal] = useState(false);
+  const [capacityModal, setCapacityModal] = useState(false);
   // router
   const router = useAppRouter();
   const { workspaceSlug, projectId, cycleId } = useParams();
@@ -73,9 +75,9 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
   const { allowPermissions } = useUserPermissions();
 
   const activeLayout = issueFilters?.displayFilters?.layout;
+  const isScrumban = isStagedGateScrumbanMode(currentProjectDetails?.workflow_mode);
   const hideStructuralDisplayControls =
-    isStagedGateScrumbanMode(currentProjectDetails?.workflow_mode) &&
-    (activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN);
+    isScrumban && (activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN);
 
   const { setValue, storedValue } = useLocalStorage("cycle_sidebar_collapsed", false);
 
@@ -138,6 +140,14 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
         onClose={() => setAnalyticsModal(false)}
         cycleDetails={cycleDetails ?? undefined}
       />
+      {isScrumban && (
+        <CycleCapacityModal
+          isOpen={capacityModal}
+          onClose={() => setCapacityModal(false)}
+          projectDetails={currentProjectDetails}
+          cycleDetails={cycleDetails ?? undefined}
+        />
+      )}
       <Header>
         <Header.LeftItem>
           <div className="flex items-center gap-2">
@@ -241,6 +251,12 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
 
             {canUserCreateIssue && (
               <>
+                {isScrumban && (
+                  <Button onClick={() => setCapacityModal(true)} variant="secondary" size="lg" className="gap-1.5">
+                    <img src="/capacity-bar-icon.png" alt="" className="size-3.5 dark:invert" />
+                    <span className="hidden @4xl:flex">Capacity</span>
+                  </Button>
+                )}
                 <Button onClick={() => setAnalyticsModal(true)} variant="secondary" size="lg">
                   <span className="hidden @4xl:flex">Analytics</span>
                   <span className="@4xl:hidden">

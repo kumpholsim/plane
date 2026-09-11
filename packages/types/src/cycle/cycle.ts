@@ -104,6 +104,10 @@ export interface ICycle extends TProgressSnapshot {
   updated_by?: string;
   archived_at: string | null;
   assignee_ids?: string[];
+  /** Scrumban capacity: team public holiday days for this sprint */
+  public_holiday_days?: number;
+  /** Scrumban capacity: map of user id → personal leave days */
+  personal_holiday_days?: Record<string, number>;
   view_props: {
     filters: IIssueFilterOptions;
   };
@@ -156,3 +160,28 @@ export type TProgressChartData = {
   ideal: number;
   actual: number;
 }[];
+
+/** Scrumban sprint capacity row (L4 estimate totals vs velocity) */
+export type TCycleCapacityMember = {
+  assignee_id: string;
+  display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  estimate_points: number;
+  personal_holiday_days: number;
+  capacity_max: number;
+  is_over_capacity: boolean;
+};
+
+export type TCycleCapacityResponse = {
+  average_velocity: number;
+  public_holiday_days: number;
+  sp_per_holiday_day: number;
+  members: TCycleCapacityMember[];
+};
+
+export type TCycleCapacityUpdatePayload = {
+  public_holiday_days?: number;
+  personal_holiday_days?: Record<string, number>;
+};

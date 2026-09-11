@@ -12,6 +12,7 @@ from plane.app.views import (
     CycleFavoriteViewSet,
     CycleProgressEndpoint,
     CycleAnalyticsEndpoint,
+    CycleCapacityEndpoint,
     TransferCycleIssueEndpoint,
     CycleUserPropertiesEndpoint,
     CycleArchiveUnarchiveEndpoint,
@@ -102,5 +103,10 @@ urlpatterns = [
         "workspaces/<str:slug>/projects/<uuid:project_id>/cycles/<uuid:cycle_id>/analytics/",
         CycleAnalyticsEndpoint.as_view(),
         name="project-cycle",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/cycles/<uuid:cycle_id>/capacity/",
+        CycleCapacityEndpoint.as_view(),
+        name="project-cycle-capacity",
     ),
 ]

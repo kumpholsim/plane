@@ -1047,3 +1047,166 @@ class CycleAnalyticsEndpoint(BaseAPIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+# Story-point reduction per holiday day (public or personal) for Scrumban capacity bars.
+CAPACITY_SP_PER_HOLIDAY_DAY = 1.5
+
+
+class CycleCapacityEndpoint(BaseAPIView):
+    """
+    Sprint capacity: open L4 (sub-task) estimate totals per assignee vs project average velocity,
+    reduced by public and personal holiday days (1.5 SP each).
+
+    Done/cancelled L4 cards are excluded so finishing work frees capacity on the bar.
+    """
+
+    def _capacity_max(self, average_velocity, public_holiday_days, personal_holiday_days):
+        public_days = float(public_holiday_days or 0)
+        personal_days = float(personal_holiday_days or 0)
+        return max(
+            0.0,
+            float(average_velocity or 15)
+            - (CAPACITY_SP_PER_HOLIDAY_DAY * public_days)
+            - (CAPACITY_SP_PER_HOLIDAY_DAY * personal_days),
+        )
+
+    def _build_capacity_payload(self, slug, project_id, cycle_id):
+        from plane.utils.issue_parent import HIERARCHY_LEVEL_SUB_TASK
+
+        cycle = Cycle.objects.filter(workspace__slug=slug, project_id=project_id, id=cycle_id).first()
+        if not cycle:
+            return None, Response({"error": "Cycle not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        project = Project.objects.filter(workspace__slug=slug, pk=project_id).first()
+        if not project:
+            return None, Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        average_velocity = float(getattr(project, "average_velocity", 15) or 15)
+        public_holiday_days = float(getattr(cycle, "public_holiday_days", 0) or 0)
+        personal_holiday_days = getattr(cycle, "personal_holiday_days", None) or {}
+        if not isinstance(personal_holiday_days, dict):
+            personal_holiday_days = {}
+
+        # Open L4 only — moving a card to Done (completed) or cancelled drops it from the bar.
+        assignee_rows = (
+            Issue.issue_objects.filter(
+                issue_cycle__cycle_id=cycle_id,
+                issue_cycle__deleted_at__isnull=True,
+                workspace__slug=slug,
+                project_id=project_id,
+                hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+            )
+            .exclude(state__group__in=["completed", "cancelled"])
+            .annotate(display_name=F("assignees__display_name"))
+            .annotate(assignee_id=F("assignees__id"))
+            .annotate(first_name=F("assignees__first_name"))
+            .annotate(last_name=F("assignees__last_name"))
+            .annotate(
+                avatar_url=Case(
+                    When(
+                        assignees__avatar_asset__isnull=False,
+                        then=Concat(
+                            Value("/api/assets/v2/static/"),
+                            Cast("assignees__avatar_asset", models.CharField()),
+                            Value("/"),
+                        ),
+                    ),
+                    When(
+                        assignees__avatar_asset__isnull=True,
+                        then="assignees__avatar",
+                    ),
+                    default=Value(None),
+                    output_field=models.CharField(),
+                )
+            )
+            .values("display_name", "assignee_id", "avatar_url", "first_name", "last_name")
+            .annotate(estimate_points=Coalesce(Sum(Cast("estimate_point__value", FloatField())), Value(0.0)))
+            .filter(assignee_id__isnull=False)
+            .order_by("display_name")
+        )
+
+        members = []
+        for row in assignee_rows:
+            assignee_id = str(row["assignee_id"]) if row["assignee_id"] else None
+            if not assignee_id:
+                continue
+            personal_days = float(personal_holiday_days.get(assignee_id, 0) or 0)
+            capacity_max = self._capacity_max(average_velocity, public_holiday_days, personal_days)
+            estimate_points = float(row["estimate_points"] or 0)
+            members.append(
+                {
+                    "assignee_id": assignee_id,
+                    "display_name": row["display_name"],
+                    "first_name": row["first_name"],
+                    "last_name": row["last_name"],
+                    "avatar_url": row["avatar_url"],
+                    "estimate_points": estimate_points,
+                    "personal_holiday_days": personal_days,
+                    "capacity_max": capacity_max,
+                    "is_over_capacity": estimate_points > capacity_max,
+                }
+            )
+
+        return (
+            {
+                "average_velocity": average_velocity,
+                "public_holiday_days": public_holiday_days,
+                "sp_per_holiday_day": CAPACITY_SP_PER_HOLIDAY_DAY,
+                "members": members,
+            },
+            None,
+        )
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
+    def get(self, request, slug, project_id, cycle_id):
+        payload, error = self._build_capacity_payload(slug, project_id, cycle_id)
+        if error:
+            return error
+        return Response(payload, status=status.HTTP_200_OK)
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def patch(self, request, slug, project_id, cycle_id):
+        cycle = Cycle.objects.filter(workspace__slug=slug, project_id=project_id, id=cycle_id).first()
+        if not cycle:
+            return Response({"error": "Cycle not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        update_kwargs = {}
+
+        if "public_holiday_days" in request.data:
+            try:
+                update_kwargs["public_holiday_days"] = max(0.0, float(request.data.get("public_holiday_days") or 0))
+            except (TypeError, ValueError):
+                return Response({"error": "Invalid public_holiday_days"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if "personal_holiday_days" in request.data:
+            incoming = request.data.get("personal_holiday_days") or {}
+            if isinstance(incoming, str):
+                try:
+                    incoming = json.loads(incoming)
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    return Response(
+                        {"error": "personal_holiday_days must be an object"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            if not isinstance(incoming, dict):
+                return Response({"error": "personal_holiday_days must be an object"}, status=status.HTTP_400_BAD_REQUEST)
+            existing = cycle.personal_holiday_days if isinstance(cycle.personal_holiday_days, dict) else {}
+            merged = {str(k): float(v or 0) for k, v in existing.items()}
+            for user_id, days in incoming.items():
+                try:
+                    merged[str(user_id)] = max(0.0, float(days or 0))
+                except (TypeError, ValueError):
+                    return Response(
+                        {"error": f"Invalid personal leave days for {user_id}"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            update_kwargs["personal_holiday_days"] = merged
+
+        if update_kwargs:
+            Cycle.objects.filter(pk=cycle.pk).update(**update_kwargs)
+
+        payload, error = self._build_capacity_payload(slug, project_id, cycle_id)
+        if error:
+            return error
+        return Response(payload, status=status.HTTP_200_OK)

@@ -105,6 +105,8 @@ class Project(BaseModel):
             ("staged_gate_scrumban", "Staged-gate Scrumban"),
         ),
     )
+    # Scrumban capacity planning: baseline story points per person per sprint
+    average_velocity = models.FloatField(default=15)
     is_time_tracking_enabled = models.BooleanField(default=False)
     is_issue_type_enabled = models.BooleanField(default=False)
     guest_view_all_features = models.BooleanField(default=False)

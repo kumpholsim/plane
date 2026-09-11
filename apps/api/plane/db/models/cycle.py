@@ -78,6 +78,10 @@ class Cycle(ProjectBaseModel):
     TIMEZONE_CHOICES = tuple(zip(pytz.common_timezones, pytz.common_timezones))
     timezone = models.CharField(max_length=255, default="UTC", choices=TIMEZONE_CHOICES)
     version = models.IntegerField(default=1)
+    # Scrumban capacity: team public holiday days for this sprint (each day ≈ 1.5 SP)
+    public_holiday_days = models.FloatField(default=0)
+    # Scrumban capacity: map of user_id → personal holiday days for this sprint
+    personal_holiday_days = models.JSONField(default=dict)
 
     class Meta:
         verbose_name = "Cycle"

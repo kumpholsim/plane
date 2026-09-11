@@ -140,3 +140,9 @@ export type TProjectWorkflowModeConstant = (typeof PROJECT_WORKFLOW_MODE)[keyof 
 /** Missing/unknown mode → classic (safe default for existing projects). */
 export const isStagedGateScrumbanMode = (mode?: string | null): boolean =>
   mode === PROJECT_WORKFLOW_MODE.STAGED_GATE_SCRUMBAN;
+
+/** Default sprint capacity (story points) per person when project.average_velocity is unset. */
+export const DEFAULT_AVERAGE_VELOCITY = 15;
+
+/** Each public or personal holiday day reduces capacity by this many story points. */
+export const CAPACITY_SP_PER_HOLIDAY_DAY = 1.5;

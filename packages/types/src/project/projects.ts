@@ -38,6 +38,8 @@ export interface IPartialProject {
   network?: number;
   /** scrum = classic Plane; staged_gate_scrumban = hierarchy product */
   workflow_mode?: TProjectWorkflowMode;
+  /** Scrumban: baseline story points per person per sprint (capacity bar). Default 15. */
+  average_velocity?: number;
   // Timestamps
   created_at?: Date;
   updated_at?: Date;

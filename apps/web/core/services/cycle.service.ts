@@ -14,6 +14,8 @@ import type {
   TCycleDistribution,
   TProgressSnapshot,
   TCycleEstimateDistribution,
+  TCycleCapacityResponse,
+  TCycleCapacityUpdatePayload,
 } from "@plane/types";
 import { APIService } from "@/services/api.service";
 
@@ -31,6 +33,27 @@ export class CycleService extends APIService {
     return this.get(
       `/api/workspaces/${workspaceSlug}/projects/${projectId}/cycles/${cycleId}/analytics?type=${analytic_type}`
     )
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async getCycleCapacity(workspaceSlug: string, projectId: string, cycleId: string): Promise<TCycleCapacityResponse> {
+    return this.get(`/api/workspaces/${workspaceSlug}/projects/${projectId}/cycles/${cycleId}/capacity/`)
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async updateCycleCapacity(
+    workspaceSlug: string,
+    projectId: string,
+    cycleId: string,
+    data: TCycleCapacityUpdatePayload
+  ): Promise<TCycleCapacityResponse> {
+    return this.patch(`/api/workspaces/${workspaceSlug}/projects/${projectId}/cycles/${cycleId}/capacity/`, data)
       .then((res) => res?.data)
       .catch((err) => {
         throw err?.response?.data;
