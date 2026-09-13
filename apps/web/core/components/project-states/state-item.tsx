@@ -25,6 +25,7 @@ type TStateItem = {
   stateOperationsCallbacks: TStateOperationsCallbacks;
   shouldTrackEvents: boolean;
   disabled?: boolean;
+  canAddOrRemoveStates?: boolean;
   stateItemClassName?: string;
 };
 
@@ -37,6 +38,7 @@ export const StateItem = observer(function StateItem(props: TStateItem) {
     stateOperationsCallbacks,
     shouldTrackEvents,
     disabled = false,
+    canAddOrRemoveStates = !disabled,
     stateItemClassName,
   } = props;
   // ref
@@ -47,7 +49,7 @@ export const StateItem = observer(function StateItem(props: TStateItem) {
   const [isDraggedOver, setIsDraggedOver] = useState(false);
   const [closestEdge, setClosestEdge] = useState<string | null>(null);
   // derived values
-  const isDraggable = totalStates === 1 ? false : true;
+  const isDraggable = totalStates !== 1;
   const commonStateItemListProps = {
     stateCount: totalStates,
     state: state,
@@ -77,7 +79,7 @@ export const StateItem = observer(function StateItem(props: TStateItem) {
           getInitialData: () => initialData,
           onDragStart: () => setIsDragging(true),
           onDrop: () => setIsDragging(false),
-          canDrag: () => isDraggable && !disabled,
+          canDrag: () => isDraggable && !disabled && canAddOrRemoveStates,
         }),
         dropTargetForElements({
           element: elementRef,
@@ -115,7 +117,16 @@ export const StateItem = observer(function StateItem(props: TStateItem) {
         })
       );
     }
-  }, [draggableElementRef, state, groupKey, isDraggable, groupedStates, handleStateSequence, disabled]);
+  }, [
+    draggableElementRef,
+    state,
+    groupKey,
+    isDraggable,
+    groupedStates,
+    handleStateSequence,
+    disabled,
+    canAddOrRemoveStates,
+  ]);
   // DND ends
 
   if (updateStateModal)
@@ -147,6 +158,7 @@ export const StateItem = observer(function StateItem(props: TStateItem) {
           <StateItemTitle
             {...commonStateItemListProps}
             disabled={false}
+            canDelete={canAddOrRemoveStates}
             stateOperationsCallbacks={{
               markStateAsDefault: stateOperationsCallbacks.markStateAsDefault,
               deleteState: stateOperationsCallbacks.deleteState,

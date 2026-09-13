@@ -13,7 +13,7 @@ import { useParams } from "next/navigation";
 import { Paperclip } from "lucide-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
-import { LinkIcon, LockIcon, StartDatePropertyIcon, ViewsIcon, DueDatePropertyIcon } from "@plane/propel/icons";
+import { LinkIcon, StartDatePropertyIcon, ViewsIcon, DueDatePropertyIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TIssue, IIssueDisplayProperties, TIssuePriorities, TDeliveryProgressStatus } from "@plane/types";
@@ -236,11 +236,11 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
 
   return (
     <div className={className}>
-      {/* state / L3 progress — locked in Scrumban (driven by workflow, not manual) */}
+      {/* state / L3 progress */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="state">
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
         <div
-          className={cn("flex h-5 items-center gap-1", hideBoardSubTaskMeta && "max-w-full min-w-0 overflow-hidden")}
+          className={cn("h-5", hideBoardSubTaskMeta && "max-w-full min-w-0 overflow-hidden")}
           onFocus={handleEventPropagation}
           onClick={handleEventPropagation}
         >
@@ -249,7 +249,7 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
               value={issue.progress_status}
               onChange={handleProgress}
               projectId={issue.project_id}
-              disabled
+              disabled={isReadOnly}
               buttonVariant="border-with-text"
               buttonContainerClassName="truncate max-w-48"
               className="h-5 max-w-48"
@@ -262,18 +262,13 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
               value={issue.state_id}
               onChange={handleState}
               projectId={issue.project_id}
-              disabled
+              disabled={isReadOnly}
               buttonVariant="border-with-text"
               renderByDefault={isMobile}
               showTooltip
               stateIds={isL4 ? l4StateIds : undefined}
             />
           )}
-          <Tooltip tooltipContent="Status is locked in Scrumban" renderByDefault={false}>
-            <span className="inline-flex shrink-0 text-tertiary">
-              <LockIcon className="size-3" />
-            </span>
-          </Tooltip>
         </div>
       </WithDisplayPropertiesHOC>
 

@@ -16,6 +16,7 @@ type TGroupList = {
   groupedStates: Record<string, IState[]>;
   stateOperationsCallbacks: TStateOperationsCallbacks;
   isEditable: boolean;
+  canAddOrRemoveStates?: boolean;
   shouldTrackEvents: boolean;
   groupListClassName?: string;
   groupItemClassName?: string;
@@ -27,6 +28,7 @@ export const GroupList = observer(function GroupList(props: TGroupList) {
     groupedStates,
     stateOperationsCallbacks,
     isEditable,
+    canAddOrRemoveStates = isEditable,
     shouldTrackEvents,
     groupListClassName,
     groupItemClassName,
@@ -72,6 +74,7 @@ export const GroupList = observer(function GroupList(props: TGroupList) {
             groupsExpanded={groupsExpanded}
             stateOperationsCallbacks={stateOperationsCallbacks}
             isEditable={isEditable}
+            canAddOrRemoveStates={canAddOrRemoveStates}
             shouldTrackEvents={shouldTrackEvents}
             handleGroupCollapse={handleGroupCollapse}
             handleExpand={handleExpand}

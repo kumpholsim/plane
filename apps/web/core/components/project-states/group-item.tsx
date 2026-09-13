@@ -23,6 +23,7 @@ type TGroupItem = {
   states: IState[];
   stateOperationsCallbacks: TStateOperationsCallbacks;
   isEditable: boolean;
+  canAddOrRemoveStates?: boolean;
   shouldTrackEvents: boolean;
   groupItemClassName?: string;
   stateItemClassName?: string;
@@ -37,6 +38,7 @@ export const GroupItem = observer(function GroupItem(props: TGroupItem) {
     states,
     groupsExpanded,
     isEditable,
+    canAddOrRemoveStates = isEditable,
     stateOperationsCallbacks,
     shouldTrackEvents,
     groupItemClassName,
@@ -60,6 +62,7 @@ export const GroupItem = observer(function GroupItem(props: TGroupItem) {
       ref={dropElementRef}
     >
       <div className="flex items-center justify-between gap-2">
+        {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events, jsx_a11y/no-static-element-interactions */}
         <div
           className="flex w-full cursor-pointer items-center py-1"
           onClick={() => (!currentStateExpanded ? handleExpand(groupKey) : handleGroupCollapse(groupKey))}
@@ -85,7 +88,7 @@ export const GroupItem = observer(function GroupItem(props: TGroupItem) {
           data-ph-element={STATE_TRACKER_ELEMENTS.STATE_GROUP_ADD_BUTTON}
           className={cn(
             "flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-sm text-accent-primary/80 transition-colors hover:bg-layer-1 hover:text-accent-primary",
-            (!isEditable || createState) && "cursor-not-allowed text-placeholder hover:text-placeholder"
+            (!canAddOrRemoveStates || createState) && "cursor-not-allowed text-placeholder hover:text-placeholder"
           )}
           onClick={() => {
             if (!createState) {
@@ -93,7 +96,8 @@ export const GroupItem = observer(function GroupItem(props: TGroupItem) {
               setCreateState(true);
             }
           }}
-          disabled={!isEditable || createState}
+          disabled={!canAddOrRemoveStates || createState}
+          title={!canAddOrRemoveStates ? "Swimlane states are locked" : undefined}
         >
           <PlusIcon className="h-4 w-4" />
         </button>
@@ -102,7 +106,7 @@ export const GroupItem = observer(function GroupItem(props: TGroupItem) {
       {shouldShowEmptyState && (
         <div className="flex h-full flex-col items-center justify-center py-4 text-13 text-tertiary">
           <div>{t("project_settings.states.empty_state.title", { groupKey })}</div>
-          {isEditable && <div>{t("project_settings.states.empty_state.description")}</div>}
+          {canAddOrRemoveStates && <div>{t("project_settings.states.empty_state.description")}</div>}
         </div>
       )}
 
@@ -113,6 +117,7 @@ export const GroupItem = observer(function GroupItem(props: TGroupItem) {
             groupedStates={groupedStates}
             states={states}
             disabled={!isEditable}
+            canAddOrRemoveStates={canAddOrRemoveStates}
             stateOperationsCallbacks={stateOperationsCallbacks}
             shouldTrackEvents={shouldTrackEvents}
             stateItemClassName={stateItemClassName}
@@ -120,7 +125,7 @@ export const GroupItem = observer(function GroupItem(props: TGroupItem) {
         </div>
       )}
 
-      {isEditable && createState && (
+      {canAddOrRemoveStates && createState && (
         <div className="">
           <StateCreate
             groupKey={groupKey}

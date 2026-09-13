@@ -24,6 +24,7 @@ type TBaseStateItemTitleProps = {
 
 type TEnabledStateItemTitleProps = TBaseStateItemTitleProps & {
   disabled: false;
+  canDelete?: boolean;
   stateOperationsCallbacks: Pick<TStateOperationsCallbacks, "markStateAsDefault" | "deleteState">;
   shouldTrackEvents: boolean;
 };
@@ -41,12 +42,14 @@ export const StateItemTitle = observer(function StateItemTitle(props: TStateItem
   // derived values
   const statePercentage = getStatePercentageInGroup(state.id);
   const percentage = statePercentage ? statePercentage / 100 : undefined;
+  const canDelete = disabled ? false : (props.canDelete ?? true);
+  const showDragHandle = !disabled && canDelete && stateCount != 1;
 
   return (
     <div className="flex w-full items-center justify-between gap-2">
       <div className="flex items-center gap-1 px-1">
         {/* draggable indicator */}
-        {!disabled && stateCount != 1 && (
+        {showDragHandle && (
           <div className="absolute -left-1.5 hidden h-3 w-3 flex-shrink-0 cursor-pointer items-center justify-center rounded-xs bg-surface-2 text-secondary transition-colors group-hover:flex hover:text-primary">
             <GripVertical className="h-3 w-3" />
           </div>
@@ -67,7 +70,7 @@ export const StateItemTitle = observer(function StateItemTitle(props: TStateItem
           <div className="flex-shrink-0 text-11 transition-all">
             <StateMarksAsDefault
               stateId={state.id}
-              isDefault={state.default ? true : false}
+              isDefault={Boolean(state.default)}
               markStateAsDefaultCallback={props.stateOperationsCallbacks.markStateAsDefault}
             />
           </div>
@@ -80,12 +83,14 @@ export const StateItemTitle = observer(function StateItemTitle(props: TStateItem
             >
               <EditIcon className="h-3 w-3" />
             </button>
-            <StateDelete
-              totalStates={stateCount}
-              state={state}
-              deleteStateCallback={props.stateOperationsCallbacks.deleteState}
-              shouldTrackEvents={props.shouldTrackEvents}
-            />
+            {canDelete && (
+              <StateDelete
+                totalStates={stateCount}
+                state={state}
+                deleteStateCallback={props.stateOperationsCallbacks.deleteState}
+                shouldTrackEvents={props.shouldTrackEvents}
+              />
+            )}
           </div>
         </div>
       )}
