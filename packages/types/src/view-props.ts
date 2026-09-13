@@ -161,6 +161,8 @@ export interface IIssueDisplayFilterOptions {
   order_by?: TIssueOrderByOptions;
   show_empty_groups?: boolean;
   sub_issue?: boolean;
+  /** Scrumban timeline: L2 parents with L3 children, or L3 parents with L4 children */
+  gantt_hierarchy?: "l2_l3" | "l3_l4";
 }
 export interface IIssueDisplayProperties {
   assignee?: boolean;

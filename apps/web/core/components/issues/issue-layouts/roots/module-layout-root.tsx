@@ -21,8 +21,7 @@ import { EIssuesStoreType, EIssueLayoutTypes } from "@plane/types";
 import { Row, ERowVariant } from "@plane/ui";
 // hooks
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
-import { WorkItemPinnedFilters } from "@/components/work-item-filters/pinned-filters";
-import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
+import { ScrumbanWorkItemFiltersRow } from "@/components/work-item-filters/scrumban-filters-row";
 import { BoardFullscreenProvider } from "@/components/issues/issue-layouts/kanban/board-fullscreen-context";
 import { BoardFullscreenShell } from "@/components/issues/issue-layouts/kanban/board-fullscreen-shell";
 import { useIssues } from "@/hooks/store/use-issues";
@@ -74,12 +73,12 @@ export const ModuleLayoutRoot = observer(function ModuleLayoutRoot() {
           !["state_id", "assignee_id", "progress_status", "hierarchy_type_id"].includes(property as string)
       )
     : [...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters];
-  const suppressedProperties: TWorkItemFilterProperty[] = [
-    "state_id",
-    "progress_status",
-    "assignee_id",
-    "hierarchy_type_id",
-  ];
+  // L3 Category is list/board-only; keep it suppressed on timeline/calendar/spreadsheet.
+  const suppressedProperties: TWorkItemFilterProperty[] | undefined = !isScrumban
+    ? undefined
+    : isPinnedFilterLayout
+      ? ["state_id", "progress_status", "assignee_id", "hierarchy_type_id"]
+      : ["hierarchy_type_id"];
 
   useSWR(
     workspaceSlug && projectId && moduleId
@@ -114,20 +113,15 @@ export const ModuleLayoutRoot = observer(function ModuleLayoutRoot() {
         >
           {({ filter: moduleWorkItemsFilter }) => (
             <BoardFullscreenShell>
-              {moduleWorkItemsFilter && (
-                <WorkItemFiltersRow
-                  filter={moduleWorkItemsFilter}
-                  leadingControls={
-                    isPinnedFilterLayout ? (
-                      <WorkItemPinnedFilters filter={moduleWorkItemsFilter} projectId={projectId} />
-                    ) : undefined
-                  }
-                  suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
-                  trackerElements={{
-                    saveView: PROJECT_VIEW_TRACKER_ELEMENTS.MODULE_HEADER_SAVE_AS_VIEW_BUTTON,
-                  }}
-                />
-              )}
+              <ScrumbanWorkItemFiltersRow
+                filter={moduleWorkItemsFilter}
+                projectId={projectId}
+                isPinnedFilterLayout={isPinnedFilterLayout}
+                suppressedProperties={suppressedProperties}
+                trackerElements={{
+                  saveView: PROJECT_VIEW_TRACKER_ELEMENTS.MODULE_HEADER_SAVE_AS_VIEW_BUTTON,
+                }}
+              />
               <Row variant={ERowVariant.HUGGING} className="h-full w-full overflow-auto">
                 <ModuleIssueLayout activeLayout={activeLayout} moduleId={moduleId} />
               </Row>

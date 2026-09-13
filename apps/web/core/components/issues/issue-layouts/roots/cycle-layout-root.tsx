@@ -22,10 +22,8 @@ import { EIssuesStoreType, EIssueLayoutTypes } from "@plane/types";
 // components
 import { TransferIssues } from "@/components/cycles/transfer-issues";
 import { TransferIssuesModal } from "@/components/cycles/transfer-issues-modal";
-// hooks
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
-import { WorkItemPinnedFilters } from "@/components/work-item-filters/pinned-filters";
-import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
+import { ScrumbanWorkItemFiltersRow } from "@/components/work-item-filters/scrumban-filters-row";
 import { BoardFullscreenProvider } from "@/components/issues/issue-layouts/kanban/board-fullscreen-context";
 import { BoardFullscreenShell } from "@/components/issues/issue-layouts/kanban/board-fullscreen-shell";
 import { useCycle } from "@/hooks/store/use-cycle";
@@ -84,12 +82,12 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
           !["state_id", "assignee_id", "progress_status", "hierarchy_type_id"].includes(property as string)
       )
     : [...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters];
-  const suppressedProperties: TWorkItemFilterProperty[] = [
-    "state_id",
-    "progress_status",
-    "assignee_id",
-    "hierarchy_type_id",
-  ];
+  // L3 Category is list/board-only; keep it suppressed on timeline/calendar/spreadsheet.
+  const suppressedProperties: TWorkItemFilterProperty[] | undefined = !isScrumban
+    ? undefined
+    : isPinnedFilterLayout
+      ? ["state_id", "progress_status", "assignee_id", "hierarchy_type_id"]
+      : ["hierarchy_type_id"];
 
   useSWR(
     workspaceSlug && projectId && cycleId ? `CYCLE_ISSUES_${workspaceSlug}_${projectId}_${cycleId}` : null,
@@ -144,20 +142,15 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
                     disabled={!isEmpty(cycleDetails?.progress_snapshot)}
                   />
                 )}
-                {cycleWorkItemsFilter && (
-                  <WorkItemFiltersRow
-                    filter={cycleWorkItemsFilter}
-                    leadingControls={
-                      isPinnedFilterLayout ? (
-                        <WorkItemPinnedFilters filter={cycleWorkItemsFilter} projectId={projectId} />
-                      ) : undefined
-                    }
-                    suppressProperties={isPinnedFilterLayout ? suppressedProperties : undefined}
-                    trackerElements={{
-                      saveView: PROJECT_VIEW_TRACKER_ELEMENTS.CYCLE_HEADER_SAVE_AS_VIEW_BUTTON,
-                    }}
-                  />
-                )}
+                <ScrumbanWorkItemFiltersRow
+                  filter={cycleWorkItemsFilter}
+                  projectId={projectId}
+                  isPinnedFilterLayout={isPinnedFilterLayout}
+                  suppressedProperties={suppressedProperties}
+                  trackerElements={{
+                    saveView: PROJECT_VIEW_TRACKER_ELEMENTS.CYCLE_HEADER_SAVE_AS_VIEW_BUTTON,
+                  }}
+                />
                 <div className="h-full w-full overflow-auto">
                   <CycleIssueLayout activeLayout={activeLayout} cycleId={cycleId} isCompletedCycle={isCompletedCycle} />
                 </div>

@@ -6,12 +6,14 @@
 
 import { observer } from "mobx-react";
 // plane imports
+import { ChevronDownIcon, ChevronRightIcon } from "@plane/propel/icons";
 import type { IGanttBlock } from "@plane/types";
 import { Row } from "@plane/ui";
 import { cn } from "@plane/utils";
 // components
 import { MultipleSelectEntityAction } from "@/components/core/multiple-select";
 import { IssueGanttSidebarBlock } from "@/components/issues/issue-layouts/gantt/blocks";
+import { useGanttHierarchy } from "@/components/issues/issue-layouts/gantt/hierarchy-context";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
@@ -32,6 +34,7 @@ export const IssuesSidebarBlock = observer(function IssuesSidebarBlock(props: Pr
   // store hooks
   const { updateActiveBlockId, isBlockActive, getNumberOfDaysFromPosition } = useTimeLineChartStore();
   const { getIsIssuePeeked } = useIssueDetail();
+  const hierarchy = useGanttHierarchy();
 
   const isBlockComplete = !!block?.start_date && !!block?.target_date;
   const duration = isBlockComplete ? getNumberOfDaysFromPosition(block?.position?.width) : undefined;
@@ -41,6 +44,10 @@ export const IssuesSidebarBlock = observer(function IssuesSidebarBlock(props: Pr
   const isIssueSelected = selectionHelpers?.getIsEntitySelected(block.id);
   const isIssueFocused = selectionHelpers?.getIsEntityActive(block.id);
   const isBlockHoveredOn = isBlockActive(block.id);
+  const meta = hierarchy?.metaById[block.id];
+  const depth = meta?.depth ?? 0;
+  const hasChildren = !!meta?.hasChildren;
+  const isExpanded = hierarchy?.expandedIds.has(block.id) ?? false;
 
   return (
     <div
@@ -80,7 +87,33 @@ export const IssuesSidebarBlock = observer(function IssuesSidebarBlock(props: Pr
             />
           </div>
         )}
-        <div className="flex h-full flex-grow items-center justify-between gap-2 truncate">
+        <div
+          className="flex h-full flex-grow items-center justify-between gap-2 truncate"
+          style={depth > 0 ? { paddingLeft: `${depth * 16}px` } : undefined}
+        >
+          {hierarchy?.enabled && (
+            <button
+              type="button"
+              className={cn(
+                "flex size-4 shrink-0 items-center justify-center rounded text-tertiary",
+                hasChildren ? "hover:bg-layer-1 hover:text-primary" : "invisible"
+              )}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (hasChildren) hierarchy.toggleExpanded(block.id);
+              }}
+              aria-label={isExpanded ? "Collapse" : "Expand"}
+            >
+              {hasChildren ? (
+                isExpanded ? (
+                  <ChevronDownIcon className="size-3.5" />
+                ) : (
+                  <ChevronRightIcon className="size-3.5" />
+                )
+              ) : null}
+            </button>
+          )}
           <div className="flex-grow truncate">
             <IssueGanttSidebarBlock issueId={block.data.id} isEpic={isEpic} />
           </div>
