@@ -20,8 +20,9 @@ import {
   UserCirclePropertyIcon,
   EstimatePropertyIcon,
   ParentPropertyIcon,
+  LockIcon,
 } from "@plane/propel/icons";
-import { TOAST_TYPE, setToast } from "@plane/propel/toast";
+import { Tooltip } from "@plane/propel/tooltip";
 import { cn, getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from "@plane/utils";
 // components
 import { DateDropdown } from "@/components/dropdowns/date";
@@ -47,12 +48,7 @@ import {
   getHierarchyLevel,
   shouldShowCycleProperty,
 } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
-import {
-  filterStateIdsForL4,
-  getL4LeaveTodoRequirementError,
-  isDoneBoardState,
-  isQaHierarchyTypeName,
-} from "@/components/issues/hierarchy-status";
+import { filterStateIdsForL4, isDoneBoardState, isQaHierarchyTypeName } from "@/components/issues/hierarchy-status";
 import { QA_OUTCOME_OPTIONS } from "@plane/constants";
 import type { TDeliveryProgressStatus, TQAOutcome } from "@plane/types";
 import { HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_EPIC, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
@@ -114,60 +110,51 @@ export const ScrumbanPeekOverviewProperties = observer(function ScrumbanPeekOver
       <h6 className="text-body-xs-medium">{t("common.properties")}</h6>
       <div className={`mt-3 w-full space-y-3 ${disabled ? "opacity-60" : ""}`}>
         {isL3 ? (
-          <SidebarPropertyListItem icon={StatePropertyIcon} label="Progress">
+          <SidebarPropertyListItem
+            icon={StatePropertyIcon}
+            label="Progress"
+            appendElement={
+              <Tooltip tooltipContent="Status is locked in Scrumban" renderByDefault={false}>
+                <span className="inline-flex text-tertiary">
+                  <LockIcon className="size-3" />
+                </span>
+              </Tooltip>
+            }
+          >
             <ProgressStatusDropdown
               value={issue.progress_status}
               onChange={(val: TDeliveryProgressStatus) =>
                 issueOperations.update(workspaceSlug, projectId, issueId, { progress_status: val })
               }
               projectId={projectId}
-              disabled={disabled}
+              disabled
               buttonVariant="transparent-with-text"
               className="group w-full grow"
               buttonContainerClassName="w-full text-left h-7.5"
               buttonClassName={`text-body-xs-medium ${issue?.progress_status ? "" : "text-placeholder"}`}
-              dropdownArrow
-              dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
             />
           </SidebarPropertyListItem>
         ) : (
-          <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
+          <SidebarPropertyListItem
+            icon={StatePropertyIcon}
+            label={t("common.state")}
+            appendElement={
+              <Tooltip tooltipContent="Status is locked in Scrumban" renderByDefault={false}>
+                <span className="inline-flex text-tertiary">
+                  <LockIcon className="size-3" />
+                </span>
+              </Tooltip>
+            }
+          >
             <StateDropdown
               value={issue?.state_id}
-              onChange={(val) => {
-                const nextState = getStateById(val);
-                const leaveTodoError = getL4LeaveTodoRequirementError({
-                  hierarchyLevel,
-                  hierarchyTypeName: hierarchyType?.name,
-                  currentStateExternalId: stateDetails?.external_id,
-                  nextStateExternalId: nextState?.external_id,
-                  currentStateId: issue.state_id,
-                  nextStateId: val,
-                  assigneeIds: issue.assignee_ids,
-                  estimatePoint: issue.estimate_point ?? null,
-                });
-                if (leaveTodoError) {
-                  setToast({
-                    type: TOAST_TYPE.WARNING,
-                    title: "Cannot change status",
-                    message: leaveTodoError,
-                  });
-                  return;
-                }
-                const payload: { state_id: string; qa_outcome?: TQAOutcome | null } = { state_id: val };
-                if (isQaL4) {
-                  payload.qa_outcome = isDoneBoardState(nextState) ? (issue.qa_outcome ?? "pass") : null;
-                }
-                issueOperations.update(workspaceSlug, projectId, issueId, payload);
-              }}
+              onChange={() => undefined}
               projectId={projectId}
-              disabled={disabled}
+              disabled
               buttonVariant="transparent-with-text"
               className="group w-full grow"
               buttonContainerClassName="w-full text-left h-7.5"
               buttonClassName={`text-body-xs-medium ${issue?.state_id ? "" : "text-placeholder"}`}
-              dropdownArrow
-              dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
               stateIds={isL4 ? l4StateIds : undefined}
             />
           </SidebarPropertyListItem>

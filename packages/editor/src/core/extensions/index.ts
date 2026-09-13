@@ -17,6 +17,7 @@ export * from "./typography";
 export * from "./work-item-embed";
 export * from "./core-without-props";
 export * from "./custom-color";
+export * from "./custom-video";
 export * from "./enter-key";
 export * from "./extensions";
 export * from "./headings-list";

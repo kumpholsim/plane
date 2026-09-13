@@ -12,6 +12,7 @@ import {
   Bold,
   CaseSensitive,
   Code2,
+  Film,
   Heading1,
   Heading2,
   Heading3,
@@ -161,9 +162,10 @@ export const USER_ACTION_ITEMS: ToolbarMenuItem<"quote" | "code">[] = [
   { itemKey: "code", renderKey: "code", name: "Code", icon: Code2, editors: ["lite", "document"] },
 ];
 
-export const COMPLEX_ITEMS: ToolbarMenuItem<"table" | "image">[] = [
-  { itemKey: "table", renderKey: "table", name: "Table", icon: Table, editors: ["document"] },
+export const COMPLEX_ITEMS: ToolbarMenuItem<"table" | "image" | "video">[] = [
+  { itemKey: "table", renderKey: "table", name: "Table", icon: Table, editors: ["lite", "document"] },
   { itemKey: "image", renderKey: "image", name: "Image", icon: Image, editors: ["lite", "document"] },
+  { itemKey: "video", renderKey: "video", name: "Video", icon: Film, editors: ["lite", "document"] },
 ];
 
 export const IMAGE_ITEM = COMPLEX_ITEMS.find((item): item is ToolbarMenuItem<"image"> => item.itemKey === "image")!;

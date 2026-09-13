@@ -6,4 +6,5 @@
 
 export * from "./core";
 export * from "./document-extensions";
+export * from "./lite-text-extensions";
 export * from "./slash-commands";

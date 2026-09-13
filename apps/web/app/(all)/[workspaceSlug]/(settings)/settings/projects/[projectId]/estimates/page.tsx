@@ -9,11 +9,12 @@ import { observer } from "mobx-react";
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { NotAuthorizedView } from "@/components/auth-screens/not-authorized-view";
 import { PageHead } from "@/components/core/page-title";
-import { EstimateRoot } from "@/components/estimates";
+import { CapacityPlanningPanel, EstimateRoot } from "@/components/estimates";
 import { SettingsContentWrapper } from "@/components/settings/content-wrapper";
 // hooks
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // local imports
 import type { Route } from "./+types/page";
 import { EstimatesProjectSettingsHeader } from "./header";
@@ -23,6 +24,7 @@ function EstimatesSettingsPage({ params }: Route.ComponentProps) {
   // store
   const { currentProjectDetails } = useProject();
   const { workspaceUserInfo, allowPermissions } = useUserPermissions();
+  const isStagedGateScrumban = useIsStagedGateScrumban(projectId);
 
   // derived values
   const pageTitle = currentProjectDetails?.name ? `${currentProjectDetails?.name} - Estimates` : undefined;
@@ -35,8 +37,15 @@ function EstimatesSettingsPage({ params }: Route.ComponentProps) {
   return (
     <SettingsContentWrapper header={<EstimatesProjectSettingsHeader />}>
       <PageHead title={pageTitle} />
-      <div className={`w-full ${canPerformProjectAdminActions ? "" : "pointer-events-none opacity-60"}`}>
+      <div className={`w-full space-y-10 ${canPerformProjectAdminActions ? "" : "pointer-events-none opacity-60"}`}>
         <EstimateRoot workspaceSlug={workspaceSlug} projectId={projectId} isAdmin={canPerformProjectAdminActions} />
+        {isStagedGateScrumban && (
+          <CapacityPlanningPanel
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            canManage={canPerformProjectAdminActions}
+          />
+        )}
       </div>
     </SettingsContentWrapper>
   );

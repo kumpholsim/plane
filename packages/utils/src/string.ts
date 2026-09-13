@@ -56,6 +56,7 @@ export const truncateText = (str: string, length: number) => {
 export const createSimilarString = (str: string) => {
   const shuffled = str
     .split("")
+    // oxlint-disable-next-line unicorn/no-array-sort
     .sort(() => Math.random() - 0.5)
     .join("");
 
@@ -153,6 +154,7 @@ export const checkEmailValidity = (email: string): boolean => {
   if (!email) return false;
 
   const isEmailValid =
+    // oxlint-disable-next-line eslint/no-useless-escape
     /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(
       email
     );
@@ -193,7 +195,10 @@ export const isJSONContentEmpty = (content: JSONContent | undefined): boolean =>
       content.type !== "hardBreak" &&
       content.type !== "image" &&
       content.type !== "mention-component" &&
-      content.type !== "image-component"
+      content.type !== "image-component" &&
+      content.type !== "imageComponent" &&
+      content.type !== "video-component" &&
+      content.type !== "videoComponent"
     );
   }
 
@@ -230,13 +235,13 @@ export const isCommentEmpty = (comment: Content | undefined): boolean => {
     return (
       comment.trim() === "" ||
       comment === "<p></p>" ||
-      isEmptyHtmlString(comment, ["img", "mention-component", "image-component"])
+      isEmptyHtmlString(comment, ["img", "mention-component", "image-component", "video-component"])
     );
   }
 
   // Handle JSONContent[] (array)
   if (Array.isArray(comment)) {
-    return comment.length === 0 || comment.every(isJSONContentEmpty);
+    return comment.every(isJSONContentEmpty);
   }
 
   // Handle JSONContent (object)
@@ -256,7 +261,13 @@ export const isStringCommentEmpty = (comment: string | undefined): boolean => {
   return (
     comment?.trim() === "" ||
     comment === "<p></p>" ||
-    isEmptyHtmlString(comment ?? "", ["img", "mention-component", "image-component", "embed-component"])
+    isEmptyHtmlString(comment ?? "", [
+      "img",
+      "mention-component",
+      "image-component",
+      "embed-component",
+      "video-component",
+    ])
   );
 };
 

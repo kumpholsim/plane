@@ -247,8 +247,9 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
 
       <IssueProperties
         className={cn(
-          "flex flex-wrap items-center whitespace-nowrap text-tertiary",
-          isCompact ? "gap-1.5 pt-1" : "gap-2 pt-1.5"
+          "flex flex-wrap items-center text-tertiary",
+          isL4Card ? "min-w-0 gap-1.5 overflow-hidden pt-1" : "whitespace-nowrap",
+          !isL4Card && (isCompact ? "gap-1.5 pt-1" : "gap-2 pt-1.5")
         )}
         issue={issue}
         displayProperties={displayProperties}
@@ -304,6 +305,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
   const handleIssuePeekOverview = (issue: TIssue) => handleRedirection(workspaceSlug, issue, isMobile);
 
   const issue = issuesMap[issueId];
+  const isL4Card = isStagedGateScrumban && getHierarchyLevel(issue) === HIERARCHY_LEVEL_SUB_TASK;
 
   const { setIsDragging: setIsKanbanDragging } = useKanbanView();
 
@@ -402,6 +404,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
           className={cn(
             "block w-full rounded-lg border border-subtle bg-layer-2 text-13 shadow-raised-100 outline-[0.5px] outline-transparent transition-all hover:border-strong hover:shadow-raised-200",
             isCompact ? "p-2" : "p-3",
+            { "overflow-hidden": isL4Card },
             { "hover:cursor-pointer": isDragAllowed },
             { "border border-accent-strong hover:border-accent-strong": getIsIssuePeeked(issue.id) },
             { "z-[100] bg-layer-1": isCurrentBlockDragging },

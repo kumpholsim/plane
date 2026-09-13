@@ -7,7 +7,9 @@
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import type { Extensions } from "@tiptap/core";
 import { CharacterCount } from "@tiptap/extension-character-count";
+// oxlint-disable-next-line eslint-plugin-import/no-named-as-default
 import TaskItem from "@tiptap/extension-task-item";
+// oxlint-disable-next-line eslint-plugin-import/no-named-as-default
 import TaskList from "@tiptap/extension-task-list";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Underline } from "@tiptap/extension-underline";
@@ -39,6 +41,7 @@ import { CoreEditorAdditionalExtensions } from "@/plane-editor/extensions";
 import type { IEditorProps } from "@/types";
 // local imports
 import { CustomImageExtension } from "./custom-image/extension";
+import { CustomVideoExtension } from "./custom-video/extension";
 import { EmojiExtension } from "./emoji/extension";
 import { CustomPlaceholderExtension } from "./placeholder";
 import { CustomStarterKitExtension } from "./starter-kit";
@@ -146,6 +149,10 @@ export const CoreEditorExtensions = (args: TArguments): Extensions => {
         fileHandler,
       }),
       CustomImageExtension({
+        fileHandler,
+        isEditable: editable,
+      }),
+      CustomVideoExtension({
         fileHandler,
         isEditable: editable,
       })

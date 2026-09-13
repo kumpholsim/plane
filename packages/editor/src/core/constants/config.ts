@@ -16,6 +16,16 @@ export const DEFAULT_DISPLAY_CONFIG: TDisplayConfig = {
 
 export const ACCEPTED_IMAGE_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 
+export const ACCEPTED_VIDEO_MIME_TYPES = [
+  "video/mp4",
+  "video/mpeg",
+  "video/ogg",
+  "video/webm",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/x-ms-wmv",
+];
+
 export const ACCEPTED_ATTACHMENT_MIME_TYPES = [
   "image/jpeg",
   "image/png",

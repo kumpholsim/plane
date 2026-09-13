@@ -28,7 +28,7 @@ import { IssueBulkOperationsRoot } from "@/components/issues/bulk-operations";
 import { useBulkOperationStatus } from "@/hooks/use-bulk-operation-status";
 // local imports
 import { DEFAULT_BLOCK_WIDTH, GANTT_SELECT_GROUP, HEADER_HEIGHT } from "../constants";
-import { getItemPositionWidth } from "../views";
+import { getItemPositionWidth, getPositionFromDate } from "../views";
 import { TimelineDragHelper } from "./timeline-drag-helper";
 
 type Props = {
@@ -155,6 +155,18 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
   if (!currentView) return null;
   const ActiveChartView = CHART_VIEW_COMPONENTS[currentView];
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const chartStartDate = currentViewData?.data.startDate ? new Date(currentViewData.data.startDate) : null;
+  const chartEndDate = currentViewData?.data.endDate ? new Date(currentViewData.data.endDate) : null;
+  chartStartDate?.setHours(0, 0, 0, 0);
+  chartEndDate?.setHours(0, 0, 0, 0);
+  const isTodayInChartRange =
+    !!currentViewData && !!chartStartDate && !!chartEndDate && today >= chartStartDate && today <= chartEndDate;
+  const todayLineLeft = isTodayInChartRange
+    ? getPositionFromDate(currentViewData, today, 0) + currentViewData.data.dayWidth / 2
+    : null;
+
   return (
     <>
       <TimelineDragHelper ganttContainerRef={ganttContainerRef} />
@@ -195,6 +207,13 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
               />
               <div className="relative h-max min-h-full flex-shrink-0 flex-grow">
                 <ActiveChartView />
+                {todayLineLeft !== null && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 z-[6] w-0 border-l border-dashed border-[#8B0000]"
+                    style={{ left: `${todayLineLeft}px` }}
+                  />
+                )}
                 {currentViewData && (
                   <div
                     className="relative h-full"

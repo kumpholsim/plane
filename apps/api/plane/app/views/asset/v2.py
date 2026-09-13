@@ -132,11 +132,18 @@ class UserAssetsV2Endpoint(BaseAPIView):
             "image/webp",
             "image/jpg",
             "image/gif",
+            "video/mp4",
+            "video/mpeg",
+            "video/ogg",
+            "video/webm",
+            "video/quicktime",
+            "video/x-msvideo",
+            "video/x-ms-wmv",
         ]
         if type not in allowed_types:
             return Response(
                 {
-                    "error": "Invalid file type. Only JPEG, PNG, WebP, JPG and GIF files are allowed.",
+                    "error": "Invalid file type. Only images (JPEG, PNG, WebP, JPG, GIF) and videos (MP4, MPEG, OGG, WebM, QuickTime, AVI, WMV) are allowed.",
                     "status": False,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -370,11 +377,18 @@ class WorkspaceFileAssetEndpoint(BaseAPIView):
             "image/webp",
             "image/jpg",
             "image/gif",
+            "video/mp4",
+            "video/mpeg",
+            "video/ogg",
+            "video/webm",
+            "video/quicktime",
+            "video/x-msvideo",
+            "video/x-ms-wmv",
         ]
         if type not in allowed_types:
             return Response(
                 {
-                    "error": "Invalid file type. Only JPEG, PNG, WebP, JPG and GIF files are allowed.",
+                    "error": "Invalid file type. Only images (JPEG, PNG, WebP, JPG, GIF) and videos (MP4, MPEG, OGG, WebM, QuickTime, AVI, WMV) are allowed.",
                     "status": False,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -599,11 +613,18 @@ class ProjectAssetEndpoint(BaseAPIView):
             "image/webp",
             "image/jpg",
             "image/gif",
+            "video/mp4",
+            "video/mpeg",
+            "video/ogg",
+            "video/webm",
+            "video/quicktime",
+            "video/x-msvideo",
+            "video/x-ms-wmv",
         ]
         if type not in allowed_types:
             return Response(
                 {
-                    "error": "Invalid file type. Only JPEG, PNG, WebP, JPG and GIF files are allowed.",
+                    "error": "Invalid file type. Only images (JPEG, PNG, WebP, JPG, GIF) and videos (MP4, MPEG, OGG, WebM, QuickTime, AVI, WMV) are allowed.",
                     "status": False,
                 },
                 status=status.HTTP_400_BAD_REQUEST,

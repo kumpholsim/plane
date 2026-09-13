@@ -25,6 +25,8 @@ import type {
 import { HIERARCHY_LEVEL_DELIVERY } from "@plane/types";
 import { Row } from "@plane/ui";
 import { cn } from "@plane/utils";
+import { LockIcon } from "@plane/propel/icons";
+import { Tooltip } from "@plane/propel/tooltip";
 // hooks
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-redirection";
@@ -305,12 +307,17 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                           value={l3Issue.progress_status}
                           onChange={handleL3ProgressChange}
                           projectId={l3Issue.project_id}
-                          disabled={!canEditL3}
+                          disabled
                           buttonVariant="border-with-text"
                           buttonContainerClassName="truncate max-w-48"
                           className="h-5 max-w-48"
                           showTooltip
                         />
+                        <Tooltip tooltipContent="Status is locked in Scrumban" renderByDefault={false}>
+                          <span className="inline-flex shrink-0 text-tertiary">
+                            <LockIcon className="size-3" />
+                          </span>
+                        </Tooltip>
                         <IssuePropertyLabels
                           projectId={l3Issue.project_id}
                           value={l3Issue.label_ids || []}

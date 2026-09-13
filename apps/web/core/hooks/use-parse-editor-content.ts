@@ -99,12 +99,16 @@ export const useParseEditorContent = (args: TArgs) => {
       });
       // handle image-component elements
       const imageComponents = doc.querySelectorAll("image-component");
+      const videoComponents = doc.querySelectorAll("video-component");
       if (noAssets) {
         // if no assets is enabled, remove the image component elements
         imageComponents.forEach((component) => component.remove());
+        videoComponents.forEach((component) => component.remove());
         // remove default img elements
         const imageElements = doc.querySelectorAll("img");
         imageElements.forEach((img) => img.remove());
+        const videoElements = doc.querySelectorAll("video");
+        videoElements.forEach((video) => video.remove());
       } else {
         // if no assets is not enabled, replace the image component elements with img elements
         imageComponents.forEach((component) => {
@@ -119,6 +123,14 @@ export const useParseEditorContent = (args: TArgs) => {
           img.style.width = width;
           // replace the image-component with the img element
           component.replaceWith(img);
+        });
+        videoComponents.forEach((component) => {
+          const src = component.getAttribute("src") ?? "";
+          const video = doc.createElement("video");
+          video.src = src;
+          video.controls = true;
+          video.style.maxWidth = "100%";
+          component.replaceWith(video);
         });
       }
       // convert all images to base64
@@ -198,15 +210,23 @@ export const useParseEditorContent = (args: TArgs) => {
       });
       // replace the matched image components with <img src={src} >
       const imageComponentRegex = /<image-component[^>]*src="([^"]+)"[^>]*>[^]*<\/image-component>/g;
+      const videoComponentRegex = /<video-component[^>]*src="([^"]+)"[^>]*>[^]*<\/video-component>/g;
       const imgTagRegex = /<img[^>]*src="([^"]+)"[^>]*\/?>/g;
       if (noAssets) {
         // remove all image components
-        parsedMarkdownContent = parsedMarkdownContent.replace(imageComponentRegex, "").replace(imgTagRegex, "");
+        parsedMarkdownContent = parsedMarkdownContent
+          .replace(imageComponentRegex, "")
+          .replace(videoComponentRegex, "")
+          .replace(imgTagRegex, "");
       } else {
         // replace the matched image components with <img src={src} >
         parsedMarkdownContent = parsedMarkdownContent.replace(
           imageComponentRegex,
           (_match, src) => `<img src="${src}" >`
+        );
+        parsedMarkdownContent = parsedMarkdownContent.replace(
+          videoComponentRegex,
+          (_match, src) => `<video src="${src}" controls></video>`
         );
       }
       // remove all issue-embed components
@@ -225,6 +245,27 @@ export const useParseEditorContent = (args: TArgs) => {
       // process image components
       const imageComponents = doc.querySelectorAll("image-component");
       imageComponents.forEach((element) => {
+        const src = element.getAttribute("src");
+        if (src) {
+          const assetSrc = src.startsWith("http")
+            ? src
+            : getEditorAssetSrc({
+                assetId: src,
+                projectId,
+                workspaceSlug,
+              });
+          if (assetSrc) {
+            filesMetaData.push({
+              id: src,
+              name: src,
+              url: assetSrc,
+            });
+          }
+        }
+      });
+      // process video components
+      const videoComponents = doc.querySelectorAll("video-component");
+      videoComponents.forEach((element) => {
         const src = element.getAttribute("src");
         if (src) {
           const assetSrc = src.startsWith("http")

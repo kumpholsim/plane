@@ -8,15 +8,12 @@ import { useParams } from "next/navigation";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { EIssuesStoreType, TIssue, TIssueGroupByOptions, TIssueOrderByOptions } from "@plane/types";
 import { HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
-import { getL4LeaveTodoRequirementError } from "@/components/issues/hierarchy-status";
 import { filterIssueIdsByPinBand, getIssuePinLevel } from "@/components/issues/issue-layouts/list/epic-list-sections";
 import type { GroupDropLocation } from "@/components/issues/issue-layouts/utils";
 import { handleGroupDragDrop } from "@/components/issues/issue-layouts/utils";
 import { ISSUE_FILTER_DEFAULT_DATA } from "@/store/issue/helpers/base-issues.store";
 import { useIssueDetail } from "./store/use-issue-detail";
 import { useIssues } from "./store/use-issues";
-import { useProjectHierarchyType } from "./store/use-project-hierarchy-type";
-import { useProjectState } from "./store/use-project-state";
 import { useIssuesActions } from "./use-issues-actions";
 import { useIsStagedGateScrumban } from "./use-workflow-mode";
 
@@ -50,8 +47,6 @@ export const useGroupIssuesDragNDrop = (
   const {
     issues: { getIssueIds, addCycleToIssue, removeCycleFromIssue, changeModulesInIssue },
   } = useIssues(storeType);
-  const { getStateById } = useProjectState();
-  const { getTypeById } = useProjectHierarchyType();
   const isStagedGateScrumban = useIsStagedGateScrumban();
 
   /**
@@ -165,7 +160,7 @@ export const useGroupIssuesDragNDrop = (
       return;
     }
 
-    // Scrumban: Dev/QA cannot leave To Do without assignee + estimate
+    // Scrumban: status is locked — block column moves when grouped by state
     if (
       isStagedGateScrumban &&
       sourceIssue &&
@@ -174,25 +169,12 @@ export const useGroupIssuesDragNDrop = (
       destination.groupId &&
       source.groupId !== destination.groupId
     ) {
-      const hierarchyType = getTypeById(sourceIssue.hierarchy_type_id ?? sourceIssue.sub_work_item_category_id ?? "");
-      const leaveTodoError = getL4LeaveTodoRequirementError({
-        hierarchyLevel: sourceIssue.hierarchy_level,
-        hierarchyTypeName: hierarchyType?.name,
-        currentStateExternalId: getStateById(source.groupId)?.external_id,
-        nextStateExternalId: getStateById(destination.groupId)?.external_id,
-        currentStateId: source.groupId,
-        nextStateId: destination.groupId,
-        assigneeIds: sourceIssue.assignee_ids,
-        estimatePoint: sourceIssue.estimate_point ?? null,
+      setToast({
+        type: TOAST_TYPE.WARNING,
+        title: "Status is locked",
+        message: "Work item status cannot be changed manually in Scrumban.",
       });
-      if (leaveTodoError) {
-        setToast({
-          type: TOAST_TYPE.WARNING,
-          title: "Cannot move work item",
-          message: leaveTodoError,
-        });
-        return;
-      }
+      return;
     }
 
     // Epic list: reorder only within High Priority (pinned) or the unpinned band

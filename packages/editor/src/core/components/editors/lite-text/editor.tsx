@@ -9,21 +9,38 @@ import { forwardRef, useMemo } from "react";
 import { EditorWrapper } from "@/components/editors/editor-wrapper";
 // extensions
 import { EnterKeyExtension } from "@/extensions";
+// plane editor imports
+import { LiteTextEditorAdditionalExtensions } from "@/plane-editor/extensions/lite-text-extensions";
 // types
 import type { EditorRefApi, ILiteTextEditorProps } from "@/types";
 
 function LiteTextEditor(props: ILiteTextEditorProps) {
-  const { onEnterKeyPress, disabledExtensions, extensions: externalExtensions = [] } = props;
+  const {
+    onEnterKeyPress,
+    disabledExtensions,
+    flaggedExtensions,
+    fileHandler,
+    extendedEditorProps,
+    extensions: externalExtensions = [],
+  } = props;
 
   const extensions = useMemo(() => {
-    const resolvedExtensions = [...externalExtensions];
+    const resolvedExtensions = [
+      ...externalExtensions,
+      ...LiteTextEditorAdditionalExtensions({
+        disabledExtensions,
+        flaggedExtensions,
+        fileHandler,
+        extendedEditorProps,
+      }),
+    ];
 
     if (!disabledExtensions?.includes("enter-key")) {
       resolvedExtensions.push(EnterKeyExtension(onEnterKeyPress));
     }
 
     return resolvedExtensions;
-  }, [externalExtensions, disabledExtensions, onEnterKeyPress]);
+  }, [externalExtensions, disabledExtensions, flaggedExtensions, fileHandler, extendedEditorProps, onEnterKeyPress]);
 
   return <EditorWrapper {...props} extensions={extensions} />;
 }

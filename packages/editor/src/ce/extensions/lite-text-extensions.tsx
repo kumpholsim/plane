@@ -1,0 +1,49 @@
+/**
+ * Copyright (c) 2023-present Plane Software, Inc. and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+import type { AnyExtension, Extensions } from "@tiptap/core";
+// extensions
+import { SlashCommands } from "@/extensions/slash-commands/root";
+// types
+import type { IEditorProps, TExtensions } from "@/types";
+
+export type TLiteTextEditorAdditionalExtensionsProps = Pick<
+  IEditorProps,
+  "disabledExtensions" | "flaggedExtensions" | "fileHandler" | "extendedEditorProps"
+>;
+
+/**
+ * Registry entry configuration for extensions
+ */
+export type TLiteTextEditorAdditionalExtensionsRegistry = {
+  /** Determines if the extension should be enabled based on disabled extensions */
+  isEnabled: (disabledExtensions: TExtensions[], flaggedExtensions: TExtensions[]) => boolean;
+  /** Returns the extension instance(s) when enabled */
+  getExtension: (props: TLiteTextEditorAdditionalExtensionsProps) => AnyExtension | undefined;
+};
+
+const extensionRegistry: TLiteTextEditorAdditionalExtensionsRegistry[] = [
+  {
+    isEnabled: (disabledExtensions) => !disabledExtensions.includes("slash-commands"),
+    getExtension: ({ disabledExtensions, flaggedExtensions }) =>
+      SlashCommands({
+        disabledExtensions,
+        flaggedExtensions,
+      }),
+  },
+];
+
+/** Extra TipTap extensions for LiteTextEditor (comments) — slash menu includes /table. */
+export function LiteTextEditorAdditionalExtensions(props: TLiteTextEditorAdditionalExtensionsProps) {
+  const { disabledExtensions, flaggedExtensions } = props;
+
+  const extensions: Extensions = extensionRegistry
+    .filter((config) => config.isEnabled(disabledExtensions, flaggedExtensions))
+    .map((config) => config.getExtension(props))
+    .filter((extension): extension is AnyExtension => extension !== undefined);
+
+  return extensions;
+}

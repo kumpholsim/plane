@@ -15,6 +15,7 @@ import {
   Heading5,
   Heading6,
   ImageIcon,
+  Film,
   List,
   ListOrdered,
   ListTodo,
@@ -37,6 +38,7 @@ import {
   toggleTextColor,
   toggleBackgroundColor,
   insertImage,
+  insertVideo,
   insertCallout,
   setText,
   openEmojiPicker,
@@ -300,6 +302,17 @@ export const getSlashCommandFilteredSections =
         section: "general",
         pushAfter: "code",
       });
+      internalAdditionalOptions.push({
+        commandKey: "video",
+        key: "video",
+        title: "Video",
+        icon: <Film className="size-3.5" />,
+        description: "Insert a video",
+        searchTerms: ["video", "mp4", "webm", "movie", "media", "upload"],
+        command: ({ editor, range }: CommandProps) => insertVideo({ editor, event: "insert", range }),
+        section: "general",
+        pushAfter: "image",
+      });
     }
 
     [
@@ -319,6 +332,7 @@ export const getSlashCommandFilteredSections =
       }
     });
 
+    // oxlint-disable-next-line oxc/no-map-spread
     const filteredSlashSections = SLASH_COMMAND_SECTIONS.map((section) => ({
       ...section,
       items: section.items.filter((item) => {
