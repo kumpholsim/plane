@@ -82,12 +82,10 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
           !["state_id", "assignee_id", "progress_status", "hierarchy_type_id"].includes(property as string)
       )
     : [...ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters];
-  // L3 Category is list/board-only; keep it suppressed on timeline/calendar/spreadsheet.
+  // L3 Category / State / Assignees are list/board-only — hide chips on calendar/table/timeline.
   const suppressedProperties: TWorkItemFilterProperty[] | undefined = !isScrumban
     ? undefined
-    : isPinnedFilterLayout
-      ? ["state_id", "progress_status", "assignee_id", "hierarchy_type_id"]
-      : ["hierarchy_type_id"];
+    : ["state_id", "progress_status", "assignee_id", "hierarchy_type_id"];
 
   useSWR(
     workspaceSlug && projectId && cycleId ? `CYCLE_ISSUES_${workspaceSlug}_${projectId}_${cycleId}` : null,

@@ -15,12 +15,13 @@ import { IconButton } from "@plane/propel/icon-button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { EIssuesStoreType, IBlockUpdateData, TIssue } from "@plane/types";
-import { EIssueLayoutTypes, GANTT_TIMELINE_TYPE } from "@plane/types";
+import { EIssueLayoutTypes, GANTT_TIMELINE_TYPE, HIERARCHY_LEVEL_DELIVERY } from "@plane/types";
 import { renderFormattedPayloadDate } from "@plane/utils";
 // components
 import { TimeLineTypeContext } from "@/components/gantt-chart/contexts";
 import { GanttChartRoot } from "@/components/gantt-chart/root";
 import { IssueGanttSidebar } from "@/components/gantt-chart/sidebar/issues/sidebar";
+import { getHierarchyLevel } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -224,6 +225,19 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
   };
 
   const isAllowed = allowPermissions([EUserPermissions.ADMIN, EUserPermissions.MEMBER], EUserPermissionsLevel.PROJECT);
+
+  const canReorderBlock = useCallback(
+    (blockId: string) => {
+      if (!isAllowed) return false;
+      // Classic timeline: only when manual order is active
+      if (!isStagedGateScrumban) return appliedDisplayFilters?.order_by === "sort_order";
+      // Scrumban: L3 (Delivery) rows can be reordered up/down
+      const issue = getIssueById(blockId);
+      return getHierarchyLevel(issue) === HIERARCHY_LEVEL_DELIVERY;
+    },
+    [appliedDisplayFilters?.order_by, getIssueById, isAllowed, isStagedGateScrumban]
+  );
+
   const updateBlockDates = useCallback(
     (
       updates: {
@@ -341,7 +355,7 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
                 enableBlockLeftResize={isAllowed}
                 enableBlockRightResize={isAllowed}
                 enableBlockMove={isAllowed}
-                enableReorder={appliedDisplayFilters?.order_by === "sort_order" && isAllowed && !isStagedGateScrumban}
+                enableReorder={canReorderBlock}
                 enableAddBlock={isAllowed}
                 enableSelection={isBulkOperationsEnabled && isAllowed}
                 quickAdd={quickAdd}

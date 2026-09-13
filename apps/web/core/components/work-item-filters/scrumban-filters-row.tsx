@@ -9,7 +9,7 @@ import type { IWorkItemFilterInstance } from "@plane/shared-state";
 import type { TWorkItemFilterProperty } from "@plane/types";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
 import { WorkItemPinnedFilters } from "@/components/work-item-filters/pinned-filters";
-import { useClearL3CategoryFilterOutsidePinnedLayouts } from "@/components/work-item-filters/use-clear-l3-category-filter";
+import { useClearScrumbanPinnedFiltersOutsideLayouts } from "@/components/work-item-filters/use-clear-l3-category-filter";
 
 type Props = {
   filter: IWorkItemFilterInstance | undefined;
@@ -23,10 +23,10 @@ type Props = {
   };
 };
 
-/** Scrumban filter bar: L3 Category only on list/board; clears it on other layouts. */
+/** Scrumban filter bar: L3 pinned filters only on list/board. */
 export const ScrumbanWorkItemFiltersRow = observer(function ScrumbanWorkItemFiltersRow(props: Props) {
   const { filter, projectId, isPinnedFilterLayout, suppressedProperties, trackerElements } = props;
-  useClearL3CategoryFilterOutsidePinnedLayouts(filter, isPinnedFilterLayout);
+  useClearScrumbanPinnedFiltersOutsideLayouts(filter, isPinnedFilterLayout);
 
   if (!filter) return null;
 

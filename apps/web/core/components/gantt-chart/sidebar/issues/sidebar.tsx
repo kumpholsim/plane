@@ -13,6 +13,7 @@ import type { IBlockUpdateData } from "@plane/types";
 import { Loader } from "@plane/ui";
 // components
 import RenderIfVisible from "@/components/core/render-if-visible-HOC";
+import { useGanttHierarchy } from "@/components/issues/issue-layouts/gantt/hierarchy-context";
 import { GanttLayoutListItemLoader } from "@/components/ui/loader/layouts/gantt-layout-loader";
 //hooks
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
@@ -30,7 +31,7 @@ type Props = {
   loadMoreBlocks?: () => void;
   ganttContainerRef: RefObject<HTMLDivElement>;
   blockIds: string[];
-  enableReorder: boolean;
+  enableReorder: boolean | ((blockId: string) => boolean);
   enableSelection: boolean;
   showAllBlocks?: boolean;
   selectionHelpers?: TSelectionHelper;
@@ -52,6 +53,7 @@ export const IssueGanttSidebar = observer(function IssueGanttSidebar(props: Prop
   } = props;
 
   const { getBlockById } = useTimeLineChart(GANTT_TIMELINE_TYPE.ISSUE);
+  const hierarchy = useGanttHierarchy();
 
   const {
     issues: { getIssueLoader },
@@ -68,12 +70,45 @@ export const IssueGanttSidebar = observer(function IssueGanttSidebar(props: Prop
     "100% 0% 100% 0%"
   );
 
+  const isBlockReorderEnabled = (blockId: string) =>
+    typeof enableReorder === "function" ? enableReorder(blockId) : enableReorder;
+
   const handleOnDrop = (
     draggingBlockId: string | undefined,
     droppedBlockId: string | undefined,
     dropAtEndOfList: boolean
   ) => {
-    handleOrderChange(draggingBlockId, droppedBlockId, dropAtEndOfList, blockIds, getBlockById, blockUpdateHandler);
+    if (!draggingBlockId || !droppedBlockId) return;
+
+    let targetBlockId = droppedBlockId;
+    let dropAtEnd = dropAtEndOfList;
+
+    // When hierarchy is on, only reorder among same-depth siblings (keeps L3↔L3 order correct).
+    let orderBlockIds = blockIds;
+    if (hierarchy?.enabled) {
+      const dragMeta = hierarchy.metaById[draggingBlockId];
+      if (!dragMeta) return;
+      orderBlockIds = blockIds.filter((id) => {
+        const meta = hierarchy.metaById[id];
+        return meta && meta.depth === dragMeta.depth && meta.parentId === dragMeta.parentId;
+      });
+      // Map drop onto a non-sibling (e.g. nested child) to the nearest sibling in the flat list.
+      if (!orderBlockIds.includes(targetBlockId)) {
+        const flatIndex = blockIds.indexOf(targetBlockId);
+        let mapped: string | undefined;
+        for (let i = flatIndex; i >= 0; i--) {
+          if (orderBlockIds.includes(blockIds[i])) {
+            mapped = blockIds[i];
+            break;
+          }
+        }
+        if (!mapped) return;
+        targetBlockId = mapped;
+        dropAtEnd = false;
+      }
+    }
+
+    handleOrderChange(draggingBlockId, targetBlockId, dropAtEnd, orderBlockIds, getBlockById, blockUpdateHandler);
   };
 
   return (
@@ -99,7 +134,7 @@ export const IssueGanttSidebar = observer(function IssueGanttSidebar(props: Prop
                 <GanttDnDHOC
                   id={block.id}
                   isLastChild={index === blockIds.length - 1}
-                  isDragEnabled={enableReorder}
+                  isDragEnabled={isBlockReorderEnabled(block.id)}
                   onDrop={handleOnDrop}
                 >
                   {(isDragging: boolean) => (

@@ -5,17 +5,26 @@
  */
 
 import { useEffect } from "react";
+import { PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES } from "@plane/constants";
 import type { IWorkItemFilterInstance } from "@plane/shared-state";
+import type { TWorkItemFilterProperty } from "@plane/types";
 import { COLLECTION_OPERATOR } from "@plane/types";
 
-/** Drop L3 Category filter when leaving list/board so it does not affect other layouts. */
-export function useClearL3CategoryFilterOutsidePinnedLayouts(
+/** Scrumban L3 pinned filters (Category / State / Assignees) — list & board only. */
+export const SCRUMBAN_PINNED_FILTER_PROPERTIES: TWorkItemFilterProperty[] = [
+  ...PINNED_WORK_ITEM_HEADER_FILTER_PROPERTIES,
+];
+
+/** Drop list/board L3 pinned filters when on calendar, table, or timeline. */
+export function useClearScrumbanPinnedFiltersOutsideLayouts(
   filter: IWorkItemFilterInstance | undefined,
   isPinnedFilterLayout: boolean
 ) {
   useEffect(() => {
     if (!filter || isPinnedFilterLayout) return;
-    const condition = filter.findFirstConditionByPropertyAndOperator("hierarchy_type_id", COLLECTION_OPERATOR.IN);
-    if (condition) filter.removeCondition(condition.id);
+    for (const property of SCRUMBAN_PINNED_FILTER_PROPERTIES) {
+      const condition = filter.findFirstConditionByPropertyAndOperator(property, COLLECTION_OPERATOR.IN);
+      if (condition) filter.removeCondition(condition.id);
+    }
   }, [filter, isPinnedFilterLayout]);
 }
