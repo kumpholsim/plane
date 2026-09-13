@@ -20,11 +20,16 @@ export interface ICalendarStore {
     activeWeekDate: Date;
   };
   calendarPayload: ICalendarPayload | null;
+  /** Scrumban multi-month scroll: overrides month layout fetch window when set */
+  scrollMonthRange: { startDate: string; endDate: string } | null;
 
   // action
   updateCalendarFilters: (filters: Partial<{ activeMonthDate: Date; activeWeekDate: Date }>) => void;
   updateCalendarPayload: (date: Date) => void;
   regenerateCalendar: () => void;
+  setScrollMonthRange: (range: { startDate: string; endDate: string } | null) => void;
+  ensureMonthPayload: (date: Date) => void;
+  getWeeksForMonth: (date: Date) => { [weekNumber: string]: ICalendarWeek } | undefined;
 
   // computed
   allWeeksOfActiveMonth:
@@ -48,6 +53,7 @@ export class CalendarStore implements ICalendarStore {
     activeWeekDate: new Date(),
   };
   calendarPayload: ICalendarPayload | null = null;
+  scrollMonthRange: { startDate: string; endDate: string } | null = null;
   // root store
   rootStore;
 
@@ -59,11 +65,14 @@ export class CalendarStore implements ICalendarStore {
       // observables
       calendarFilters: observable.ref,
       calendarPayload: observable.ref,
+      scrollMonthRange: observable.ref,
 
       // actions
       updateCalendarFilters: action,
       updateCalendarPayload: action,
       regenerateCalendar: action,
+      setScrollMonthRange: action,
+      ensureMonthPayload: action,
 
       //computed
       allWeeksOfActiveMonth: computed,
@@ -149,6 +158,10 @@ export class CalendarStore implements ICalendarStore {
   }
 
   getStartAndEndDate = computedFn((layout: "week" | "month") => {
+    if (layout === "month" && this.scrollMonthRange) {
+      return this.scrollMonthRange;
+    }
+
     switch (layout) {
       case "week": {
         if (!this.allDaysOfActiveWeek) return;
@@ -164,6 +177,43 @@ export class CalendarStore implements ICalendarStore {
         return { startDate: firstWeekDates[0], endDate: lastWeekDates[lastWeekDates.length - 1] };
       }
     }
+  });
+
+  setScrollMonthRange = (range: { startDate: string; endDate: string } | null) => {
+    if (
+      range?.startDate === this.scrollMonthRange?.startDate &&
+      range?.endDate === this.scrollMonthRange?.endDate
+    ) {
+      return;
+    }
+    if (range === null && this.scrollMonthRange === null) return;
+    this.scrollMonthRange = range;
+  };
+
+  ensureMonthPayload = (date: Date) => {
+    if (!this.calendarPayload) return;
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    if (this.calendarPayload[`y-${year}`]?.[`m-${month}`]) return;
+    this.updateCalendarPayload(date);
+  };
+
+  getWeeksForMonth = computedFn((date: Date) => {
+    if (!this.calendarPayload) return undefined;
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const weeks = this.calendarPayload[`y-${year}`]?.[`m-${month}`];
+    if (!weeks) return undefined;
+
+    const reorderedWeeks: { [weekNumber: string]: ICalendarWeek } = {};
+    const weekNumbers = Object.keys(weeks)
+      .map((key) => parseInt(key.replace("w-", ""), 10))
+      .toSorted((a, b) => a - b);
+    weekNumbers.forEach((weekNumber) => {
+      const weekKey = `w-${weekNumber}`;
+      reorderedWeeks[weekKey] = weeks[weekKey];
+    });
+    return reorderedWeeks;
   });
 
   updateCalendarFilters = (filters: Partial<{ activeMonthDate: Date; activeWeekDate: Date }>) => {

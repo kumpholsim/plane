@@ -16,7 +16,6 @@ import type {
   TIssue,
   TIssueMap,
   TPaginationData,
-  ICalendarWeek,
   TSupportedFilterForUpdate,
 } from "@plane/types";
 import { EIssuesStoreType, EIssueLayoutTypes } from "@plane/types";
@@ -28,6 +27,7 @@ import { MONTHS_LIST } from "@plane/constants";
 // helpers
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import useSize from "@/hooks/use-window-size";
 // store
 import type { ICycleIssuesFilter } from "@/store/issue/cycle";
@@ -40,6 +40,7 @@ import { IssueLayoutHOC } from "../issue-layout-HOC";
 import type { TRenderQuickActions } from "../list/list-view-types";
 import { CalendarHeader } from "./header";
 import { CalendarIssueBlocks } from "./issue-blocks";
+import { ScrumbanCalendarChart } from "./scrumban/scroll-calendar";
 import { CalendarWeekDays } from "./week-days";
 import { CalendarWeekHeader } from "./week-header";
 
@@ -100,6 +101,7 @@ export const CalendarChart = observer(function CalendarChart(props: Props) {
   const {
     issues: { viewFlags },
   } = useIssues(EIssuesStoreType.PROJECT);
+  const isStagedGateScrumban = useIsStagedGateScrumban();
 
   const [windowWidth] = useSize();
 
@@ -122,7 +124,30 @@ export const CalendarChart = observer(function CalendarChart(props: Props) {
         element,
       })
     );
-  }, [scrollableContainerRef?.current]);
+  }, []);
+
+  if (isStagedGateScrumban) {
+    return (
+      <ScrumbanCalendarChart
+        issuesFilterStore={issuesFilterStore}
+        issues={issues}
+        groupedIssueIds={groupedIssueIds}
+        showWeekends={showWeekends}
+        issueCalendarView={issueCalendarView}
+        loadMoreIssues={loadMoreIssues}
+        handleDragAndDrop={handleDragAndDrop}
+        quickActions={quickActions}
+        quickAddCallback={quickAddCallback}
+        addIssuesToView={addIssuesToView}
+        getPaginationData={getPaginationData}
+        getGroupIssueCount={getGroupIssueCount}
+        updateFilters={updateFilters}
+        canEditProperties={canEditProperties}
+        readOnly={readOnly}
+        isEpic={isEpic}
+      />
+    );
+  }
 
   if (!calendarPayload || !formattedDatePayload)
     return (
@@ -154,13 +179,13 @@ export const CalendarChart = observer(function CalendarChart(props: Props) {
               {layout === "month" && (
                 <div className="grid h-full w-full grid-cols-1 divide-y-[0.5px] divide-subtle-1">
                   {allWeeksOfActiveMonth &&
-                    Object.values(allWeeksOfActiveMonth).map((week: ICalendarWeek, weekIndex) => (
+                    Object.entries(allWeeksOfActiveMonth).map(([weekKey, week]) => (
                       <CalendarWeekDays
                         selectedDate={selectedDate}
                         setSelectedDate={setSelectedDate}
                         handleDragAndDrop={handleDragAndDrop}
                         issuesFilterStore={issuesFilterStore}
-                        key={weekIndex}
+                        key={weekKey}
                         week={week}
                         issues={issues}
                         groupedIssueIds={groupedIssueIds}

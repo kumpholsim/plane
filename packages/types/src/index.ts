@@ -10,6 +10,7 @@ export * from "./analytics";
 export * from "./api_token";
 export * from "./auth";
 export * from "./calendar";
+export * from "./project-event";
 export * from "./charts";
 export * from "./command-palette";
 export * from "./common";

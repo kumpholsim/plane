@@ -146,6 +146,8 @@ from .issue.project_hierarchy_type import ProjectHierarchyTypeViewSet
 # Back-compat alias
 SubWorkItemCategoryViewSet = ProjectHierarchyTypeViewSet
 
+from .project_event import ProjectEventViewSet
+
 from .issue.link import IssueLinkViewSet
 
 from .issue.relation import IssueRelationViewSet

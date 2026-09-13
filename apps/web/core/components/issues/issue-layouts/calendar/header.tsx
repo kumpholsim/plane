@@ -28,10 +28,14 @@ interface ICalendarHeader {
     filters: TSupportedFilterForUpdate
   ) => Promise<void>;
   setSelectedDate: (date: Date) => void;
+  /** Scrumban scroll calendar: hide prev/next month arrows */
+  hideMonthArrows?: boolean;
+  /** Optional Today override (e.g. scroll-to-today in multi-month view) */
+  onTodayClick?: () => void;
 }
 
 export const CalendarHeader = observer(function CalendarHeader(props: ICalendarHeader) {
-  const { issuesFilterStore, updateFilters, setSelectedDate } = props;
+  const { issuesFilterStore, updateFilters, setSelectedDate, hideMonthArrows = false, onTodayClick } = props;
 
   const { t } = useTranslation();
 
@@ -90,6 +94,10 @@ export const CalendarHeader = observer(function CalendarHeader(props: ICalendarH
   };
 
   const handleToday = () => {
+    if (onTodayClick) {
+      onTodayClick();
+      return;
+    }
     const today = new Date();
     const firstDayOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
@@ -103,12 +111,16 @@ export const CalendarHeader = observer(function CalendarHeader(props: ICalendarH
   return (
     <Row className="mb-4 flex items-center justify-between gap-2">
       <div className="flex items-center gap-1.5">
-        <button type="button" className="grid place-items-center" onClick={handlePrevious}>
-          <ChevronLeftIcon height={16} width={16} strokeWidth={2} />
-        </button>
-        <button type="button" className="grid place-items-center" onClick={handleNext}>
-          <ChevronRightIcon height={16} width={16} strokeWidth={2} />
-        </button>
+        {!hideMonthArrows && (
+          <>
+            <button type="button" className="grid place-items-center" onClick={handlePrevious}>
+              <ChevronLeftIcon height={16} width={16} strokeWidth={2} />
+            </button>
+            <button type="button" className="grid place-items-center" onClick={handleNext}>
+              <ChevronRightIcon height={16} width={16} strokeWidth={2} />
+            </button>
+          </>
+        )}
         <CalendarMonthsDropdown issuesFilterStore={issuesFilterStore} />
       </div>
       <div className="flex items-center gap-1.5">
