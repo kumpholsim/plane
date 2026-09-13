@@ -22,6 +22,13 @@ export const isDevHierarchyTypeName = (name: string | null | undefined): boolean
 export const isDevOrQaHierarchyTypeName = (name: string | null | undefined): boolean =>
   isDevHierarchyTypeName(name) || isQaHierarchyTypeName(name);
 
+export const isDesignHierarchyTypeName = (name: string | null | undefined): boolean =>
+  (name ?? "").trim().toLowerCase() === "design";
+
+/** Design / Dev / QA — all L4 roles that share the board leave-To Do gate. */
+export const isDesignDevOrQaHierarchyTypeName = (name: string | null | undefined): boolean =>
+  isDesignHierarchyTypeName(name) || isDevOrQaHierarchyTypeName(name);
+
 /** All L4 types share the same To Do column. */
 export const todoBoardKeyForL4Type = (_hierarchyTypeName?: string | null): THierarchyBoardStateKey =>
   HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO;
@@ -29,7 +36,7 @@ export const todoBoardKeyForL4Type = (_hierarchyTypeName?: string | null): THier
 export const L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE =
   "Add an assignee and estimate before moving this sub-task out of To Do.";
 
-/** Dev/QA L4 cannot leave their To Do column without both assignee and estimate. */
+/** Design/Dev/QA L4 cannot leave To Do without both assignee and estimate. */
 export const getL4LeaveTodoRequirementError = (params: {
   hierarchyLevel?: number | string | null;
   hierarchyTypeName?: string | null;
@@ -51,7 +58,7 @@ export const getL4LeaveTodoRequirementError = (params: {
     estimatePoint,
   } = params;
 
-  if (Number(hierarchyLevel ?? 0) !== 4 || !isDevOrQaHierarchyTypeName(hierarchyTypeName)) return null;
+  if (Number(hierarchyLevel ?? 0) !== 4 || !isDesignDevOrQaHierarchyTypeName(hierarchyTypeName)) return null;
 
   const todoKey = todoBoardKeyForL4Type(hierarchyTypeName);
   const currentKey = boardStateKeyFromExternalId(currentStateExternalId);
@@ -144,9 +151,6 @@ export const getL3ProgressStatusOptionClassName = (progressStatus: string | null
   isL3DoneProgressStatus(progressStatus) ? "bg-success-subtle" : "";
 
 export type TL3EstimateRollupKey = "design_estimate_points" | "dev_estimate_points" | "qa_estimate_points";
-
-export const isDesignHierarchyTypeName = (name: string | null | undefined): boolean =>
-  (name ?? "").trim().toLowerCase() === "design";
 
 /** Map L4 hierarchy type name → L3 Total Estimate rollup field. */
 export const l3EstimateRollupKeyForTypeName = (name: string | null | undefined): TL3EstimateRollupKey | null => {

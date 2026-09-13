@@ -27,7 +27,7 @@ import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 
 const mixColorChannel = (channel: number) => Math.round(channel + (255 - channel) * 0.5);
 
-/** Dilute L4 (sub-task) badge colors 50% toward white — keeps hue, softer fill */
+/** Dilute L4 (sub-task) badge colors 50% toward white — keeps hue, softer fill (menu dots / legacy). */
 export const diluteHierarchyBadgeColor = (hex: string, level: number): string => {
   if (level !== HIERARCHY_LEVEL_SUB_TASK) return hex;
   const raw = hex.startsWith("#") ? hex : `#${hex}`;
@@ -39,6 +39,21 @@ export const diluteHierarchyBadgeColor = (hex: string, level: number): string =>
   const toHex = (channel: number) => mixColorChannel(channel).toString(16).padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
+
+/** Three thick horizontal bars in type color — quiet L4 Design/Dev/QA accent. */
+export function HierarchyTypeLines(props: { color: string; className?: string }) {
+  const { color, className } = props;
+  return (
+    <span
+      className={cn("inline-flex h-3.5 w-3 flex-shrink-0 flex-col items-stretch justify-center gap-[3px]", className)}
+      aria-hidden
+    >
+      <span className="h-[2.5px] w-full rounded-full" style={{ backgroundColor: color }} />
+      <span className="h-[2.5px] w-full rounded-full" style={{ backgroundColor: color }} />
+      <span className="h-[2.5px] w-full rounded-full" style={{ backgroundColor: color }} />
+    </span>
+  );
+}
 
 type Props = {
   issue: Pick<
@@ -77,7 +92,8 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
   const currentLevel = (hierarchyType?.level ?? issue.hierarchy_level ?? 3) as 1 | 2 | 3 | 4;
   const name = hierarchyType?.name ?? HIERARCHY_LEVEL_SHORT_LABELS[currentLevel] ?? "Work item";
   const isSubTaskLevel = currentLevel === HIERARCHY_LEVEL_SUB_TASK;
-  const color = diluteHierarchyBadgeColor(hierarchyType?.color || "#6B7280", currentLevel);
+  const rawTypeColor = hierarchyType?.color || "#6B7280";
+  const color = diluteHierarchyBadgeColor(rawTypeColor, currentLevel);
 
   useEffect(() => {
     if (!isScrumban || !workspaceSlug || !projectId || fetchedMap[projectId]) return;
@@ -143,33 +159,36 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
   // Classic Scrum has no hierarchy type chips (Milestone / Epic / Story / …)
   if (!isScrumban) return null;
 
-  const badgeButton = (
-    <button
-      type="button"
-      disabled={disabled || options.length === 0}
+  // Must be a span — CustomMenu wraps customButton in its own <button> (no nested buttons).
+  const badgeVisual = (
+    <span
       className={cn(
-        "inline-flex h-5 w-20 flex-shrink-0 items-center justify-center truncate rounded-sm px-1.5 text-11 font-medium",
-        isSubTaskLevel ? "text-primary" : "text-white",
+        "inline-flex flex-shrink-0 items-center truncate rounded-sm text-11 font-medium",
+        isSubTaskLevel
+          ? "h-3.5 w-auto justify-center bg-transparent px-0 text-primary"
+          : "h-5 w-20 justify-center px-1.5 text-white",
         {
           "cursor-pointer hover:opacity-90": !disabled && options.length > 0,
           "cursor-default opacity-90": disabled || options.length === 0,
         },
         className
       )}
-      style={{ backgroundColor: color }}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
+      style={isSubTaskLevel ? undefined : { backgroundColor: color }}
+      aria-label={name}
+      title={name}
     >
-      <span className="w-full truncate text-center">{name}</span>
-    </button>
+      {isSubTaskLevel ? (
+        <HierarchyTypeLines color={rawTypeColor} />
+      ) : (
+        <span className="w-full truncate text-center">{name}</span>
+      )}
+    </span>
   );
 
   if (disabled || options.length === 0) {
     return (
       <Tooltip tooltipContent={name} position="top">
-        {badgeButton}
+        <span className="inline-flex items-center self-center">{badgeVisual}</span>
       </Tooltip>
     );
   }
@@ -177,6 +196,7 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
   return (
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
     <div
+      className={cn("inline-flex flex-shrink-0 items-center self-center", isSubTaskLevel && "h-3.5")}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -185,11 +205,15 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
       <CustomMenu
         placement="bottom-start"
         closeOnSelect
-        className="flex-shrink-0"
+        className="inline-flex flex-shrink-0 items-center"
+        customButtonClassName={
+          isSubTaskLevel ? "inline-flex h-3.5 items-center justify-center leading-none" : "inline-flex items-center"
+        }
         portalElement={typeof document !== "undefined" ? document.body : null}
         menuItemsClassName="z-[100]"
         optionsClassName="z-[100]"
-        customButton={badgeButton}
+        customButton={badgeVisual}
+        ariaLabel={name}
       >
         {groupedOptions.map((group) => (
           <div key={group.level}>
@@ -199,10 +223,14 @@ export const HierarchyTypeBadge = observer(function HierarchyTypeBadge(props: Pr
             {group.items.map((item) => (
               <CustomMenu.MenuItem key={item.id} onClick={() => void handleSelect(item)}>
                 <div className="flex w-full items-center gap-2">
-                  <span
-                    className="size-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: diluteHierarchyBadgeColor(item.color, item.level) }}
-                  />
+                  {item.level === HIERARCHY_LEVEL_SUB_TASK ? (
+                    <HierarchyTypeLines color={item.color || "#6B7280"} />
+                  ) : (
+                    <span
+                      className="size-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: diluteHierarchyBadgeColor(item.color, item.level) }}
+                    />
+                  )}
                   <span className="flex-1 truncate">{item.name}</span>
                   {typeId === item.id && <CheckIcon className="size-3.5 flex-shrink-0 text-secondary" />}
                 </div>

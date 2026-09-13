@@ -222,6 +222,7 @@ def issue_on_results(
         "progress_status",
         "qa_outcome",
         "pin_level",
+        "badge_color",
         "design_estimate_points",
         "dev_estimate_points",
         "qa_estimate_points",

@@ -169,15 +169,37 @@ export type TCycleCapacityMember = {
   last_name: string | null;
   avatar_url: string | null;
   estimate_points: number;
+  /** Completed L4 sub-tasks assigned to this member in the sprint */
+  done_subtasks: number;
   personal_holiday_days: number;
   capacity_max: number;
   is_over_capacity: boolean;
 };
 
+export type TCycleCapacityRoleVelocity = {
+  role: string;
+  done_estimate_points: number;
+  people_count: number;
+  average: number;
+};
+
 export type TCycleCapacityResponse = {
+  /** Project setting — baseline capacity per person (Default Team Velocity) */
   average_velocity: number;
+  default_team_velocity?: number;
+  /** Done L4 story points ÷ people on the sprint roster */
+  average_team_velocity: number;
+  total_done_estimate_points: number;
+  people_count: number;
+  velocity_by_role: TCycleCapacityRoleVelocity[];
   public_holiday_days: number;
   sp_per_holiday_day: number;
+  /** Fraction of average_velocity removed from max per day after cycle start */
+  daily_decay_fraction: number;
+  /** Calendar days since cycle start (0 on start day) */
+  days_elapsed: number;
+  /** Distinct completed L4 sub-tasks in this sprint */
+  total_done_subtasks: number;
   members: TCycleCapacityMember[];
 };
 

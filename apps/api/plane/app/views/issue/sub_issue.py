@@ -171,6 +171,7 @@ class SubIssuesEndpoint(BaseAPIView):
                 "hierarchy_level",
                 "progress_status",
                 "qa_outcome",
+                "badge_color",
             )
         )
 

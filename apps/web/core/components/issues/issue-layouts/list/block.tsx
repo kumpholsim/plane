@@ -249,7 +249,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
                   </div>
                 </Tooltip>
               )}
-              {/* Scrumban: hierarchy type always visible next to identifier/title */}
+              {/* Scrumban: hierarchy type next to identifier/title (epic badge lives on L2 group header) */}
               {isStagedGateScrumban && (
                 <HierarchyTypeBadge issue={issue} disabled={!canEditIssueProperties} updateIssue={updateIssue} />
               )}

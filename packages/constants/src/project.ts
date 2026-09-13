@@ -146,3 +146,26 @@ export const DEFAULT_AVERAGE_VELOCITY = 15;
 
 /** Each public or personal holiday day reduces capacity by this many story points. */
 export const CAPACITY_SP_PER_HOLIDAY_DAY = 1.5;
+
+/**
+ * Fraction of default velocity subtracted from max capacity for each calendar day
+ * after the cycle start date (10 days → max reaches 0 from time decay alone).
+ */
+export const CAPACITY_DAILY_DECAY_FRACTION = 0.1;
+
+/** Default Epic (L2) badge color when issue.badge_color is unset. */
+export const DEFAULT_EPIC_BADGE_COLOR = "#8B5CF6";
+
+/** Preset CSS gradients for Epic (L2) badge_color. */
+export const EPIC_BADGE_GRADIENT_PRESETS = [
+  "linear-gradient(90deg, #8B5CF6, #EC4899)",
+  "linear-gradient(90deg, #3B82F6, #06B6D4)",
+  "linear-gradient(90deg, #F59E0B, #EF4444)",
+  "linear-gradient(135deg, #10B981, #3B82F6)",
+  "linear-gradient(90deg, #6366F1, #A855F7)",
+  "linear-gradient(90deg, #14B8A6, #84CC16)",
+] as const;
+
+/** True when badge_color stores a CSS gradient (vs solid hex/rgb). */
+export const isEpicBadgeGradient = (value?: string | null): boolean =>
+  Boolean(value?.trim().toLowerCase().includes("gradient"));

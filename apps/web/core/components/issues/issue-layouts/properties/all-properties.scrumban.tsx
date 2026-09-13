@@ -267,6 +267,20 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
         </div>
       </WithDisplayPropertiesHOC>
 
+      {/* labels — board: directly after status for visibility */}
+      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="labels">
+        <IssuePropertyLabels
+          projectId={issue?.project_id || null}
+          value={issue?.label_ids || []}
+          defaultOptions={defaultLabelOptions}
+          onChange={handleLabel}
+          disabled={isReadOnly}
+          renderByDefault={isMobile}
+          hideDropdownArrow
+          maxRender={3}
+        />
+      </WithDisplayPropertiesHOC>
+
       {/* priority */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="priority">
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
@@ -541,20 +555,6 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
             <div className="text-caption-sm-regular">{issue.link_count}</div>
           </div>
         </Tooltip>
-      </WithDisplayPropertiesHOC>
-
-      {/* label */}
-      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="labels">
-        <IssuePropertyLabels
-          projectId={issue?.project_id || null}
-          value={issue?.label_ids || []}
-          defaultOptions={defaultLabelOptions}
-          onChange={handleLabel}
-          disabled={isReadOnly}
-          renderByDefault={isMobile}
-          hideDropdownArrow
-          maxRender={3}
-        />
       </WithDisplayPropertiesHOC>
 
       {/* list: assignee + estimate rightmost after labels for easier scanning */}

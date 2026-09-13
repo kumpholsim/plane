@@ -55,7 +55,8 @@ import {
 } from "@/components/issues/hierarchy-status";
 import { QA_OUTCOME_OPTIONS } from "@plane/constants";
 import type { TDeliveryProgressStatus, TQAOutcome } from "@plane/types";
-import { HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
+import { HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_EPIC, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
+import { EpicBadgeColorField } from "@/components/issues/epic-badge-color-field";
 import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
@@ -95,6 +96,7 @@ export const ScrumbanPeekOverviewProperties = observer(function ScrumbanPeekOver
   const showParent = canHaveParent(issue);
   const parentEditable = !disabled && canChangeParent(issue);
   const isL3 = hierarchyLevel === HIERARCHY_LEVEL_DELIVERY;
+  const isL2 = hierarchyLevel === HIERARCHY_LEVEL_EPIC;
   const isL4 = hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
   const isQaL4 = isL4 && isQaHierarchyTypeName(hierarchyType?.name);
   const projectStateIds = getProjectStateIds(projectId) ?? [];
@@ -221,6 +223,21 @@ export const ScrumbanPeekOverviewProperties = observer(function ScrumbanPeekOver
             buttonClassName={`text-body-xs-medium whitespace-nowrap [&_svg]:size-3.5 ${!issue?.priority || issue?.priority === "none" ? "text-placeholder" : ""}`}
           />
         </SidebarPropertyListItem>
+
+        {isL2 && (
+          <SidebarPropertyListItem icon={LabelPropertyIcon} label="Badge color">
+            <EpicBadgeColorField
+              inputName="epic-badge-color-peek"
+              value={issue.badge_color}
+              disabled={disabled}
+              onChange={(next) => {
+                void issueOperations.update(workspaceSlug, projectId, issueId, {
+                  badge_color: next,
+                });
+              }}
+            />
+          </SidebarPropertyListItem>
+        )}
 
         {createdByDetails && (
           <SidebarPropertyListItem

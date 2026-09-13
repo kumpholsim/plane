@@ -151,6 +151,7 @@ def issue_on_results(
         "hierarchy_type_id",
         "hierarchy_level",
         "pin_level",
+        "badge_color",
     ]
 
     if group_by in FIELD_MAPPER:

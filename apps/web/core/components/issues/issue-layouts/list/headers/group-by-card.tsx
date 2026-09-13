@@ -16,12 +16,15 @@ import type { TIssue, ISearchIssueResponse, TIssueGroupByOptions } from "@plane/
 import { CustomMenu } from "@plane/ui";
 // components
 import { cn } from "@plane/utils";
+import { isStagedGateScrumbanMode } from "@plane/constants";
 import { ExistingIssuesListModal } from "@/components/core/modals/existing-issues-list-modal";
 import { MultipleSelectGroupAction } from "@/components/core/multiple-select";
 import { CreateUpdateIssueModal } from "@/components/issues/issue-modal/modal";
 import { CreateUpdateEpicModal } from "@/components/epic-modal";
+import { EpicSelfBadge } from "@/components/issues/parent-epic-badge";
 // constants
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useProject } from "@/hooks/store/use-project";
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 
 interface IHeaderGroupByCard {
@@ -42,6 +45,7 @@ interface IHeaderGroupByCard {
 export const HeaderGroupByCard = observer(function HeaderGroupByCard(props: IHeaderGroupByCard) {
   const {
     groupID,
+    groupBy,
     icon,
     title,
     count,
@@ -59,12 +63,18 @@ export const HeaderGroupByCard = observer(function HeaderGroupByCard(props: IHea
   // router
   const { workspaceSlug, projectId, moduleId, cycleId } = useParams();
   const storeType = useIssueStoreType();
+  const { getProjectById } = useProject();
   // derived values
   const renderExistingIssueModal = moduleId || cycleId;
   const existingIssuesListModalPayload = moduleId ? { module: moduleId.toString() } : { cycle: true };
   const isGroupSelectionEmpty = selectionHelpers.isGroupSelected(groupID) === "empty";
   // auth
   const canSelectIssues = canEditProperties(projectId?.toString()) && !selectionHelpers.isSelectionDisabled;
+  const isScrumban = isStagedGateScrumbanMode(
+    projectId ? getProjectById(projectId.toString())?.workflow_mode : undefined
+  );
+  // Scrumban module groups are Epics (L2) — show badge beside the epic title
+  const showEpicBadge = isScrumban && groupBy === "module" && groupID !== "None";
 
   const handleAddIssuesToView = async (data: ISearchIssueResponse[]) => {
     if (!workspaceSlug || !projectId) return;
@@ -116,6 +126,9 @@ export const HeaderGroupByCard = observer(function HeaderGroupByCard(props: IHea
           onClick={() => handleCollapsedGroups(groupID)}
         >
           <div className="line-clamp-1 inline-block truncate font-medium text-primary">{title}</div>
+          {showEpicBadge && (
+            <EpicSelfBadge epicId={groupID === "None" ? null : groupID} projectId={projectId?.toString()} />
+          )}
           <div className="pl-2 text-13 font-medium text-tertiary">{count || 0}</div>
           <div className="px-2.5"></div>
         </div>

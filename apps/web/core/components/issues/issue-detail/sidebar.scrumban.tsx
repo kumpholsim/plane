@@ -22,9 +22,10 @@ import {
 } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { TDeliveryProgressStatus, TQAOutcome } from "@plane/types";
-import { HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
+import { HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_EPIC, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 import { cn, getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from "@plane/utils";
 // components
+import { EpicBadgeColorField } from "@/components/issues/epic-badge-color-field";
 import { DateDropdown } from "@/components/dropdowns/date";
 import { EstimateDropdown } from "@/components/dropdowns/estimate";
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
@@ -94,6 +95,7 @@ export const ScrumbanIssueDetailsSidebar = observer(function ScrumbanIssueDetail
   const showParent = canHaveParent(issue);
   const parentEditable = isEditable && canChangeParent(issue);
   const isL3 = hierarchyLevel === HIERARCHY_LEVEL_DELIVERY;
+  const isL2 = hierarchyLevel === HIERARCHY_LEVEL_EPIC;
   const isL4 = hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
   const isQaL4 = isL4 && isQaHierarchyTypeName(hierarchyType?.name);
   const projectStateIds = getProjectStateIds(projectId) ?? [];
@@ -222,6 +224,21 @@ export const ScrumbanIssueDetailsSidebar = observer(function ScrumbanIssueDetail
                 buttonClassName="size-full px-2 py-0.5 whitespace-nowrap [&_svg]:size-3.5"
               />
             </SidebarPropertyListItem>
+
+            {isL2 && (
+              <SidebarPropertyListItem icon={LabelPropertyIcon} label="Badge color">
+                <EpicBadgeColorField
+                  inputName="epic-badge-color"
+                  value={issue.badge_color}
+                  disabled={!isEditable}
+                  onChange={(next) => {
+                    void issueOperations.update(workspaceSlug, projectId, issueId, {
+                      badge_color: next,
+                    });
+                  }}
+                />
+              </SidebarPropertyListItem>
+            )}
 
             {createdByDetails && (
               <SidebarPropertyListItem icon={UserCirclePropertyIcon} label={t("common.created_by")}>

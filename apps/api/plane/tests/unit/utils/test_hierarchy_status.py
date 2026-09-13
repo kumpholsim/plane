@@ -110,7 +110,7 @@ def test_transfer_skips_fully_done_l3(monkeypatch):
 
 
 @pytest.mark.unit
-def test_dev_and_qa_cannot_leave_todo_without_assignee_and_estimate():
+def test_design_dev_and_qa_cannot_leave_todo_without_assignee_and_estimate():
     todo = _state(BOARD_STATE_DESIGN_DEV_TODO, group="unstarted", name="To Do")
     in_progress = _state("design_dev_in_progress", group="started", name="In Progress")
     under_review = _state("design_dev_under_review", group="started", name="Under Review")
@@ -165,7 +165,7 @@ def test_dev_and_qa_cannot_leave_todo_without_assignee_and_estimate():
         )
         == L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE
     )
-    # Design is not gated
+    # Design shares the same leave-To Do gate
     assert (
         l4_leave_todo_requirement_error(
             hierarchy_level=4,
@@ -174,6 +174,17 @@ def test_dev_and_qa_cannot_leave_todo_without_assignee_and_estimate():
             next_state=in_progress,
             has_assignee=False,
             has_estimate=False,
+        )
+        == L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE
+    )
+    assert (
+        l4_leave_todo_requirement_error(
+            hierarchy_level=4,
+            hierarchy_type=design_type,
+            current_state=todo,
+            next_state=in_progress,
+            has_assignee=True,
+            has_estimate=True,
         )
         is None
     )

@@ -6,6 +6,7 @@
 
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
+import { useEffect } from "react";
 import useSWR from "swr";
 // plane constants
 import {
@@ -27,6 +28,7 @@ import { BoardFullscreenProvider } from "@/components/issues/issue-layouts/kanba
 import { BoardFullscreenShell } from "@/components/issues/issue-layouts/kanban/board-fullscreen-shell";
 import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
+import { useAppRouter } from "@/hooks/use-app-router";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 // local imports
 import { IssuePeekOverview } from "../../peek-overview";
@@ -58,6 +60,7 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
   const { workspaceSlug: routerWorkspaceSlug, projectId: routerProjectId } = useParams();
   const workspaceSlug = routerWorkspaceSlug ? routerWorkspaceSlug.toString() : undefined;
   const projectId = routerProjectId ? routerProjectId.toString() : undefined;
+  const router = useAppRouter();
   // hooks
   const { issues, issuesFilter } = useIssues(EIssuesStoreType.PROJECT);
   const { getProjectById } = useProject();
@@ -65,6 +68,13 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
   const workItemFilters = projectId ? issuesFilter?.getIssueFilters(projectId) : undefined;
   const activeLayout = workItemFilters?.displayFilters?.layout;
   const isScrumban = isStagedGateScrumbanMode(projectId ? getProjectById(projectId)?.workflow_mode : undefined);
+
+  // Scrumban uses Cycles as the primary board — bounce /issues away once mode is known
+  useEffect(() => {
+    if (!isScrumban || !workspaceSlug || !projectId) return;
+    router.replace(`/${workspaceSlug}/projects/${projectId}/cycles/`);
+  }, [isScrumban, workspaceSlug, projectId, router]);
+
   const isPinnedFilterLayout =
     isScrumban && (activeLayout === EIssueLayoutTypes.LIST || activeLayout === EIssueLayoutTypes.KANBAN);
   const filtersToShowByLayout: TWorkItemFilterProperty[] = isPinnedFilterLayout

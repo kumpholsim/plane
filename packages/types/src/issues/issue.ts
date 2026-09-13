@@ -94,6 +94,8 @@ export type TBaseIssue = {
   qa_outcome?: TQAOutcome | null;
   /** 0 = none, 1 = single-up pin, 2 = double-up pin (above peers in type section) */
   pin_level?: number | null;
+  /** Per-item badge color (hex). Epic (L2) chips use this; falls back to default purple when empty. */
+  badge_color?: string | null;
   /** @deprecated Use hierarchy_type_id */
   sub_work_item_category_id?: string | null;
 

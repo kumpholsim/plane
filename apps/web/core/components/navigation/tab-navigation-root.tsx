@@ -7,7 +7,7 @@
 import React, { useEffect } from "react";
 import { observer } from "mobx-react";
 import { useParams, useLocation, Link, useNavigate } from "react-router";
-import { EUserPermissionsLevel, EUserPermissions } from "@plane/constants";
+import { EUserPermissionsLevel, EUserPermissions, isStagedGateScrumbanMode } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { TabNavigationList, TabNavigationItem } from "@plane/propel/tab-navigation";
 import type { EUserProjectRoles } from "@plane/types";
@@ -136,16 +136,29 @@ export const TabNavigationRoot = observer(function TabNavigationRoot(props: TTab
     if (isProjectRoot && allNavigationItems.length > 0) {
       // Find the default tab in available items
       const defaultTabItem = allNavigationItems.find((item: TNavigationItem) => item.key === tabPreferences.defaultTab);
+      const isScrumban = isStagedGateScrumbanMode(project?.workflow_mode);
+      // Scrumban has no Work items tab — prefer Cycles over the classic default
+      const fallbackKey = isScrumban ? "cycles" : DEFAULT_TAB_KEY;
 
-      // If default tab exists and is enabled, use it; otherwise fall back to work_items
+      // If default tab exists and is enabled, use it; otherwise fall back
       const targetItem =
-        defaultTabItem || allNavigationItems.find((item: TNavigationItem) => item.key === DEFAULT_TAB_KEY);
+        defaultTabItem ||
+        allNavigationItems.find((item: TNavigationItem) => item.key === fallbackKey) ||
+        allNavigationItems[0];
 
       if (targetItem) {
         navigate(targetItem.href, { replace: true });
       }
     }
-  }, [pathname, workspaceSlug, projectId, tabPreferences.defaultTab, allNavigationItems, navigate]);
+  }, [
+    pathname,
+    workspaceSlug,
+    projectId,
+    tabPreferences.defaultTab,
+    allNavigationItems,
+    navigate,
+    project?.workflow_mode,
+  ]);
 
   if (allNavigationItems.length === 0) return null;
   if (!project) return null;

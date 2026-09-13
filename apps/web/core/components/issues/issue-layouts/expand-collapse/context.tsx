@@ -99,11 +99,6 @@ export const IssueExpandCollapseProvider = observer(function IssueExpandCollapse
 
   const [step, setStep] = useState(0);
 
-  // Reset cycle when switching list ↔ board
-  useEffect(() => {
-    setStep(0);
-  }, [layout]);
-
   const level = useMemo(() => (isAvailable ? levelForStep(step, isBoard) : 1), [isAvailable, isBoard, step]);
 
   const nextAction = useMemo(
@@ -167,6 +162,15 @@ export const IssueExpandCollapseProvider = observer(function IssueExpandCollapse
     },
     [collapseKey, getCollapsibleGroupIds, isAvailable, projectId, updateFilters]
   );
+
+  // Reset cycle when switching list ↔ board; start with groups open (step 0 ⇒ level 1).
+  useEffect(() => {
+    setStep(0);
+    if (!isAvailable) return;
+    applyGroupCollapse(false);
+    // Only when layout/availability changes — not when applyGroupCollapse identity churns with issue data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [layout, isAvailable]);
 
   const cycle = useCallback(() => {
     if (!isAvailable) return;

@@ -146,12 +146,10 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
   const handleCollapsedGroups = useCallback(
     (value: string) => {
       if (workspaceSlug) {
-        let nextCollapsedGroups = issuesFilter?.issueFilters?.kanbanFilters?.group_by || [];
-        if (nextCollapsedGroups.includes(value)) {
-          nextCollapsedGroups = nextCollapsedGroups.filter((_value) => _value != value);
-        } else {
-          nextCollapsedGroups.push(value);
-        }
+        const current = issuesFilter?.issueFilters?.kanbanFilters?.group_by || [];
+        const nextCollapsedGroups = current.includes(value)
+          ? current.filter((_value) => _value != value)
+          : [...current, value];
         updateFilters(projectId?.toString() ?? "", EIssueFilterType.KANBAN_FILTERS, {
           group_by: nextCollapsedGroups,
         } as TIssueKanbanFilters);

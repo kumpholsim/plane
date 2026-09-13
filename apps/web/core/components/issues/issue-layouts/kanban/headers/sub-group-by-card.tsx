@@ -22,6 +22,8 @@ interface IHeaderSubGroupByCard {
   handleCollapsedGroups: (toggle: "group_by" | "sub_group_by", value: string) => void;
   className?: string;
   leading?: React.ReactNode;
+  /** Content after the title (e.g. epic badge on Scrumban L3 swimlanes) */
+  trailing?: React.ReactNode;
   /** When set, title opens this instead of collapsing the swimlane */
   onTitleClick?: () => void;
   /** Scrumban L3: slightly smaller title (no bold) */
@@ -38,6 +40,7 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
     handleCollapsedGroups,
     className,
     leading,
+    trailing,
     onTitleClick,
     emphasizeTitle = false,
   } = props;
@@ -106,6 +109,7 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
             {title}
           </button>
         )}
+        {trailing}
         <div className={cn("shrink-0 pl-2 font-medium text-tertiary", emphasizeTitle ? "text-[0.731rem]" : "text-13")}>
           {count || 0}
         </div>

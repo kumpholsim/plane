@@ -1051,24 +1051,65 @@ class CycleAnalyticsEndpoint(BaseAPIView):
 
 # Story-point reduction per holiday day (public or personal) for Scrumban capacity bars.
 CAPACITY_SP_PER_HOLIDAY_DAY = 1.5
+# Max capacity drops by this fraction of default velocity each calendar day after sprint start
+# (e.g. velocity 15 → −1.5 SP/day; after 10 days the time-decay alone reaches 0).
+CAPACITY_DAILY_DECAY_FRACTION = 0.1
 
 
 class CycleCapacityEndpoint(BaseAPIView):
     """
-    Sprint capacity: open L4 (sub-task) estimate totals per assignee vs project average velocity,
-    reduced by public and personal holiday days (1.5 SP each).
+    Sprint capacity: open L4 (sub-task) estimate totals per assignee vs project average velocity.
 
-    Done/cancelled L4 cards are excluded so finishing work frees capacity on the bar.
+    Max capacity starts at average velocity, then:
+    - decays 10% of that default each calendar day after cycle start (hits 0 after 10 days)
+    - and is reduced by public / personal holiday days (1.5 SP each)
+
+    Done L4 counts are returned so teams can compare finished work vs remaining load.
+    The bar track stays anchored to the default velocity so the max marker moves left as days pass.
     """
 
-    def _capacity_max(self, average_velocity, public_holiday_days, personal_holiday_days):
+    def _days_elapsed(self, cycle, project):
+        if not cycle.start_date:
+            return 0
+        project_tz_name = getattr(project, "timezone", None) or "UTC"
+        try:
+            local_tz = pytz.timezone(project_tz_name)
+        except Exception:
+            local_tz = pytz.UTC
+        today = timezone.now().astimezone(local_tz).date()
+        start = cycle.start_date
+        if timezone.is_aware(start):
+            start_date = start.astimezone(local_tz).date()
+        else:
+            start_date = start.date() if hasattr(start, "date") else start
+        return max(0, (today - start_date).days)
+
+    def _capacity_max(self, average_velocity, public_holiday_days, personal_holiday_days, days_elapsed):
+        base = float(average_velocity or 15)
         public_days = float(public_holiday_days or 0)
         personal_days = float(personal_holiday_days or 0)
-        return max(
-            0.0,
-            float(average_velocity or 15)
-            - (CAPACITY_SP_PER_HOLIDAY_DAY * public_days)
-            - (CAPACITY_SP_PER_HOLIDAY_DAY * personal_days),
+        time_decay = base * CAPACITY_DAILY_DECAY_FRACTION * max(0, int(days_elapsed or 0))
+        holiday_reduction = (CAPACITY_SP_PER_HOLIDAY_DAY * public_days) + (
+            CAPACITY_SP_PER_HOLIDAY_DAY * personal_days
+        )
+        return max(0.0, base - time_decay - holiday_reduction)
+
+    def _assignee_avatar_annotation(self):
+        return Case(
+            When(
+                assignees__avatar_asset__isnull=False,
+                then=Concat(
+                    Value("/api/assets/v2/static/"),
+                    Cast("assignees__avatar_asset", models.CharField()),
+                    Value("/"),
+                ),
+            ),
+            When(
+                assignees__avatar_asset__isnull=True,
+                then="assignees__avatar",
+            ),
+            default=Value(None),
+            output_field=models.CharField(),
         )
 
     def _build_capacity_payload(self, slug, project_id, cycle_id):
@@ -1087,72 +1128,158 @@ class CycleCapacityEndpoint(BaseAPIView):
         personal_holiday_days = getattr(cycle, "personal_holiday_days", None) or {}
         if not isinstance(personal_holiday_days, dict):
             personal_holiday_days = {}
+        days_elapsed = self._days_elapsed(cycle, project)
 
-        # Open L4 only — moving a card to Done (completed) or cancelled drops it from the bar.
-        assignee_rows = (
-            Issue.issue_objects.filter(
-                issue_cycle__cycle_id=cycle_id,
-                issue_cycle__deleted_at__isnull=True,
-                workspace__slug=slug,
-                project_id=project_id,
-                hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
-            )
-            .exclude(state__group__in=["completed", "cancelled"])
+        l4_base = Issue.issue_objects.filter(
+            issue_cycle__cycle_id=cycle_id,
+            issue_cycle__deleted_at__isnull=True,
+            workspace__slug=slug,
+            project_id=project_id,
+            hierarchy_level=HIERARCHY_LEVEL_SUB_TASK,
+        )
+
+        # Open L4 only — moving a card to Done (completed) or cancelled drops it from the bar fill.
+        open_rows = (
+            l4_base.exclude(state__group__in=["completed", "cancelled"])
             .annotate(display_name=F("assignees__display_name"))
             .annotate(assignee_id=F("assignees__id"))
             .annotate(first_name=F("assignees__first_name"))
             .annotate(last_name=F("assignees__last_name"))
-            .annotate(
-                avatar_url=Case(
-                    When(
-                        assignees__avatar_asset__isnull=False,
-                        then=Concat(
-                            Value("/api/assets/v2/static/"),
-                            Cast("assignees__avatar_asset", models.CharField()),
-                            Value("/"),
-                        ),
-                    ),
-                    When(
-                        assignees__avatar_asset__isnull=True,
-                        then="assignees__avatar",
-                    ),
-                    default=Value(None),
-                    output_field=models.CharField(),
-                )
-            )
+            .annotate(avatar_url=self._assignee_avatar_annotation())
             .values("display_name", "assignee_id", "avatar_url", "first_name", "last_name")
             .annotate(estimate_points=Coalesce(Sum(Cast("estimate_point__value", FloatField())), Value(0.0)))
             .filter(assignee_id__isnull=False)
-            .order_by("display_name")
         )
 
-        members = []
-        for row in assignee_rows:
+        # Done L4 counts per assignee (completed group only; cancelled excluded from "done").
+        done_rows = (
+            l4_base.filter(state__group="completed")
+            .annotate(display_name=F("assignees__display_name"))
+            .annotate(assignee_id=F("assignees__id"))
+            .annotate(first_name=F("assignees__first_name"))
+            .annotate(last_name=F("assignees__last_name"))
+            .annotate(avatar_url=self._assignee_avatar_annotation())
+            .values("display_name", "assignee_id", "avatar_url", "first_name", "last_name")
+            .annotate(done_count=Count("id", distinct=True))
+            .filter(assignee_id__isnull=False)
+        )
+
+        by_assignee = {}
+        for row in open_rows:
             assignee_id = str(row["assignee_id"]) if row["assignee_id"] else None
             if not assignee_id:
                 continue
-            personal_days = float(personal_holiday_days.get(assignee_id, 0) or 0)
-            capacity_max = self._capacity_max(average_velocity, public_holiday_days, personal_days)
-            estimate_points = float(row["estimate_points"] or 0)
-            members.append(
-                {
+            by_assignee[assignee_id] = {
+                "assignee_id": assignee_id,
+                "display_name": row["display_name"],
+                "first_name": row["first_name"],
+                "last_name": row["last_name"],
+                "avatar_url": row["avatar_url"],
+                "estimate_points": float(row["estimate_points"] or 0),
+                "done_subtasks": 0,
+            }
+
+        # Distinct done L4 cards in the sprint (not summed per assignee — avoids double-count).
+        done_l4 = l4_base.filter(state__group="completed")
+        total_done_subtasks = done_l4.values("id").distinct().count()
+        total_done_estimate_points = float(
+            done_l4.aggregate(
+                total=Coalesce(Sum(Cast("estimate_point__value", FloatField())), Value(0.0))
+            )["total"]
+            or 0
+        )
+
+        for row in done_rows:
+            assignee_id = str(row["assignee_id"]) if row["assignee_id"] else None
+            if not assignee_id:
+                continue
+            done_count = int(row["done_count"] or 0)
+            if assignee_id in by_assignee:
+                by_assignee[assignee_id]["done_subtasks"] = done_count
+            else:
+                by_assignee[assignee_id] = {
                     "assignee_id": assignee_id,
                     "display_name": row["display_name"],
                     "first_name": row["first_name"],
                     "last_name": row["last_name"],
                     "avatar_url": row["avatar_url"],
-                    "estimate_points": estimate_points,
+                    "estimate_points": 0.0,
+                    "done_subtasks": done_count,
+                }
+
+        members = []
+        for assignee_id, row in sorted(
+            by_assignee.items(),
+            key=lambda item: (item[1].get("display_name") or "").lower(),
+        ):
+            personal_days = float(personal_holiday_days.get(assignee_id, 0) or 0)
+            capacity_max = self._capacity_max(
+                average_velocity, public_holiday_days, personal_days, days_elapsed
+            )
+            estimate_points = float(row["estimate_points"] or 0)
+            members.append(
+                {
+                    **row,
                     "personal_holiday_days": personal_days,
                     "capacity_max": capacity_max,
                     "is_over_capacity": estimate_points > capacity_max,
                 }
             )
 
+        # Average Team Velocity = done L4 story points ÷ people on the sprint roster.
+        people_count = len(members)
+        average_team_velocity = (
+            round(total_done_estimate_points / people_count, 2) if people_count > 0 else 0.0
+        )
+
+        # Per-role (Design / Dev / QA / …): done SP for that L4 type ÷ people who finished those cards.
+        role_sp_rows = (
+            done_l4.annotate(role_name=F("hierarchy_type__name"))
+            .values("role_name")
+            .annotate(
+                done_estimate_points=Coalesce(Sum(Cast("estimate_point__value", FloatField())), Value(0.0)),
+            )
+            .order_by("role_name")
+        )
+        role_people_rows = (
+            done_l4.annotate(role_name=F("hierarchy_type__name"))
+            .annotate(assignee_id=F("assignees__id"))
+            .filter(assignee_id__isnull=False)
+            .values("role_name")
+            .annotate(people_count=Count("assignee_id", distinct=True))
+        )
+        people_by_role = {
+            (row["role_name"] or "Other"): int(row["people_count"] or 0) for row in role_people_rows
+        }
+        role_order = {"design": 0, "dev": 1, "qa": 2}
+        velocity_by_role = []
+        for row in role_sp_rows:
+            role_name = row["role_name"] or "Other"
+            done_sp = float(row["done_estimate_points"] or 0)
+            role_people = people_by_role.get(role_name, 0)
+            velocity_by_role.append(
+                {
+                    "role": role_name,
+                    "done_estimate_points": done_sp,
+                    "people_count": role_people,
+                    "average": round(done_sp / role_people, 2) if role_people > 0 else 0.0,
+                }
+            )
+        velocity_by_role.sort(key=lambda item: (role_order.get(item["role"].lower(), 99), item["role"].lower()))
+
         return (
             {
                 "average_velocity": average_velocity,
+                "default_team_velocity": average_velocity,
+                "average_team_velocity": average_team_velocity,
+                "total_done_estimate_points": total_done_estimate_points,
+                "people_count": people_count,
+                "velocity_by_role": velocity_by_role,
                 "public_holiday_days": public_holiday_days,
                 "sp_per_holiday_day": CAPACITY_SP_PER_HOLIDAY_DAY,
+                "daily_decay_fraction": CAPACITY_DAILY_DECAY_FRACTION,
+                "days_elapsed": days_elapsed,
+                "total_done_subtasks": total_done_subtasks,
                 "members": members,
             },
             None,

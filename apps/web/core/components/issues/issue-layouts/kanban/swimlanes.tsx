@@ -34,6 +34,8 @@ import { ProgressStatusDropdown } from "@/components/dropdowns/progress-status";
 import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
 import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
+import { IssuePropertyLabels } from "@/components/issues/issue-layouts/properties/labels";
+import { ParentEpicBadge } from "@/components/issues/parent-epic-badge";
 // plane web imports
 import { useWorkFlowFDragNDrop } from "@/components/workflow";
 // local imports
@@ -230,6 +232,11 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
             await updateIssue(l3Issue.project_id, l3Issue.id, { progress_status: value });
           };
 
+          const handleL3LabelChange = async (labelIds: string[]) => {
+            if (!updateIssue || !l3Issue?.project_id) return;
+            await updateIssue(l3Issue.project_id, l3Issue.id, { label_ids: labelIds });
+          };
+
           return (
             <div key={_list.id} className="flex flex-shrink-0 flex-col">
               {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
@@ -242,7 +249,7 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                 >
                   <div
                     className={cn(
-                      "flex max-w-2xl min-w-0 items-center gap-2",
+                      "flex max-w-4xl min-w-0 items-center gap-2",
                       isStagedGateScrumban &&
                         isFullyDoneL3ForCycleHighlight(l3Issue ?? { id: _list.id }, issuesMap) &&
                         "rounded-md bg-success-subtle px-1.5 py-0.5"
@@ -273,6 +280,14 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                           </div>
                         ) : undefined
                       }
+                      trailing={
+                        isL3Swimlane ? (
+                          // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
+                          <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+                            <ParentEpicBadge issue={l3Issue} />
+                          </div>
+                        ) : undefined
+                      }
                       onTitleClick={
                         isL3Swimlane ? () => handleRedirection(workspaceSlug?.toString(), l3Issue, isMobile) : undefined
                       }
@@ -280,7 +295,7 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                     {isL3Swimlane && (
                       // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
                       <div
-                        className="h-5 w-auto shrink-0"
+                        className="flex h-5 min-w-0 shrink-0 items-center gap-2"
                         onClick={(e) => {
                           e.stopPropagation();
                         }}
@@ -295,6 +310,15 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                           buttonContainerClassName="truncate max-w-48"
                           className="h-5 max-w-48"
                           showTooltip
+                        />
+                        <IssuePropertyLabels
+                          projectId={l3Issue.project_id}
+                          value={l3Issue.label_ids || []}
+                          onChange={handleL3LabelChange}
+                          disabled={!canEditL3}
+                          hideDropdownArrow
+                          maxRender={2}
+                          renderByDefault={isMobile}
                         />
                       </div>
                     )}

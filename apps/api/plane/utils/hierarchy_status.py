@@ -140,6 +140,16 @@ def is_dev_or_qa_hierarchy_type(hierarchy_type) -> bool:
     return is_dev_hierarchy_type(hierarchy_type) or is_qa_hierarchy_type(hierarchy_type)
 
 
+def is_design_hierarchy_type(hierarchy_type) -> bool:
+    if hierarchy_type is None:
+        return False
+    return str(getattr(hierarchy_type, "name", "")).strip().lower() == "design"
+
+
+def is_design_dev_or_qa_hierarchy_type(hierarchy_type) -> bool:
+    return is_design_hierarchy_type(hierarchy_type) or is_dev_or_qa_hierarchy_type(hierarchy_type)
+
+
 def is_design_or_dev_hierarchy_type(hierarchy_type) -> bool:
     if hierarchy_type is None:
         return False
@@ -166,10 +176,10 @@ def l4_leave_todo_requirement_error(
     has_estimate: bool,
 ) -> str | None:
     """
-    Dev/QA L4 cards cannot leave their To Do column without both assignee and estimate.
+    Design/Dev/QA L4 cards cannot leave To Do without both assignee and estimate.
     Returns an error message when blocked, otherwise None.
     """
-    if hierarchy_level != 4 or not is_dev_or_qa_hierarchy_type(hierarchy_type):
+    if hierarchy_level != 4 or not is_design_dev_or_qa_hierarchy_type(hierarchy_type):
         return None
     if current_state is None or next_state is None:
         return None

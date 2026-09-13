@@ -28,7 +28,7 @@ import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { isFullyDoneL3ForCycleHighlight } from "@/components/issues/hierarchy-status";
 import { HIGHLIGHT_CLASS, getIssueBlockId } from "@/components/issues/issue-layouts/utils";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
-import { diluteHierarchyBadgeColor, HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
+import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 import { getHierarchyLevel } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
@@ -36,7 +36,6 @@ import { useEstimate } from "@/hooks/store/estimates/use-estimate";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useKanbanView } from "@/hooks/store/use-kanban-view";
 import { useProject } from "@/hooks/store/use-project";
-import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-redirection";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -180,14 +179,8 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
   // hooks
   const { isMobile } = usePlatformOS();
   const isStagedGateScrumban = useIsStagedGateScrumban(issue.project_id);
-  const { getTypeById } = useProjectHierarchyType();
   const hierarchyLevel = getHierarchyLevel(issue);
   const isL4Card = isStagedGateScrumban && hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
-  const hierarchyTypeId = issue.hierarchy_type_id ?? issue.sub_work_item_category_id ?? null;
-  const hierarchyType = hierarchyTypeId ? getTypeById(hierarchyTypeId) : null;
-  const l4IdAccentColor = isL4Card
-    ? diluteHierarchyBadgeColor(hierarchyType?.color || "#6B7280", HIERARCHY_LEVEL_SUB_TASK)
-    : undefined;
   // Scrumban pins assignee/estimate to the card footer instead of the properties row
   const showCardFooter = isStagedGateScrumban && Boolean(displayProperties?.assignee || displayProperties?.estimate);
 
@@ -214,7 +207,8 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
 
   return (
     <div className="relative">
-      <div className={cn("relative", isStagedGateScrumban && "flex items-center gap-1.5")}>
+      <div className={cn("relative", isStagedGateScrumban && "flex items-center gap-1.5 leading-none")}>
+        {isStagedGateScrumban && <HierarchyTypeBadge issue={issue} disabled={isReadOnly} updateIssue={updateIssue} />}
         {issue.project_id && (
           <IssueIdentifier
             issueId={issue.id}
@@ -222,11 +216,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
             size="xs"
             variant="tertiary"
             displayProperties={displayProperties}
-            accentColor={l4IdAccentColor}
           />
-        )}
-        {isStagedGateScrumban && !isL4Card && (
-          <HierarchyTypeBadge issue={issue} disabled={isReadOnly} updateIssue={updateIssue} />
         )}
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
         <div

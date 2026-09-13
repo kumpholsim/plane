@@ -322,15 +322,15 @@ function CapacityPlanningPanel(props: { workspaceSlug: string; projectId: string
     if (!canManage) return;
     const parsed = Number(velocity);
     if (Number.isNaN(parsed) || parsed < 0) {
-      setToast({ type: TOAST_TYPE.ERROR, title: "Error!", message: "Enter a valid average velocity." });
+      setToast({ type: TOAST_TYPE.ERROR, title: "Error!", message: "Enter a valid default team velocity." });
       return;
     }
     setIsSaving(true);
     try {
       await updateProject(workspaceSlug, projectId, { average_velocity: parsed });
-      setToast({ type: TOAST_TYPE.SUCCESS, title: "Success!", message: "Average velocity updated." });
+      setToast({ type: TOAST_TYPE.SUCCESS, title: "Success!", message: "Default team velocity updated." });
     } catch {
-      setToast({ type: TOAST_TYPE.ERROR, title: "Error!", message: "Could not update average velocity." });
+      setToast({ type: TOAST_TYPE.ERROR, title: "Error!", message: "Could not update default team velocity." });
     } finally {
       setIsSaving(false);
     }
@@ -341,14 +341,14 @@ function CapacityPlanningPanel(props: { workspaceSlug: string; projectId: string
       <div>
         <h3 className="text-14 font-semibold text-primary">Sprint capacity</h3>
         <p className="mt-1 text-12 text-tertiary">
-          Team average velocity is the baseline capacity bar for each person (story points of L4 sub-tasks in the
+          Default Team Velocity is the baseline capacity bar for each person (story points of L4 sub-tasks in the
           sprint). Bars turn red when someone exceeds this limit after holiday / leave adjustments. Each public holiday
           or personal leave day reduces max capacity by {CAPACITY_SP_PER_HOLIDAY_DAY} SP (edit these on the cycle
           Capacity panel).
         </p>
       </div>
       <label htmlFor="scrumban-average-velocity" className="flex flex-col gap-1.5">
-        <span className="text-13 font-medium text-secondary">Average velocity (SP)</span>
+        <span className="text-13 font-medium text-secondary">Default Team Velocity (SP)</span>
         <Input
           id="scrumban-average-velocity"
           type="number"

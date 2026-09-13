@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { CAPACITY_SP_PER_HOLIDAY_DAY, DEFAULT_AVERAGE_VELOCITY } from "@plane/constants";
+import { DEFAULT_AVERAGE_VELOCITY } from "@plane/constants";
 import { Avatar } from "@plane/propel/avatar";
 import { CloseIcon } from "@plane/propel/icons";
 import { ModalPortal, EPortalWidth, EPortalPosition } from "@plane/propel/portal";
@@ -27,15 +27,17 @@ const cycleService = new CycleService();
 
 function CapacityBarRow(props: {
   member: TCycleCapacityMember;
+  /** Fixed track scale = default velocity (so the max marker moves left as days pass). */
+  baseVelocity: number;
   onPersonalLeaveChange: (assigneeId: string, days: number) => Promise<void>;
 }) {
-  const { member, onPersonalLeaveChange } = props;
+  const { member, baseVelocity, onPersonalLeaveChange } = props;
   const [personalLeaveDraft, setPersonalLeaveDraft] = useState(String(member.personal_holiday_days));
   const [savingLeave, setSavingLeave] = useState(false);
 
-  // Full track = capacity max + 30% headroom, so the max marker is never at the far right.
+  // Track stays anchored to default velocity + 30% headroom so decaying max visibly moves left.
   const capacityMax = Math.max(member.capacity_max, 0);
-  const trackMax = Math.max(capacityMax * 1.3, 0.1);
+  const trackMax = Math.max(baseVelocity * 1.3, 0.1);
   const fillPct = Math.min(100, Math.max(0, (member.estimate_points / trackMax) * 100));
   const maxMarkerPct = Math.min(100, Math.max(0, (capacityMax / trackMax) * 100));
   const barColor = member.is_over_capacity ? "bg-danger-primary" : "bg-accent-primary";
@@ -69,7 +71,7 @@ function CapacityBarRow(props: {
         <div className="min-w-0 flex-1">
           <p className="truncate text-13 font-medium text-primary">{member.display_name}</p>
           <p className="text-11 text-tertiary">
-            {member.estimate_points.toFixed(1)} SP · max {capacityMax.toFixed(1)}
+            {member.estimate_points.toFixed(1)} open SP · {member.done_subtasks ?? 0} done
           </p>
         </div>
         <label
@@ -98,22 +100,23 @@ function CapacityBarRow(props: {
           />
         </label>
       </div>
-      <div className="relative w-full">
+      <div className="relative w-full pt-1 pb-4">
+        {/* Fill track — overflow clipped so the fill stays rounded */}
         <div className="relative h-3 w-full overflow-hidden rounded-full bg-layer-1">
           <div
             className={`absolute inset-y-0 left-0 rounded-full transition-all ${barColor}`}
             style={{ width: `${fillPct}%` }}
           />
-          {/* Max capacity marker — sits at ~76.9% so 30% of the track remains beyond it */}
+        </div>
+        {/* Max marker + label sit outside overflow so the vertical line stays visible and aligned */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0" aria-hidden>
           <div
-            className="bg-primary pointer-events-none absolute top-1/2 z-[1] h-5 w-0.5 -translate-x-1/2 -translate-y-1/2"
+            className="bg-primary absolute top-0 bottom-3 w-0.5 -translate-x-1/2"
             style={{ left: `${maxMarkerPct}%` }}
             title={`Max capacity ${capacityMax.toFixed(1)} SP`}
           />
-        </div>
-        <div className="relative mt-1 h-3 w-full">
           <span
-            className="absolute -translate-x-1/2 text-[10px] leading-none text-tertiary"
+            className="absolute bottom-0 -translate-x-1/2 text-[10px] leading-none text-tertiary"
             style={{ left: `${maxMarkerPct}%` }}
           >
             {capacityMax.toFixed(1)}
@@ -247,51 +250,70 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <div className="relative z-10 mb-4 space-y-3 rounded-lg border border-subtle bg-layer-1 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-13">
-              <span className="text-secondary">Team average velocity</span>
-              <span className="font-medium text-primary">{Number(velocity).toFixed(1)} SP</span>
+              <span className="text-secondary">Default Team Velocity</span>
+              <span className="font-medium text-primary">{Number(velocity).toFixed(1)} SP/Sprint</span>
             </div>
-            <p className="text-11 text-tertiary">
-              Open L4 sub-task story points only (Done / cancelled cards are excluded). Each public holiday or personal
-              leave day reduces max capacity by {CAPACITY_SP_PER_HOLIDAY_DAY} SP. The vertical line marks max capacity;
-              the track always includes 30% headroom past that line.
-            </p>
-            <label
-              htmlFor="capacity-public-holidays"
-              className="flex items-center justify-between gap-2 text-13"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-secondary">Team public holidays</span>
-              <input
-                id="capacity-public-holidays"
-                type="number"
-                min={0}
-                step={0.5}
-                disabled={savingPublic || loading}
-                value={publicHolidayDraft}
-                onChange={(e) => setPublicHolidayDraft(e.target.value)}
-                onBlur={() => void commitPublicHolidays()}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    (e.target as HTMLInputElement).blur();
-                  }
-                }}
-                className="focus:border-accent-primary pointer-events-auto w-16 rounded border border-subtle bg-surface-1 px-1.5 py-0.5 text-13 text-primary outline-none"
-              />
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-13">
+              <span className="text-secondary">Average Team Velocity</span>
+              <span className="font-medium text-primary">
+                {Number(data?.average_team_velocity ?? 0).toFixed(1)} SP/Sprint
+              </span>
+            </div>
+            {(data?.velocity_by_role ?? []).length > 0 && (
+              <div className="space-y-1.5 border-t border-subtle pt-2">
+                {(data?.velocity_by_role ?? []).map((roleRow) => (
+                  <div key={roleRow.role} className="flex flex-wrap items-center justify-between gap-2 text-12">
+                    <span className="text-tertiary">{roleRow.role}</span>
+                    <span className="text-secondary">
+                      {Number(roleRow.average).toFixed(1)} SP/Sprint
+                      <span className="text-tertiary">
+                        {" "}
+                        ({Number(roleRow.done_estimate_points).toFixed(0)} / {roleRow.people_count})
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+          <label
+            htmlFor="capacity-public-holidays"
+            className="relative z-10 mb-3 flex items-center justify-between gap-2 text-13"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-secondary">Team public holidays</span>
+            <input
+              id="capacity-public-holidays"
+              type="number"
+              min={0}
+              step={0.5}
+              disabled={savingPublic || loading}
+              value={publicHolidayDraft}
+              onChange={(e) => setPublicHolidayDraft(e.target.value)}
+              onBlur={() => void commitPublicHolidays()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className="focus:border-accent-primary pointer-events-auto w-16 rounded border border-subtle bg-surface-1 px-1.5 py-0.5 text-13 text-primary outline-none"
+            />
+          </label>
 
           {loading && !data ? (
             <p className="text-13 text-tertiary">Loading capacity…</p>
           ) : !data?.members.length ? (
-            <p className="text-13 text-tertiary">No open sub-task estimates assigned in this sprint yet.</p>
+            <p className="text-13 text-tertiary">No open or done sub-task estimates assigned in this sprint yet.</p>
           ) : (
             <div>
               {data.members.map((member) => (
                 <CapacityBarRow
                   key={member.assignee_id}
                   member={member}
+                  baseVelocity={Number(velocity)}
                   onPersonalLeaveChange={handlePersonalLeaveChange}
                 />
               ))}

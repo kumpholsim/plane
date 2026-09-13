@@ -192,6 +192,8 @@ class ProjectViewSet(BaseViewSet):
             "guest_view_all_features",
             "project_lead",
             "network",
+            "workflow_mode",
+            "average_velocity",
             "created_at",
             "updated_at",
             "created_by",
