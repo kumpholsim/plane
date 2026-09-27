@@ -43,6 +43,8 @@ import { useProjectState } from "@/hooks/store/use-project-state";
 // components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
 import { L3TotalSPValue } from "@/components/issues/l3-total-sp";
+import { ManhourField } from "@/components/issues/manhour-field";
+import { useManhourFieldState } from "@/hooks/use-manhour-field";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
 import {
   canChangeParent,
@@ -82,6 +84,7 @@ export const ScrumbanIssueDetailsSidebar = observer(function ScrumbanIssueDetail
   const { getStateById, getProjectStateIds } = useProjectState();
   const { getCategoryById } = useProjectHierarchyType();
   const issue = getIssueById(issueId);
+  const manhourField = useManhourFieldState(issue);
   if (!issue) return <></>;
 
   const createdByDetails = getUserDetails(issue.created_by);
@@ -311,6 +314,19 @@ export const ScrumbanIssueDetailsSidebar = observer(function ScrumbanIssueDetail
                   hideIcon
                   dropdownArrow
                   dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
+                />
+              </SidebarPropertyListItem>
+            )}
+
+            {manhourField.show && (
+              <SidebarPropertyListItem icon={EstimatePropertyIcon} label={t("common.manhour")}>
+                <ManhourField
+                  variant="sidebar"
+                  value={manhourField.value}
+                  disabled={!isEditable || manhourField.disabled}
+                  onChange={(next) => {
+                    void issueOperations.update(workspaceSlug, projectId, issueId, { manhour: next });
+                  }}
                 />
               </SidebarPropertyListItem>
             )}

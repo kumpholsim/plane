@@ -40,6 +40,10 @@ export interface IPartialProject {
   workflow_mode?: TProjectWorkflowMode;
   /** Scrumban: baseline story points per person per sprint (capacity bar). Default 15. */
   average_velocity?: number;
+  /** When true, L4 cards show a manhour number field. */
+  is_manhour_enabled?: boolean;
+  /** When true, L4 manhour is derived from story points (1 SP = 8 hours) and the field is read-only. */
+  is_manhour_auto_convert_enabled?: boolean;
   // Timestamps
   created_at?: Date;
   updated_at?: Date;

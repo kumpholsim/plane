@@ -66,6 +66,30 @@
       "label": "Szacunki",
       "title": "Włącz szacunki dla mojego projektu",
       "enable_description": "Pomagają w komunikacji o złożoności i obciążeniu zespołu.",
+      "manhour": {
+        "title": "Włącz roboczogodziny",
+        "description": "Pokaż pole liczbowe roboczogodzin na kartach podzadań L4.",
+        "toasts": {
+          "enabled": "Roboczogodziny zostały włączone.",
+          "disabled": "Roboczogodziny zostały wyłączone.",
+          "error": "Nie udało się zaktualizować roboczogodzin. Spróbuj ponownie."
+        },
+        "auto_convert": {
+          "title": "Automatycznie przeliczaj SP na roboczogodziny",
+          "description": "Po włączeniu roboczogodziny L4 są obliczane ze story pointów (1 SP = {hours} godz.) i pola nie można edytować.",
+          "modal": {
+            "title": "Przeliczyć story pointy na roboczogodziny?",
+            "content": "Roboczogodziny wszystkich podzadań L4 zostaną ustawione na podstawie story pointów według 1 SP = {hours} godz. (0,5 SP = 4 godz., 2 SP = 16 godz.). Istniejące wartości roboczogodzin zostaną nadpisane.",
+            "confirm": "Przelicz",
+            "confirming": "Przeliczanie…"
+          },
+          "toasts": {
+            "enabled": "Story pointy będą teraz automatycznie przeliczane na roboczogodziny.",
+            "disabled": "Automatyczne przeliczanie SP na roboczogodziny zostało wyłączone.",
+            "error": "Nie udało się zaktualizować automatycznego przeliczania. Spróbuj ponownie."
+          }
+        }
+      },
       "no_estimate": "Bez szacunku",
       "new": "Nowy system szacowania",
       "create": {

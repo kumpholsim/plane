@@ -66,6 +66,30 @@
       "label": "Schätzungen",
       "title": "Schätzungen für mein Projekt aktivieren",
       "enable_description": "Sie helfen Ihnen, die Komplexität und Arbeitsbelastung des Teams zu kommunizieren.",
+      "manhour": {
+        "title": "Mannstunden aktivieren",
+        "description": "Auf L4-Unteraufgabenkarten ein Zahlenfeld für Mannstunden anzeigen.",
+        "toasts": {
+          "enabled": "Mannstunden wurden aktiviert.",
+          "disabled": "Mannstunden wurden deaktiviert.",
+          "error": "Mannstunden konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut."
+        },
+        "auto_convert": {
+          "title": "SP automatisch in Mannstunden umrechnen",
+          "description": "Wenn aktiv, wird die L4-Mannstunde aus Story Points berechnet (1 SP = {hours} Stunden) und das Feld kann nicht bearbeitet werden.",
+          "modal": {
+            "title": "Story Points in Mannstunden umrechnen?",
+            "content": "Dadurch werden die Mannstunden aller L4-Unteraufgaben aus ihren Story Points mit 1 SP = {hours} Stunden gesetzt (0,5 SP = 4 Stunden, 2 SP = 16 Stunden). Vorhandene Mannstundenwerte werden überschrieben.",
+            "confirm": "Umrechnen",
+            "confirming": "Wird umgerechnet…"
+          },
+          "toasts": {
+            "enabled": "Story Points werden jetzt automatisch in Mannstunden umgerechnet.",
+            "disabled": "Die automatische Umrechnung von SP in Mannstunden wurde deaktiviert.",
+            "error": "Die automatische Umrechnung konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut."
+          }
+        }
+      },
       "no_estimate": "Keine Schätzung",
       "new": "Neues Schätzungssystem",
       "create": {

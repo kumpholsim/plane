@@ -107,6 +107,10 @@ class Project(BaseModel):
     )
     # Scrumban capacity planning: baseline story points per person per sprint
     average_velocity = models.FloatField(default=15)
+    # When True, L4 cards show a free-form manhour number field
+    is_manhour_enabled = models.BooleanField(default=False)
+    # When True, L4 manhour is derived from story points (1 SP = 8 hours)
+    is_manhour_auto_convert_enabled = models.BooleanField(default=False)
     is_time_tracking_enabled = models.BooleanField(default=False)
     is_issue_type_enabled = models.BooleanField(default=False)
     guest_view_all_features = models.BooleanField(default=False)

@@ -66,6 +66,30 @@
       "label": "估算",
       "title": "为我的项目启用估算",
       "enable_description": "它们有助于您传达团队的复杂性和工作量。",
+      "manhour": {
+        "title": "启用工时",
+        "description": "在 L4 子任务卡片上显示工时数字字段。",
+        "toasts": {
+          "enabled": "已启用工时。",
+          "disabled": "已关闭工时。",
+          "error": "无法更新工时。请重试。"
+        },
+        "auto_convert": {
+          "title": "自动将 SP 换算为工时",
+          "description": "开启后，L4 工时将按故事点计算（1 SP = {hours} 小时），且该字段不可编辑。",
+          "modal": {
+            "title": "将故事点换算为工时？",
+            "content": "所有 L4 子任务的工时将按 1 SP = {hours} 小时从故事点设置（0.5 SP = 4 小时，2 SP = 16 小时）。现有工时值将被覆盖。",
+            "confirm": "换算",
+            "confirming": "正在换算…"
+          },
+          "toasts": {
+            "enabled": "故事点现在会自动换算为工时。",
+            "disabled": "已关闭 SP 到工时的自动换算。",
+            "error": "无法更新自动换算。请重试。"
+          }
+        }
+      },
       "no_estimate": "无估算",
       "new": "新估算系统",
       "create": {

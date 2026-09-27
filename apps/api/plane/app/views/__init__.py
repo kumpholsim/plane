@@ -222,6 +222,8 @@ from .analytic.project_analytics import (
     ProjectAdvanceAnalyticsStatsEndpoint,
     ProjectAdvanceAnalyticsChartEndpoint,
 )
+from .analytic.velocity import WorkspaceVelocityEndpoint
+from .analytic.manhour import WorkspaceManhourReportEndpoint, WorkspaceManhourEntryEndpoint
 
 from .notification.base import (
     NotificationViewSet,

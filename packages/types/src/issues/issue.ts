@@ -98,6 +98,8 @@ export type TBaseIssue = {
   pin_level?: number | null;
   /** Per-item badge color (hex). Epic (L2) chips use this; falls back to default purple when empty. */
   badge_color?: string | null;
+  /** L4-only effort in hours when the project manhour toggle is on. */
+  manhour?: number | null;
   /** @deprecated Use hierarchy_type_id */
   sub_work_item_category_id?: string | null;
 

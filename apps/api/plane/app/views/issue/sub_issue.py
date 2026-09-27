@@ -172,6 +172,7 @@ class SubIssuesEndpoint(BaseAPIView):
                 "progress_status",
                 "qa_outcome",
                 "badge_color",
+                "manhour",
             )
         )
 

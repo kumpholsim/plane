@@ -21,10 +21,6 @@ import { Breadcrumbs, Header } from "@plane/ui";
 // components
 import { BreadcrumbLink } from "@/components/common/breadcrumb-link";
 import { ModuleViewHeader } from "@/components/modules";
-import {
-  HIERARCHY_OPEN_EPIC_EVENT,
-  HIERARCHY_OPEN_MILESTONE_EVENT,
-} from "@/components/modules/hierarchy-modules-list-view";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useProject } from "@/hooks/store/use-project";
@@ -72,47 +68,26 @@ export const ModulesListHeader = observer(function ModulesListHeader() {
           </Breadcrumbs>
         </div>
       </Header.LeftItem>
-      <Header.RightItem>
-        {isScrumban ? (
-          canUserCreateModule ? (
-            <>
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() => window.dispatchEvent(new Event(HIERARCHY_OPEN_MILESTONE_EVENT))}
-              >
-                Create milestone
-              </Button>
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={() => window.dispatchEvent(new Event(HIERARCHY_OPEN_EPIC_EVENT))}
-              >
-                Create epic
-              </Button>
-            </>
-          ) : null
-        ) : (
-          <>
-            <ModuleViewHeader />
-            {canUserCreateModule ? (
-              <Button
-                variant="primary"
-                data-ph-element={MODULE_TRACKER_ELEMENTS.RIGHT_HEADER_ADD_BUTTON}
-                onClick={() => {
-                  toggleCreateModuleModal(true);
-                }}
-                size="lg"
-              >
-                <div className="block sm:hidden">{t("add")}</div>
-                <div className="hidden sm:block">{t("project_module.add_module")}</div>
-              </Button>
-            ) : (
-              <></>
-            )}
-          </>
-        )}
-      </Header.RightItem>
+      {!isScrumban && (
+        <Header.RightItem>
+          <ModuleViewHeader />
+          {canUserCreateModule ? (
+            <Button
+              variant="primary"
+              data-ph-element={MODULE_TRACKER_ELEMENTS.RIGHT_HEADER_ADD_BUTTON}
+              onClick={() => {
+                toggleCreateModuleModal(true);
+              }}
+              size="lg"
+            >
+              <div className="block sm:hidden">{t("add")}</div>
+              <div className="hidden sm:block">{t("project_module.add_module")}</div>
+            </Button>
+          ) : (
+            <></>
+          )}
+        </Header.RightItem>
+      )}
     </Header>
   );
 });

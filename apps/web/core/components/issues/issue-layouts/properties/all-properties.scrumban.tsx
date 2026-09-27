@@ -42,6 +42,8 @@ import {
   shouldShowCycleProperty,
 } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 import { filterStateIdsForL4, getL4LeaveTodoRequirementError } from "@/components/issues/hierarchy-status";
+import { ManhourField } from "@/components/issues/manhour-field";
+import { useManhourFieldState } from "@/hooks/use-manhour-field";
 import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
@@ -81,6 +83,7 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
   const { getStateById, getProjectStateIds } = useProjectState();
   const { getCategoryById } = useProjectHierarchyType();
   const { isMobile } = usePlatformOS();
+  const manhourField = useManhourFieldState(issue);
   const projectDetails = getProjectById(issue.project_id);
 
   // router
@@ -199,6 +202,12 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
   const handleEstimate = async (value: string | undefined) => {
     if (updateIssue) await updateIssue(issue.project_id, issue.id, { estimate_point: value });
   };
+
+  const handleManhour = async (value: number | null) => {
+    if (updateIssue) await updateIssue(issue.project_id, issue.id, { manhour: value });
+  };
+
+  const showManhour = manhourField.show;
 
   const workItemLink = generateWorkItemLink({
     workspaceSlug: workspaceSlug?.toString(),
@@ -478,6 +487,17 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
           </WithDisplayPropertiesHOC>
         )}
 
+      {showManhour && activeLayout !== "Kanban" && activeLayout !== "List" && (
+        // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
+        <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+          <ManhourField
+            value={manhourField.value}
+            disabled={isReadOnly || manhourField.disabled}
+            onChange={(next) => void handleManhour(next)}
+          />
+        </div>
+      )}
+
       {/* extra render properties */}
       {/* sub-issues */}
       {!isEpic && (
@@ -600,6 +620,17 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
                 />
               </div>
             </WithDisplayPropertiesHOC>
+          )}
+
+          {showManhour && (
+            // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
+            <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+              <ManhourField
+                value={manhourField.value}
+                disabled={isReadOnly || manhourField.disabled}
+                onChange={(next) => void handleManhour(next)}
+              />
+            </div>
           )}
         </>
       )}

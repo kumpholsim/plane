@@ -66,6 +66,30 @@
       "label": "Perkiraan",
       "title": "Aktifkan perkiraan untuk proyek saya",
       "enable_description": "Ini membantu Anda dalam mengkomunikasikan kompleksitas dan beban kerja tim.",
+      "manhour": {
+        "title": "Aktifkan jam-orang",
+        "description": "Tampilkan bidang angka jam-orang pada kartu subtugas L4.",
+        "toasts": {
+          "enabled": "Jam-orang telah diaktifkan.",
+          "disabled": "Jam-orang telah dinonaktifkan.",
+          "error": "Tidak dapat memperbarui jam-orang. Silakan coba lagi."
+        },
+        "auto_convert": {
+          "title": "Konversi otomatis SP ke jam-orang",
+          "description": "Jika aktif, jam-orang L4 dihitung dari story point (1 SP = {hours} jam) dan bidang ini tidak dapat diedit.",
+          "modal": {
+            "title": "Konversi story point ke jam-orang?",
+            "content": "Jam-orang semua subtugas L4 akan diatur dari story point dengan 1 SP = {hours} jam (0,5 SP = 4 jam, 2 SP = 16 jam). Nilai jam-orang yang ada akan ditimpa.",
+            "confirm": "Konversi",
+            "confirming": "Mengonversi…"
+          },
+          "toasts": {
+            "enabled": "Story point kini akan dikonversi otomatis ke jam-orang.",
+            "disabled": "Konversi otomatis SP ke jam-orang telah dimatikan.",
+            "error": "Tidak dapat memperbarui konversi otomatis. Silakan coba lagi."
+          }
+        }
+      },
       "no_estimate": "Tidak ada perkiraan",
       "new": "Sistem perkiraan baru",
       "create": {

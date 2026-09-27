@@ -66,6 +66,30 @@
       "label": "Stime",
       "title": "Abilita le stime per il mio progetto",
       "enable_description": "Ti aiutano a comunicare la complessità e il carico di lavoro del team.",
+      "manhour": {
+        "title": "Attiva ora-uomo",
+        "description": "Mostra un campo numerico di ora-uomo sulle schede delle sottoattività L4.",
+        "toasts": {
+          "enabled": "L'ora-uomo è stata attivata.",
+          "disabled": "L'ora-uomo è stata disattivata.",
+          "error": "Impossibile aggiornare l'ora-uomo. Riprova."
+        },
+        "auto_convert": {
+          "title": "Converti automaticamente gli SP in ora-uomo",
+          "description": "Se attivo, l'ora-uomo L4 viene calcolata dai story point (1 SP = {hours} ore) e il campo non può essere modificato.",
+          "modal": {
+            "title": "Convertire i story point in ora-uomo?",
+            "content": "L'ora-uomo di tutte le sottoattività L4 verrà impostata dai relativi story point con 1 SP = {hours} ore (0,5 SP = 4 ore, 2 SP = 16 ore). I valori di ora-uomo esistenti verranno sovrascritti.",
+            "confirm": "Converti",
+            "confirming": "Conversione…"
+          },
+          "toasts": {
+            "enabled": "I story point verranno ora convertiti automaticamente in ora-uomo.",
+            "disabled": "La conversione automatica da SP a ora-uomo è stata disattivata.",
+            "error": "Impossibile aggiornare la conversione automatica. Riprova."
+          }
+        }
+      },
       "no_estimate": "Nessuna stima",
       "new": "Nuovo sistema di stima",
       "create": {

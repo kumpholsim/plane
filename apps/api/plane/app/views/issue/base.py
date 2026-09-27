@@ -207,6 +207,7 @@ class IssueListEndpoint(BaseAPIView):
                 "progress_status",
                 "qa_outcome",
                 "badge_color",
+                "manhour",
             )
             datetime_fields = ["created_at", "updated_at"]
             issues = user_timezone_converter(issues, datetime_fields, request.user.user_timezone)
@@ -482,6 +483,7 @@ class IssueViewSet(BaseViewSet):
                     "progress_status",
                     "qa_outcome",
                     "badge_color",
+                    "manhour",
                 )
                 .first()
             )
@@ -923,6 +925,7 @@ class IssuePaginatedViewSet(BaseViewSet):
             "progress_status",
             "qa_outcome",
             "badge_color",
+            "manhour",
         ]
 
         if str(is_description_required).lower() == "true":

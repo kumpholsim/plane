@@ -23,6 +23,8 @@ import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { filterStateIdsForL4 } from "@/components/issues/hierarchy-status";
+import { ManhourField } from "@/components/issues/manhour-field";
+import { useManhourFieldState } from "@/hooks/use-manhour-field";
 import {
   canEditCycle,
   getHierarchyLevel,
@@ -66,6 +68,7 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
   const { getProjectById } = useProject();
   const { getCategoryById } = useProjectHierarchyType();
   const { areEstimateEnabledByProjectId } = useProjectEstimates();
+  const manhourField = useManhourFieldState(issue);
   const {
     issue: { getIssueById },
   } = useIssueDetail();
@@ -296,6 +299,20 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
             />
           </div>
         </WithDisplayPropertiesHOC>
+      )}
+
+      {manhourField.show && (
+        // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
+        <div className="h-5 flex-shrink-0" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+          <ManhourField
+            value={manhourField.value}
+            disabled={!canEdit || manhourField.disabled}
+            onChange={(next) => {
+              if (!issue.project_id) return;
+              void updateSubIssue(workspaceSlug, issue.project_id, parentIssueId, issueId, { manhour: next });
+            }}
+          />
+        </div>
       )}
 
       {showCycle && (

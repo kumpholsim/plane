@@ -66,6 +66,30 @@
       "label": "預估",
       "title": "為我的專案啟用預估",
       "enable_description": "它們能幫助您傳達團隊的複雜度和工作量。",
+      "manhour": {
+        "title": "啟用工時",
+        "description": "在 L4 子任務卡片上顯示工時數字欄位。",
+        "toasts": {
+          "enabled": "已啟用工時。",
+          "disabled": "已關閉工時。",
+          "error": "無法更新工時。請再試一次。"
+        },
+        "auto_convert": {
+          "title": "自動將 SP 換算為工時",
+          "description": "開啟後，L4 工時將依故事點計算（1 SP = {hours} 小時），且此欄位無法編輯。",
+          "modal": {
+            "title": "將故事點換算為工時？",
+            "content": "所有 L4 子任務的工時將依 1 SP = {hours} 小時從故事點設定（0.5 SP = 4 小時，2 SP = 16 小時）。現有工時值將被覆蓋。",
+            "confirm": "換算",
+            "confirming": "換算中…"
+          },
+          "toasts": {
+            "enabled": "故事點現在會自動換算為工時。",
+            "disabled": "已關閉 SP 到工時的自動換算。",
+            "error": "無法更新自動換算。請再試一次。"
+          }
+        }
+      },
       "no_estimate": "無預估",
       "new": "新估算系統",
       "create": {

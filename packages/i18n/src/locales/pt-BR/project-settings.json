@@ -66,6 +66,30 @@
       "label": "Estimativas",
       "title": "Habilitar estimativas para meu projeto",
       "enable_description": "Elas ajudam você a comunicar a complexidade e a carga de trabalho da equipe.",
+      "manhour": {
+        "title": "Ativar homem-hora",
+        "description": "Mostrar um campo numérico de homem-hora nos cartões de subtarefa L4.",
+        "toasts": {
+          "enabled": "Homem-hora foi ativado.",
+          "disabled": "Homem-hora foi desativado.",
+          "error": "Não foi possível atualizar o homem-hora. Tente novamente."
+        },
+        "auto_convert": {
+          "title": "Converter SP em homem-hora automaticamente",
+          "description": "Quando ativado, o homem-hora L4 é calculado a partir dos story points (1 SP = {hours} horas) e o campo não pode ser editado.",
+          "modal": {
+            "title": "Converter story points em homem-hora?",
+            "content": "O homem-hora de todas as subtarefas L4 será definido a partir dos story points com 1 SP = {hours} horas (0,5 SP = 4 horas, 2 SP = 16 horas). Os valores de homem-hora existentes serão substituídos.",
+            "confirm": "Converter",
+            "confirming": "Convertendo…"
+          },
+          "toasts": {
+            "enabled": "Os story points agora serão convertidos automaticamente em homem-hora.",
+            "disabled": "A conversão automática de SP para homem-hora foi desativada.",
+            "error": "Não foi possível atualizar a conversão automática. Tente novamente."
+          }
+        }
+      },
       "no_estimate": "Sem estimativa",
       "new": "Novo sistema de estimativa",
       "create": {

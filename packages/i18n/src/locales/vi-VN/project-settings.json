@@ -66,6 +66,30 @@
       "label": "Ước tính",
       "title": "Bật ước tính cho dự án của tôi",
       "enable_description": "Chúng giúp bạn truyền đạt độ phức tạp và khối lượng công việc của nhóm.",
+      "manhour": {
+        "title": "Bật giờ công",
+        "description": "Hiển thị trường số giờ công trên thẻ công việc phụ L4.",
+        "toasts": {
+          "enabled": "Đã bật giờ công.",
+          "disabled": "Đã tắt giờ công.",
+          "error": "Không thể cập nhật giờ công. Vui lòng thử lại."
+        },
+        "auto_convert": {
+          "title": "Tự động chuyển SP sang giờ công",
+          "description": "Khi bật, giờ công L4 được tính từ story point (1 SP = {hours} giờ) và không thể chỉnh sửa trường này.",
+          "modal": {
+            "title": "Chuyển story point sang giờ công?",
+            "content": "Giờ công của tất cả công việc phụ L4 sẽ được đặt từ story point theo 1 SP = {hours} giờ (0,5 SP = 4 giờ, 2 SP = 16 giờ). Các giá trị giờ công hiện có sẽ bị ghi đè.",
+            "confirm": "Chuyển đổi",
+            "confirming": "Đang chuyển…"
+          },
+          "toasts": {
+            "enabled": "Story point sẽ được tự động chuyển sang giờ công.",
+            "disabled": "Đã tắt chuyển tự động SP sang giờ công.",
+            "error": "Không thể cập nhật chuyển tự động. Vui lòng thử lại."
+          }
+        }
+      },
       "no_estimate": "Không có ước tính",
       "new": "Hệ thống ước tính mới",
       "create": {

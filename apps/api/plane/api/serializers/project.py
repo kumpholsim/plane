@@ -92,6 +92,8 @@ class ProjectCreateSerializer(BaseSerializer):
             "external_id",
             "is_issue_type_enabled",
             "is_time_tracking_enabled",
+            "is_manhour_enabled",
+            "is_manhour_auto_convert_enabled",
             "workflow_mode",
         ]
 

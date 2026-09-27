@@ -184,6 +184,8 @@ class Issue(ChangeTrackerMixin, ProjectBaseModel):
     qa_outcome = models.CharField(max_length=16, null=True, blank=True)
     # Per-work-item badge color (hex or CSS gradient). Used for Epic (L2) chips on L3 rows; default applied in UI when empty.
     badge_color = models.CharField(max_length=255, null=True, blank=True)
+    # L4-only effort in hours when project.is_manhour_enabled
+    manhour = models.FloatField(null=True, blank=True)
 
     issue_objects = IssueManager()
 

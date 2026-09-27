@@ -153,6 +153,16 @@ export const CAPACITY_SP_PER_HOLIDAY_DAY = 1.5;
  */
 export const CAPACITY_DAILY_DECAY_FRACTION = 0.1;
 
+/** Hours represented by 1 story point when auto-converting SP to manhour. */
+export const MANHOUR_HOURS_PER_SP = 8;
+
+export const manhourFromStoryPoints = (sp: unknown): number | null => {
+  if (sp == null || sp === "") return null;
+  const parsed = typeof sp === "number" ? sp : Number(sp);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return parsed * MANHOUR_HOURS_PER_SP;
+};
+
 /** Default Epic (L2) badge color when issue.badge_color is unset. */
 export const DEFAULT_EPIC_BADGE_COLOR = "#8B5CF6";
 

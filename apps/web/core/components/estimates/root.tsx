@@ -22,6 +22,8 @@ import { DeleteEstimateModal } from "./delete/modal";
 import { EstimateDisableSwitch } from "./estimate-disable-switch";
 import { EstimateList } from "./estimate-list";
 import { EstimateLoaderScreen } from "./loader-screen";
+import { ManhourAutoConvertSwitch } from "./manhour-auto-convert-switch";
+import { ManhourSwitch } from "./manhour-switch";
 
 type TEstimateRoot = {
   workspaceSlug: string;
@@ -59,7 +61,7 @@ export const EstimateRoot = observer(function EstimateRoot(props: TEstimateRoot)
           title={t("project_settings.estimates.heading")}
           description={t("project_settings.estimates.description")}
         />
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
           {/* current active estimate section */}
           {currentActiveEstimateId ? (
             <>
@@ -99,6 +101,10 @@ export const EstimateRoot = observer(function EstimateRoot(props: TEstimateRoot)
               align="start"
               rootClassName="py-20"
             />
+          )}
+          <ManhourSwitch workspaceSlug={workspaceSlug} projectId={projectId} isAdmin={isAdmin} />
+          {Boolean(currentProjectDetails?.is_manhour_enabled) && (
+            <ManhourAutoConvertSwitch workspaceSlug={workspaceSlug} projectId={projectId} isAdmin={isAdmin} />
           )}
           {/* archived estimates section */}
           {archivedEstimateIds && archivedEstimateIds.length > 0 && (

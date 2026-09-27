@@ -66,6 +66,30 @@
       "label": "Estimări",
       "title": "Activează estimările pentru proiectul meu",
       "enable_description": "Te ajută să comunici complexitatea și volumul de muncă al echipei.",
+      "manhour": {
+        "title": "Activează ora-om",
+        "description": "Afișează un câmp numeric de ore-om pe cardurile de subtask L4.",
+        "toasts": {
+          "enabled": "Ora-om a fost activată.",
+          "disabled": "Ora-om a fost dezactivată.",
+          "error": "Ora-om nu a putut fi actualizată. Încercați din nou."
+        },
+        "auto_convert": {
+          "title": "Conversie automată SP în ore-om",
+          "description": "Când este activată, ora-om L4 se calculează din story points (1 SP = {hours} ore), iar câmpul nu poate fi editat.",
+          "modal": {
+            "title": "Convertiți story points în ore-om?",
+            "content": "Ora-om a tuturor subtaskurilor L4 va fi setată din story points după 1 SP = {hours} ore (0,5 SP = 4 ore, 2 SP = 16 ore). Valorile existente de ore-om vor fi suprascrise.",
+            "confirm": "Convertește",
+            "confirming": "Se convertește…"
+          },
+          "toasts": {
+            "enabled": "Story points vor fi convertite automat în ore-om.",
+            "disabled": "Conversia automată din SP în ore-om a fost dezactivată.",
+            "error": "Conversia automată nu a putut fi actualizată. Încercați din nou."
+          }
+        }
+      },
       "no_estimate": "Fără estimare",
       "new": "Noul sistem de estimare",
       "create": {

@@ -272,11 +272,6 @@ class IssueCreateSerializer(BaseSerializer):
                 raise serializers.ValidationError(
                     "Hierarchy type is not valid please pass a valid hierarchy_type_id"
                 )
-            current_type_id = getattr(self.instance, "hierarchy_type_id", None) if self.instance is not None else None
-            if current_type_id and hierarchy_type.id != current_type_id:
-                raise serializers.ValidationError(
-                    {"hierarchy_type_id": "Hierarchy type cannot be changed."}
-                )
             # Keep hierarchy_level in sync with type
             attrs["hierarchy_level"] = hierarchy_type.level
 
@@ -319,6 +314,7 @@ class IssueCreateSerializer(BaseSerializer):
             is_qa_hierarchy_type,
             l4_leave_todo_requirement_error,
         )
+        from plane.utils.manhour import normalize_manhour
 
         level = attrs.get("hierarchy_level")
         if level is None and self.instance is not None:
@@ -354,6 +350,29 @@ class IssueCreateSerializer(BaseSerializer):
                     )
                 if qa_outcome not in QA_OUTCOME_VALUES:
                     raise serializers.ValidationError({"qa_outcome": "Invalid QA outcome."})
+
+        manhour = attrs.get("manhour", serializers.empty)
+        if manhour is not serializers.empty:
+            try:
+                attrs["manhour"] = normalize_manhour(manhour, level)
+            except ValueError as exc:
+                raise serializers.ValidationError({"manhour": str(exc)}) from exc
+
+        project_id = self.context.get("project_id")
+        if project_id and level == 4:
+            from plane.db.models import Project
+            from plane.utils.manhour import manhour_from_estimate_value
+
+            project = Project.objects.filter(pk=project_id).only("is_manhour_auto_convert_enabled").first()
+            if project and project.is_manhour_auto_convert_enabled:
+                estimate_point = attrs.get("estimate_point", serializers.empty)
+                if estimate_point is serializers.empty and self.instance is not None:
+                    estimate_point = getattr(self.instance, "estimate_point", None)
+                if estimate_point in (None, serializers.empty):
+                    attrs["manhour"] = None
+                else:
+                    estimate_value = getattr(estimate_point, "value", None)
+                    attrs["manhour"] = manhour_from_estimate_value(estimate_value)
 
         state = attrs.get("state")
         if state is None and self.instance is not None and "state" not in attrs:
@@ -1059,6 +1078,7 @@ class IssueSerializer(DynamicBaseSerializer):
             "sub_work_item_category_id",
             "pin_level",
             "badge_color",
+            "manhour",
             "design_estimate_points",
             "dev_estimate_points",
             "qa_estimate_points",
@@ -1070,6 +1090,8 @@ class IssueSerializer(DynamicBaseSerializer):
         data["design_estimate_points"] = float(getattr(instance, "design_estimate_points", 0) or 0)
         data["dev_estimate_points"] = float(getattr(instance, "dev_estimate_points", 0) or 0)
         data["qa_estimate_points"] = float(getattr(instance, "qa_estimate_points", 0) or 0)
+        raw_manhour = getattr(instance, "manhour", None)
+        data["manhour"] = float(raw_manhour) if raw_manhour is not None else None
         return data
 
     def validate(self, data):
@@ -1120,6 +1142,7 @@ class IssueListDetailSerializer(serializers.Serializer):
             "qa_outcome": getattr(instance, "qa_outcome", None),
             "pin_level": getattr(instance, "pin_level", 0),
             "badge_color": getattr(instance, "badge_color", None),
+            "manhour": float(instance.manhour) if getattr(instance, "manhour", None) is not None else None,
             "created_at": instance.created_at,
             "updated_at": instance.updated_at,
             "created_by": instance.created_by_id,

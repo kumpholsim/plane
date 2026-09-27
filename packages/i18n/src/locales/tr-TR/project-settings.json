@@ -66,6 +66,30 @@
       "label": "Tahminler",
       "title": "Projem için tahminleri etkinleştir",
       "enable_description": "Takımın karmaşıklığını ve iş yükünü iletmenize yardımcı olurlar.",
+      "manhour": {
+        "title": "Adam-saati etkinleştir",
+        "description": "L4 alt görev kartlarında sayısal bir adam-saat alanı göster.",
+        "toasts": {
+          "enabled": "Adam-saat etkinleştirildi.",
+          "disabled": "Adam-saat devre dışı bırakıldı.",
+          "error": "Adam-saat güncellenemedi. Lütfen tekrar deneyin."
+        },
+        "auto_convert": {
+          "title": "SP'yi adam-saate otomatik dönüştür",
+          "description": "Açıkken L4 adam-saat, story point'lerden hesaplanır (1 SP = {hours} saat) ve alan düzenlenemez.",
+          "modal": {
+            "title": "Story point'ler adam-saate dönüştürülsün mü?",
+            "content": "Tüm L4 alt görevlerinin adam-saati, 1 SP = {hours} saat kuralıyla story point'lerinden ayarlanır (0,5 SP = 4 saat, 2 SP = 16 saat). Mevcut adam-saat değerlerinin üzerine yazılır.",
+            "confirm": "Dönüştür",
+            "confirming": "Dönüştürülüyor…"
+          },
+          "toasts": {
+            "enabled": "Story point'ler artık otomatik olarak adam-saate dönüştürülecek.",
+            "disabled": "SP'den adam-saate otomatik dönüştürme kapatıldı.",
+            "error": "Otomatik dönüştürme güncellenemedi. Lütfen tekrar deneyin."
+          }
+        }
+      },
       "no_estimate": "Tahmin yok",
       "new": "Yeni tahmin sistemi",
       "create": {

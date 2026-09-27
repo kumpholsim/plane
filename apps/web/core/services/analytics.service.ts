@@ -11,6 +11,11 @@ import type {
   TAnalyticsTabsBase,
   TAnalyticsGraphsBase,
   TAnalyticsFilterParams,
+  TManhourManualEntryPayload,
+  TManhourManualEntryResponse,
+  TManhourReportResponse,
+  TVelocityIndividualResponse,
+  TVelocityProjectResponse,
 } from "@plane/types";
 // services
 import { APIService } from "./api.service";
@@ -82,6 +87,43 @@ export class AnalyticsService extends APIService {
         ...params,
       },
     })
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async getVelocityAnalytics(
+    workspaceSlug: string,
+    params: TAnalyticsFilterParams & {
+      mode: "project" | "individual";
+      focus_project_id?: string;
+      assignee_id?: string;
+    }
+  ): Promise<TVelocityProjectResponse | TVelocityIndividualResponse> {
+    return this.get(`/api/workspaces/${workspaceSlug}/velocity/`, { params })
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async getManhourReport(
+    workspaceSlug: string,
+    params: { assignee_id: string; start_date: string; end_date: string }
+  ): Promise<TManhourReportResponse> {
+    return this.get(`/api/workspaces/${workspaceSlug}/manhour-report/`, { params })
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async createManhourEntry(
+    workspaceSlug: string,
+    payload: TManhourManualEntryPayload
+  ): Promise<TManhourManualEntryResponse> {
+    return this.post(`/api/workspaces/${workspaceSlug}/manhour-entries/`, payload)
       .then((res) => res?.data)
       .catch((err) => {
         throw err?.response?.data;

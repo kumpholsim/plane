@@ -32,11 +32,13 @@ type EpicIssueLite = Pick<
 type ChipProps = {
   epic: EpicIssueLite;
   className?: string;
+  /** `sm` for board cards; `md` matches HierarchyTypeBadge (h-5 w-20). */
+  size?: "sm" | "md";
 };
 
 /** Visual chip — epic name + badge_color (solid or gradient). */
 export const EpicBadgeChip = observer(function EpicBadgeChip(props: ChipProps) {
-  const { epic, className } = props;
+  const { epic, className, size = "sm" } = props;
   const { getTypeById } = useProjectHierarchyType();
 
   const typeId = epic.hierarchy_type_id ?? epic.sub_work_item_category_id ?? null;
@@ -44,27 +46,54 @@ export const EpicBadgeChip = observer(function EpicBadgeChip(props: ChipProps) {
   const color = epic.badge_color?.trim() || DEFAULT_EPIC_BADGE_COLOR;
   const label = epic.name?.trim() || hierarchyType?.name || "Epic";
 
+  const chipInner = <span className="w-full truncate text-center">{label}</span>;
+
   return (
     <Tooltip tooltipContent={`Epic: ${label}`} position="top">
-      {/*
-        ~67.5% of HierarchyTypeBadge (h-5 / text-11), width +25%.
-        Scale avoids browser min-font-size crushing the chip.
-      */}
-      {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-      <span
-        className={cn("relative inline-block h-[13.5px] w-[67.5px] flex-shrink-0 align-middle", className)}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      >
+      {size === "md" ? (
         <span
-          className="absolute top-0 left-0 inline-flex h-5 w-[100px] origin-top-left scale-[0.675] items-center justify-center truncate rounded-sm px-1.5 text-11 leading-none font-medium text-white"
+          role="presentation"
+          className={cn(
+            "inline-flex h-5 w-20 flex-shrink-0 items-center justify-center truncate rounded-sm px-1.5 text-11 leading-none font-medium text-white",
+            className
+          )}
           style={{ background: color }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onKeyDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
-          <span className="w-full truncate text-center">{label}</span>
+          {chipInner}
         </span>
-      </span>
+      ) : (
+        <span
+          role="presentation"
+          className={cn("relative inline-block h-[13.5px] w-[67.5px] flex-shrink-0 align-middle", className)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onKeyDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          {/*
+            ~67.5% of HierarchyTypeBadge (h-5 / text-11), width +25%.
+            Scale avoids browser min-font-size crushing the chip.
+          */}
+          <span
+            className="absolute top-0 left-0 inline-flex h-5 w-[100px] origin-top-left scale-[0.675] items-center justify-center truncate rounded-sm px-1.5 text-11 leading-none font-medium text-white"
+            style={{ background: color }}
+          >
+            {chipInner}
+          </span>
+        </span>
+      )}
     </Tooltip>
   );
 });

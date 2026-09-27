@@ -66,6 +66,30 @@
       "label": "Odhady",
       "title": "Povolit odhady pro můj projekt",
       "enable_description": "Pomáhají vám komunikovat složitost a pracovní zátěž týmu.",
+      "manhour": {
+        "title": "Povolit člověkohodiny",
+        "description": "Zobrazit číselné pole člověkohodin na kartách podúkolů L4.",
+        "toasts": {
+          "enabled": "Člověkohodiny byly povoleny.",
+          "disabled": "Člověkohodiny byly zakázány.",
+          "error": "Člověkohodiny se nepodařilo aktualizovat. Zkuste to znovu."
+        },
+        "auto_convert": {
+          "title": "Automaticky převádět SP na člověkohodiny",
+          "description": "Pokud je zapnuto, L4 člověkohodiny se počítají ze story pointů (1 SP = {hours} hodin) a pole nelze upravit.",
+          "modal": {
+            "title": "Převést story pointy na člověkohodiny?",
+            "content": "Člověkohodiny všech podúkolů L4 se nastaví ze story pointů podle 1 SP = {hours} hodin (0,5 SP = 4 hodiny, 2 SP = 16 hodin). Existující hodnoty člověkohodin se přepíší.",
+            "confirm": "Převést",
+            "confirming": "Převádí se…"
+          },
+          "toasts": {
+            "enabled": "Story pointy se nyní budou automaticky převádět na člověkohodiny.",
+            "disabled": "Automatický převod SP na člověkohodiny byl vypnut.",
+            "error": "Automatický převod se nepodařilo aktualizovat. Zkuste to znovu."
+          }
+        }
+      },
       "no_estimate": "Bez odhadu",
       "new": "Nový systém odhadů",
       "create": {

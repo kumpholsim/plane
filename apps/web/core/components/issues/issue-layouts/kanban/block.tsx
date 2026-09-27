@@ -30,6 +30,8 @@ import { HIGHLIGHT_CLASS, getIssueBlockId } from "@/components/issues/issue-layo
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 import { getHierarchyLevel } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
+import { ManhourField } from "@/components/issues/manhour-field";
+import { useManhourFieldState } from "@/hooks/use-manhour-field";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useEstimate } from "@/hooks/store/estimates/use-estimate";
@@ -103,8 +105,10 @@ const KanbanCardFooter = observer(function KanbanCardFooter(props: {
   const showEstimate =
     Boolean(displayProperties?.estimate && issue.project_id) &&
     Boolean(issue.project_id && areEstimateEnabledByProjectId(issue.project_id));
+  const manhourField = useManhourFieldState(issue);
+  const showManhour = manhourField.show;
 
-  if (!showAssignee && !showEstimate) return null;
+  if (!showAssignee && !showEstimate && !showManhour) return null;
 
   const handleEstimate = async (value: string | undefined) => {
     if (updateIssue) await updateIssue(issue.project_id, issue.id, { estimate_point: value });
@@ -157,6 +161,17 @@ const KanbanCardFooter = observer(function KanbanCardFooter(props: {
           />
         </div>
       )}
+      {showManhour && (
+        <div className={cn("shrink-0", !showEstimate && "ml-auto")}>
+          <ManhourField
+            value={manhourField.value}
+            disabled={isReadOnly || manhourField.disabled}
+            onChange={(next) => {
+              if (updateIssue) void updateIssue(issue.project_id, issue.id, { manhour: next });
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 });
@@ -181,8 +196,12 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
   const isStagedGateScrumban = useIsStagedGateScrumban(issue.project_id);
   const hierarchyLevel = getHierarchyLevel(issue);
   const isL4Card = isStagedGateScrumban && hierarchyLevel === HIERARCHY_LEVEL_SUB_TASK;
+  const { getProjectById } = useProject();
+  const projectDetails = issue.project_id ? getProjectById(issue.project_id) : undefined;
+  const showManhour = isL4Card && Boolean(projectDetails?.is_manhour_enabled);
   // Scrumban pins assignee/estimate to the card footer instead of the properties row
-  const showCardFooter = isStagedGateScrumban && Boolean(displayProperties?.assignee || displayProperties?.estimate);
+  const showCardFooter =
+    isStagedGateScrumban && Boolean(displayProperties?.assignee || displayProperties?.estimate || showManhour);
 
   const customActionButton = (
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions

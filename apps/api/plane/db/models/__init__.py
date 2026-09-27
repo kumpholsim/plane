@@ -90,6 +90,8 @@ from .recent_visit import UserRecentVisit
 
 from .label import Label
 
+from .manhour import ManhourManualEntry
+
 from .project_hierarchy_type import (
     ProjectHierarchyType,
     DEFAULT_PROJECT_HIERARCHY_TYPES,

@@ -384,7 +384,16 @@ class ProjectViewSet(BaseViewSet):
         )
 
         if serializer.is_valid():
+            was_auto_convert = project.is_manhour_auto_convert_enabled
             serializer.save()
+            project.refresh_from_db(fields=["is_manhour_enabled", "is_manhour_auto_convert_enabled"])
+            if not project.is_manhour_enabled and project.is_manhour_auto_convert_enabled:
+                project.is_manhour_auto_convert_enabled = False
+                project.save(update_fields=["is_manhour_auto_convert_enabled"])
+            if project.is_manhour_auto_convert_enabled and not was_auto_convert:
+                from plane.utils.manhour import apply_manhour_auto_convert_for_project
+
+                apply_manhour_auto_convert_for_project(project.id)
             if intake_view:
                 intake = Intake.objects.filter(project=project, is_default=True).first()
                 if not intake:

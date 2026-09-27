@@ -20,6 +20,7 @@ import { ContentWrapper, CustomMenu, DragHandle, DropIndicator, Loader } from "@
 import { cn, generateWorkItemLink } from "@plane/utils";
 import { HierarchyTypeBadge } from "@/components/issues/hierarchy-type-badge";
 import { isEpicWorkItem } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
+import { EpicBadgeChip } from "@/components/issues/parent-epic-badge";
 import { CreateUpdateEpicModal } from "@/components/modules/modal";
 import { CreateUpdateMilestoneModal } from "@/components/modules/milestone-modal";
 import { useProject } from "@/hooks/store/use-project";
@@ -30,8 +31,6 @@ import { IssueService } from "@/services/issue";
 
 const issueService = new IssueService();
 export const HIERARCHY_MODULES_REFRESH_EVENT = "plane:hierarchy-modules-refresh";
-export const HIERARCHY_OPEN_MILESTONE_EVENT = "plane:hierarchy-open-milestone";
-export const HIERARCHY_OPEN_EPIC_EVENT = "plane:hierarchy-open-epic";
 
 const EPIC_DND_TYPE = "HIERARCHY_EPIC";
 const EPIC_ROW_DND_TYPE = "HIERARCHY_EPIC_ROW";
@@ -217,7 +216,7 @@ function HierarchyEpicRow(props: HierarchyEpicRowProps) {
       >
         {canDrag && <DragHandle className="pointer-events-none cursor-grab" />}
         <div className="flex min-w-0 flex-1 items-center gap-3 px-2 py-1">
-          <HierarchyTypeBadge issue={epic} disabled />
+          <EpicBadgeChip epic={epic} size="md" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-14 font-medium text-primary">{epic.name}</p>
             <p className="text-12 text-tertiary">
@@ -517,22 +516,6 @@ export const HierarchyModulesListView = observer(function HierarchyModulesListVi
     setIsMilestoneModalOpen(false);
     setEditingMilestone(undefined);
   };
-
-  const openCreateEpicModal = (milestoneId: string | null = null) => {
-    setEpicMilestoneId(milestoneId);
-    setIsEpicModalOpen(true);
-  };
-
-  useEffect(() => {
-    const onOpenMilestone = () => openCreateMilestoneModal();
-    const onOpenEpic = () => openCreateEpicModal(null);
-    window.addEventListener(HIERARCHY_OPEN_MILESTONE_EVENT, onOpenMilestone);
-    window.addEventListener(HIERARCHY_OPEN_EPIC_EVENT, onOpenEpic);
-    return () => {
-      window.removeEventListener(HIERARCHY_OPEN_MILESTONE_EVENT, onOpenMilestone);
-      window.removeEventListener(HIERARCHY_OPEN_EPIC_EVENT, onOpenEpic);
-    };
-  }, []);
 
   const handleDropEpic = useCallback(
     async ({ epicId, milestoneId, relativeToEpicId, placeBelow = false }: EpicDropArgs) => {

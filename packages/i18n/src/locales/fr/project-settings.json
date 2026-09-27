@@ -66,6 +66,30 @@
       "label": "Estimations",
       "title": "Activer les estimations pour mon projet",
       "enable_description": "Elles vous aident à communiquer la complexité et la charge de travail de l’équipe.",
+      "manhour": {
+        "title": "Activer les heures-homme",
+        "description": "Afficher un champ numérique d'heures-homme sur les cartes de sous-tâche L4.",
+        "toasts": {
+          "enabled": "Les heures-homme ont été activées.",
+          "disabled": "Les heures-homme ont été désactivées.",
+          "error": "Impossible de mettre à jour les heures-homme. Veuillez réessayer."
+        },
+        "auto_convert": {
+          "title": "Convertir automatiquement les SP en heures-homme",
+          "description": "Lorsque cette option est activée, les heures-homme L4 sont calculées à partir des story points (1 SP = {hours} heures) et le champ ne peut pas être modifié.",
+          "modal": {
+            "title": "Convertir les story points en heures-homme ?",
+            "content": "Les heures-homme de toutes les sous-tâches L4 seront définies à partir de leurs story points selon 1 SP = {hours} heures (0,5 SP = 4 heures, 2 SP = 16 heures). Les valeurs d'heures-homme existantes seront écrasées.",
+            "confirm": "Convertir",
+            "confirming": "Conversion…"
+          },
+          "toasts": {
+            "enabled": "Les story points seront désormais convertis automatiquement en heures-homme.",
+            "disabled": "La conversion automatique des SP en heures-homme a été désactivée.",
+            "error": "Impossible de mettre à jour la conversion automatique. Veuillez réessayer."
+          }
+        }
+      },
       "no_estimate": "Sans estimation",
       "new": "Nouveau système d’estimation",
       "create": {

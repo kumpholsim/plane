@@ -66,6 +66,30 @@
       "label": "Estimates",
       "title": "Enable estimates for my project",
       "enable_description": "They help you in communicating complexity and workload of the team.",
+      "manhour": {
+        "title": "Enable manhour",
+        "description": "Show a manhour number field on L4 sub-task cards.",
+        "toasts": {
+          "enabled": "Manhour has been enabled.",
+          "disabled": "Manhour has been disabled.",
+          "error": "Could not update manhour. Please try again."
+        },
+        "auto_convert": {
+          "title": "Auto convert SP to manhour",
+          "description": "When on, L4 manhour is calculated from story points (1 SP = {hours} hours) and the field cannot be edited.",
+          "modal": {
+            "title": "Convert story points to manhour?",
+            "content": "This will set manhour on all L4 sub-tasks from their story points using 1 SP = {hours} hours (0.5 SP = 4 hours, 2 SP = 16 hours). Existing manhour values will be overwritten.",
+            "confirm": "Convert",
+            "confirming": "Converting…"
+          },
+          "toasts": {
+            "enabled": "Story points will now convert to manhour automatically.",
+            "disabled": "Automatic SP to manhour conversion has been turned off.",
+            "error": "Could not update auto convert. Please try again."
+          }
+        }
+      },
       "no_estimate": "No estimate",
       "new": "New estimate system",
       "create": {
