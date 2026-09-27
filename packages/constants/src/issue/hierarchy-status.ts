@@ -35,20 +35,27 @@ export const DESIGN_DEV_BOARD_KEYS = L4_BOARD_KEYS;
 export const QA_BOARD_KEYS = L4_BOARD_KEYS;
 
 export const L3_PROGRESS_STATUS_OPTIONS = [
-  { value: "design_todo", label: "Design To Do", phase: "design" },
-  { value: "design_in_progress", label: "Design In Progress", phase: "design" },
-  { value: "design_under_review", label: "Design Under Review", phase: "design" },
-  { value: "design_done_no_dev", label: "Design Done (No Dev Needed)", phase: "design" },
-  { value: "dev_todo", label: "Dev To Do", phase: "dev" },
-  { value: "dev_in_progress", label: "Dev In Progress", phase: "dev" },
-  { value: "dev_under_review", label: "Dev Under Review", phase: "dev" },
-  { value: "dev_done_no_qa", label: "Dev Done (No QA Needed)", phase: "dev" },
-  { value: "qa_todo", label: "QA To Do", phase: "qa" },
-  { value: "qa_in_progress", label: "QA In Progress", phase: "qa" },
-  { value: "qa_done", label: "QA Done", phase: "qa" },
+  { value: "design_todo", label: "Design To Do", phase: "design", exitGate: false },
+  { value: "design_in_progress", label: "Design In Progress", phase: "design", exitGate: false },
+  { value: "design_under_review", label: "Design Under Review", phase: "design", exitGate: false },
+  { value: "design_done", label: "Design Done", phase: "design", exitGate: false },
+  { value: "design_done_no_dev", label: "Design Done (No Dev Needed)", phase: "design", exitGate: true },
+  { value: "dev_todo", label: "Dev To Do", phase: "dev", exitGate: false },
+  { value: "dev_in_progress", label: "Dev In Progress", phase: "dev", exitGate: false },
+  { value: "dev_under_review", label: "Dev Under Review", phase: "dev", exitGate: false },
+  { value: "dev_done", label: "Dev Done", phase: "dev", exitGate: false },
+  { value: "dev_done_no_qa", label: "Dev Done (No QA Needed)", phase: "dev", exitGate: true },
+  { value: "qa_todo", label: "QA To Do", phase: "qa", exitGate: false },
+  { value: "qa_in_progress", label: "QA In Progress", phase: "qa", exitGate: false },
+  { value: "qa_done", label: "QA Done", phase: "qa", exitGate: true },
 ] as const;
 
 export type TL3ProgressPhase = (typeof L3_PROGRESS_STATUS_OPTIONS)[number]["phase"];
+
+/** Terminal L3 exit gates only — Design Done / Dev Done are intermediate and not included. */
+export const L3_EXIT_GATE_PROGRESS_STATUSES = L3_PROGRESS_STATUS_OPTIONS.filter((option) => option.exitGate).map(
+  (option) => option.value
+);
 
 /** Fallback colors matching default L4 Design / Dev / QA hierarchy types */
 export const L3_PROGRESS_PHASE_FALLBACK_COLORS: Record<TL3ProgressPhase, string> = {

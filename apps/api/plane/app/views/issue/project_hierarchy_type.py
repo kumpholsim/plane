@@ -2,9 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
-# Django imports
-from django.db import IntegrityError
-
 # Third Party imports
 from rest_framework.response import Response
 from rest_framework import status
@@ -53,46 +50,21 @@ class ProjectHierarchyTypeViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN])
     def create(self, request, slug, project_id):
-        try:
-            serializer = ProjectHierarchyTypeSerializer(
-                data=request.data, context={"project_id": project_id}
-            )
-            if serializer.is_valid():
-                serializer.save(project_id=project_id)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except IntegrityError:
-            return Response(
-                {"error": "Hierarchy type with the same name already exists at this level"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(
+            {"error": "Hierarchy types are system-defined and cannot be created."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     @allow_permission([ROLE.ADMIN])
     def partial_update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        level = request.data.get("level", instance.level)
-        if "name" in request.data and ProjectHierarchyType.objects.filter(
-            project_id=kwargs["project_id"],
-            level=level,
-            name=request.data["name"],
-        ).exclude(pk=kwargs["pk"]).exists():
-            return Response(
-                {"error": "Hierarchy type with the same name already exists at this level"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = ProjectHierarchyTypeSerializer(
-            instance=instance,
-            data=request.data,
-            context={"project_id": kwargs["project_id"]},
-            partial=True,
+        return Response(
+            {"error": "Hierarchy types are system-defined and cannot be edited."},
+            status=status.HTTP_403_FORBIDDEN,
         )
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @allow_permission([ROLE.ADMIN])
     def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
+        return Response(
+            {"error": "Hierarchy types are system-defined and cannot be deleted."},
+            status=status.HTTP_403_FORBIDDEN,
+        )

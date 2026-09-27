@@ -33,10 +33,12 @@ QA_BOARD_KEYS = L4_BOARD_KEYS
 PROGRESS_DESIGN_TODO = "design_todo"
 PROGRESS_DESIGN_IN_PROGRESS = "design_in_progress"
 PROGRESS_DESIGN_UNDER_REVIEW = "design_under_review"
+PROGRESS_DESIGN_DONE = "design_done"
 PROGRESS_DESIGN_DONE_NO_DEV = "design_done_no_dev"
 PROGRESS_DEV_TODO = "dev_todo"
 PROGRESS_DEV_IN_PROGRESS = "dev_in_progress"
 PROGRESS_DEV_UNDER_REVIEW = "dev_under_review"
+PROGRESS_DEV_DONE = "dev_done"
 PROGRESS_DEV_DONE_NO_QA = "dev_done_no_qa"
 PROGRESS_QA_TODO = "qa_todo"
 PROGRESS_QA_IN_PROGRESS = "qa_in_progress"
@@ -46,10 +48,12 @@ L3_PROGRESS_CHOICES = (
     (PROGRESS_DESIGN_TODO, "Design To Do"),
     (PROGRESS_DESIGN_IN_PROGRESS, "Design In Progress"),
     (PROGRESS_DESIGN_UNDER_REVIEW, "Design Under Review"),
+    (PROGRESS_DESIGN_DONE, "Design Done"),
     (PROGRESS_DESIGN_DONE_NO_DEV, "Design Done (No Dev Needed)"),
     (PROGRESS_DEV_TODO, "Dev To Do"),
     (PROGRESS_DEV_IN_PROGRESS, "Dev In Progress"),
     (PROGRESS_DEV_UNDER_REVIEW, "Dev Under Review"),
+    (PROGRESS_DEV_DONE, "Dev Done"),
     (PROGRESS_DEV_DONE_NO_QA, "Dev Done (No QA Needed)"),
     (PROGRESS_QA_TODO, "QA To Do"),
     (PROGRESS_QA_IN_PROGRESS, "QA In Progress"),
@@ -57,6 +61,7 @@ L3_PROGRESS_CHOICES = (
 )
 
 L3_PROGRESS_VALUES = {value for value, _ in L3_PROGRESS_CHOICES}
+# Exit gates only. Intermediate Design Done / Dev Done stay in L3_PROGRESS_VALUES.
 L3_DONE_PROGRESS_VALUES = {
     PROGRESS_DESIGN_DONE_NO_DEV,
     PROGRESS_DEV_DONE_NO_QA,
@@ -323,7 +328,9 @@ def l4_children_all_in_done(parent_issue) -> bool:
 
 def is_story_fully_done(issue) -> bool:
     """L3 is fully done when progress is a terminal done status and all L4 children are in Done."""
-    if getattr(issue, "hierarchy_level", None) != 3:
+    from plane.utils.issue_parent import get_hierarchy_level
+
+    if get_hierarchy_level(issue) != 3:
         return False
     if getattr(issue, "progress_status", None) not in L3_DONE_PROGRESS_VALUES:
         return False
@@ -346,8 +353,10 @@ def issue_ids_to_transfer_from_cycle(cycle_issues_qs):
 
     transfer_ids = set()
 
-    # L3 stories
-    l3_ids = [iid for iid, issue in issue_by_id.items() if getattr(issue, "hierarchy_level", None) == 3]
+    from plane.utils.issue_parent import get_hierarchy_level
+
+    # L3 stories (include legacy rows whose hierarchy_level is unset — defaults to delivery)
+    l3_ids = [iid for iid, issue in issue_by_id.items() if get_hierarchy_level(issue) == 3]
     fully_done_l3 = set()
     for iid in l3_ids:
         issue = issue_by_id[iid]
@@ -358,7 +367,7 @@ def issue_ids_to_transfer_from_cycle(cycle_issues_qs):
 
     # L4 children in this cycle follow their L3 parent
     for iid, issue in issue_by_id.items():
-        if getattr(issue, "hierarchy_level", None) != 4:
+        if get_hierarchy_level(issue) != 4:
             continue
         parent_id = issue.parent_id
         if parent_id in fully_done_l3:
@@ -383,7 +392,7 @@ def issue_ids_to_transfer_from_cycle(cycle_issues_qs):
 
     # L1 / L2 / other: classic incomplete
     for iid, issue in issue_by_id.items():
-        level = getattr(issue, "hierarchy_level", None)
+        level = get_hierarchy_level(issue)
         if level in (3, 4):
             continue
         state = issue.state

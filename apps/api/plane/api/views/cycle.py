@@ -1255,25 +1255,13 @@ class TransferCycleIssueAPIEndpoint(BaseAPIView):
         """Transfer cycle issues
 
         Move incomplete issues from the current cycle to a new target cycle.
-        Captures progress snapshot and transfers only unfinished work items.
+        Writes a progress snapshot only when the source cycle has already ended.
         """
         new_cycle_id = request.data.get("new_cycle_id", False)
 
         if not new_cycle_id:
             return Response(
                 {"error": "New Cycle Id is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        old_cycle = Cycle.objects.get(
-            workspace__slug=slug,
-            project_id=project_id,
-            pk=cycle_id,
-        )
-        # transfer work items only when cycle is completed (passed the end data)
-        if old_cycle.end_date is not None and old_cycle.end_date > timezone.now():
-            return Response(
-                {"error": "The old cycle is not completed yet"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

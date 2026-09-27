@@ -55,7 +55,7 @@ from plane.db.models import (
 from plane.utils.analytics_plot import burndown_plot
 from plane.bgtasks.recent_visited_task import recent_visited_task
 from plane.utils.host import base_host
-from plane.utils.cycle_transfer_issues import transfer_cycle_issues
+from plane.utils.cycle_transfer_issues import preview_cycle_transfer_issues, transfer_cycle_issues
 from .. import BaseAPIView, BaseViewSet
 from plane.bgtasks.webhook_task import model_activity
 from plane.utils.timezone_converter import convert_to_utc, user_timezone_converter
@@ -592,6 +592,15 @@ class CycleFavoriteViewSet(BaseViewSet):
 
 
 class TransferCycleIssueEndpoint(BaseAPIView):
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def get(self, request, slug, project_id, cycle_id):
+        if not Cycle.objects.filter(workspace__slug=slug, project_id=project_id, pk=cycle_id).exists():
+            return Response({"error": "Cycle not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            preview_cycle_transfer_issues(slug, project_id, cycle_id),
+            status=status.HTTP_200_OK,
+        )
+
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def post(self, request, slug, project_id, cycle_id):
         new_cycle_id = request.data.get("new_cycle_id", False)

@@ -29,6 +29,7 @@ import { useCycle } from "@/hooks/store/use-cycle";
 import { useMember } from "@/hooks/store/use-member";
 import { useUserPermissions } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
+import { useCycleTransferPreview } from "@/hooks/use-cycle-transfer-preview";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 import { useTimeZoneConverter } from "@/hooks/use-timezone-converter";
 // local imports
@@ -90,7 +91,13 @@ export const CycleListItemAction = observer(function CycleListItemAction(props: 
     ? cycleDetails.total_issues - (cycleDetails.cancelled_issues + cycleDetails.completed_issues)
     : 0;
 
-  const showTransferIssues = routerProjectId && transferableIssuesCount > 0 && cycleStatus === "completed";
+  const { hasTransferableWork } = useCycleTransferPreview(
+    workspaceSlug,
+    projectId,
+    cycleId,
+    !!routerProjectId && transferableIssuesCount > 0
+  );
+  const showTransferIssues = !!routerProjectId && hasTransferableWork;
 
   const projectUTCOffset = getProjectUTCOffset();
 

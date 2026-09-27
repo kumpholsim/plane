@@ -216,6 +216,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
           await addIssueToCycle(response, payload.cycle_id);
         }
         if (
+          !isStagedGateScrumban &&
           payload.module_ids &&
           payload.module_ids.length > 0 &&
           (!payload.module_ids.includes(moduleId?.toString()) || storeType !== EIssuesStoreType.MODULE)

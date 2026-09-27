@@ -29,6 +29,7 @@ import { BoardFullscreenShell } from "@/components/issues/issue-layouts/kanban/b
 import { useCycle } from "@/hooks/store/use-cycle";
 import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
+import { useCycleTransferPreview } from "@/hooks/use-cycle-transfer-preview";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 // local imports
 import { IssuePeekOverview } from "../../peek-overview";
@@ -101,10 +102,9 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
   const cycleStatus = cycleDetails?.status?.toLocaleLowerCase() ?? "draft";
   const isCompletedCycle = cycleStatus === "completed";
   const isProgressSnapshotEmpty = isEmpty(cycleDetails?.progress_snapshot);
-  const transferableIssuesCount = cycleDetails
-    ? cycleDetails.backlog_issues + cycleDetails.unstarted_issues + cycleDetails.started_issues
-    : 0;
-  const canTransferIssues = isProgressSnapshotEmpty && transferableIssuesCount > 0;
+  const { hasTransferableWork } = useCycleTransferPreview(workspaceSlug, projectId, cycleId);
+  const canTransferIssues = hasTransferableWork && (!isCompletedCycle || isProgressSnapshotEmpty);
+  const showTransferIssues = hasTransferableWork;
 
   if (!workspaceSlug || !projectId || !cycleId || !workItemFilters) return <></>;
   return (
@@ -133,11 +133,12 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
                 isOpen={transferIssuesModal}
               />
               <BoardFullscreenShell>
-                {cycleStatus === "completed" && (
+                {showTransferIssues && (
                   <TransferIssues
                     handleClick={() => setTransferIssuesModal(true)}
                     canTransferIssues={canTransferIssues}
-                    disabled={!isEmpty(cycleDetails?.progress_snapshot)}
+                    disabled={isCompletedCycle && !isProgressSnapshotEmpty}
+                    isCompletedCycle={isCompletedCycle}
                   />
                 )}
                 <ScrumbanWorkItemFiltersRow

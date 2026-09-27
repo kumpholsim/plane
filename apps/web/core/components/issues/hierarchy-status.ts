@@ -7,6 +7,7 @@
 import {
   L4_BOARD_KEYS,
   HIERARCHY_BOARD_STATE_KEYS,
+  L3_EXIT_GATE_PROGRESS_STATUSES,
   L3_PROGRESS_STATUS_OPTIONS,
   boardStateKeyFromExternalId,
   type THierarchyBoardStateKey,
@@ -104,7 +105,7 @@ export const isDoneBoardState = (state: IState | undefined): boolean =>
   boardStateKeyFromExternalId(state?.external_id) === "done" ||
   (state?.group === "completed" && (state?.name ?? "").toLowerCase() === "done");
 
-export const L3_DONE_PROGRESS_STATUSES = new Set(["design_done_no_dev", "dev_done_no_qa", "qa_done"]);
+export const L3_DONE_PROGRESS_STATUSES = new Set<string>(L3_EXIT_GATE_PROGRESS_STATUSES);
 
 export const isL3DoneProgressStatus = (progressStatus: string | null | undefined): boolean =>
   !!progressStatus && L3_DONE_PROGRESS_STATUSES.has(progressStatus);
@@ -135,7 +136,7 @@ export const isFullyDoneL3ForCycleHighlight = (
   return l4Children.every((child) => child.state__group === "completed");
 };
 
-export const L3_TERMINAL_DONE_STATUSES = ["design_done_no_dev", "dev_done_no_qa", "qa_done"] as const;
+export const L3_TERMINAL_DONE_STATUSES = L3_EXIT_GATE_PROGRESS_STATUSES;
 
 /** Dot / accent color: always the phase color (design / dev / qa). */
 export const getL3ProgressStatusColor = (

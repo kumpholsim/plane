@@ -10,9 +10,13 @@ from plane.utils.hierarchy_status import (
     BOARD_STATE_DONE,
     BOARD_STATE_DESIGN_DEV_TODO,
     BOARD_STATE_EXTERNAL_PREFIX,
+    L3_DONE_PROGRESS_VALUES,
+    L3_PROGRESS_VALUES,
     L4_LEAVE_TODO_REQUIRES_ASSIGNEE_AND_ESTIMATE,
+    PROGRESS_DESIGN_DONE,
     PROGRESS_DESIGN_DONE_NO_DEV,
     PROGRESS_DESIGN_TODO,
+    PROGRESS_DEV_DONE,
     PROGRESS_DEV_DONE_NO_QA,
     PROGRESS_QA_DONE,
     is_story_fully_done,
@@ -35,6 +39,12 @@ def test_is_story_fully_done_requires_terminal_done_status(monkeypatch):
     for done_status in (PROGRESS_DESIGN_DONE_NO_DEV, PROGRESS_DEV_DONE_NO_QA, PROGRESS_QA_DONE):
         issue.progress_status = done_status
         assert is_story_fully_done(issue) is True
+
+    for intermediate_done in (PROGRESS_DESIGN_DONE, PROGRESS_DEV_DONE):
+        issue.progress_status = intermediate_done
+        assert is_story_fully_done(issue) is False
+        assert intermediate_done in L3_PROGRESS_VALUES
+        assert intermediate_done not in L3_DONE_PROGRESS_VALUES
 
     monkeypatch.setattr(
         "plane.utils.hierarchy_status.l4_children_all_in_done",

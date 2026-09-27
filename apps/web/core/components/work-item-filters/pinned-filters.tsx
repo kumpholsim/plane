@@ -22,6 +22,7 @@ import { L3_PROGRESS_PHASE_FALLBACK_COLORS, L3_PROGRESS_STATUS_OPTIONS } from "@
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { GroupExpandCollapseControls } from "@/components/issues/issue-layouts/expand-collapse";
 import { getL3ProgressStatusOptionClassName } from "@/components/issues/hierarchy-status";
+import { L3ProgressStatusSwatch } from "@/components/issues/l3-progress-status-swatch";
 import { COMMON_FILTER_ITEM_BORDER_CLASSNAME } from "@/components/rich-filters/shared";
 import { useMember } from "@/hooks/store/use-member";
 import { useProjectHierarchyType } from "@/hooks/store/use-project-hierarchy-type";
@@ -157,11 +158,7 @@ export const WorkItemPinnedFilters = observer(function WorkItemPinnedFilters(pro
               getL3ProgressStatusOptionClassName(option.value)
             )}
           >
-            <span
-              className="size-2.5 rounded-full"
-              style={{ backgroundColor: phaseColors[option.phase] }}
-              aria-hidden
-            />
+            <L3ProgressStatusSwatch color={phaseColors[option.phase]} progressStatus={option.value} size="sm" />
             <span>{option.label}</span>
           </span>
         ),

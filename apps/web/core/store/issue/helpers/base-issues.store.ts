@@ -26,7 +26,7 @@ import type {
   TBulkOperationsPayload,
   IBlockUpdateDependencyData,
 } from "@plane/types";
-import { EIssueServiceType, EIssueLayoutTypes, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
+import { EIssueServiceType, EIssueLayoutTypes, HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 // helpers
 import { convertToISODateString, areSubIssuesIncludedInView, resolveDisplayFiltersForLayout } from "@plane/utils";
 // plane web imports
@@ -525,22 +525,49 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       tempId: _tempId,
       sourceIssueId: _sourceIssueId,
       parent: _parent,
+      module_ids: clientModuleIds,
       ...apiData
     } = data as TIssue & {
       parent?: unknown;
     };
 
+    // Scrumban list/board may stash epic id in module_ids for client grouping — never send that to create
+    if (!this.lockStructuralFilters && clientModuleIds?.length) {
+      (apiData as Partial<TIssue>).module_ids = clientModuleIds;
+    }
+
     // perform an API call
     const response = await this.issueService.createIssue(workspaceSlug, projectId, apiData);
 
-    // Preserve create-payload hierarchy fields for board/list grouping (Scrumban L4 swimlanes)
+    // Preserve create-payload hierarchy fields for board/list grouping (Scrumban L3/L4)
+    const parentId = response.parent_id ?? apiData.parent_id ?? null;
+    const hierarchyLevel = response.hierarchy_level ?? apiData.hierarchy_level ?? undefined;
+    const responseModuleIds = response.module_ids?.filter(Boolean) ?? [];
+    const apiModuleIds =
+      (this.lockStructuralFilters ? clientModuleIds : apiData.module_ids)?.filter(
+        (moduleId) => moduleId && moduleId !== "None"
+      ) ?? [];
+    // Scrumban list/board epic columns group by module_ids; create responses may omit the
+    // annotated epic id — keep parent (L3) or payload key so the item stays under the epic.
+    const moduleIds =
+      responseModuleIds.length > 0
+        ? responseModuleIds
+        : apiModuleIds.length > 0
+          ? apiModuleIds
+          : this.lockStructuralFilters &&
+              parentId &&
+              Number(hierarchyLevel ?? HIERARCHY_LEVEL_DELIVERY) === HIERARCHY_LEVEL_DELIVERY
+            ? [parentId]
+            : (response.module_ids ?? clientModuleIds ?? []);
+
     const stored = {
       ...response,
-      parent_id: response.parent_id ?? apiData.parent_id ?? null,
-      hierarchy_level: response.hierarchy_level ?? apiData.hierarchy_level ?? undefined,
+      parent_id: parentId,
+      hierarchy_level: hierarchyLevel,
       hierarchy_type_id: response.hierarchy_type_id ?? apiData.hierarchy_type_id ?? undefined,
       state_id: response.state_id ?? apiData.state_id ?? null,
       assignee_ids: response.assignee_ids?.length ? response.assignee_ids : (apiData.assignee_ids ?? []),
+      module_ids: moduleIds,
     } as TIssue;
 
     // add Issue to Store
@@ -711,8 +738,11 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
         this.rootIssueStore.issues.removeIssue(optimistic.id);
       });
       const currentCycleId = data.cycle_id !== "" && data.cycle_id === "None" ? undefined : data.cycle_id;
+      // Scrumban reuses module_ids as epic-column keys — never write those to ModuleIssue
       const currentModuleIds =
-        data.module_ids && data.module_ids.length > 0 ? data.module_ids.filter((moduleId) => moduleId != "None") : [];
+        !this.lockStructuralFilters && data.module_ids && data.module_ids.length > 0
+          ? data.module_ids.filter((moduleId) => moduleId != "None")
+          : [];
       const promiseRequests = [];
       if (currentCycleId) {
         promiseRequests.push(this.addCycleToIssue(workspaceSlug, projectId, currentCycleId, response.id));
@@ -1721,13 +1751,27 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   ): string[] => {
     // if issue object is undefined return empty array
     if (!issueObject) return [];
-    // Board swimlanes are L3 rows. L4 always groups by parent_id — module_ids may be the
-    // ancestor epic from the create payload / unscoped grouper annotation.
-    if (groupByKey === "module" && this.lockStructuralFilters && this.subGroupBy === "module") {
-      const isL4 = Number(issueObject.hierarchy_level ?? 0) >= HIERARCHY_LEVEL_SUB_TASK;
-      if (isL4) {
-        const deliveryParentId = issueObject.parent_id || (Array.isArray(value) && value[0] ? value[0] : undefined);
-        return deliveryParentId ? [String(deliveryParentId)] : ["None"];
+    // Scrumban reuses group_by "module" for hierarchy columns (not Plane Modules).
+    if (groupByKey === "module" && this.lockStructuralFilters) {
+      // Board swimlanes are L3 rows. L4 always groups by parent_id — module_ids may be the
+      // ancestor epic from the create payload / unscoped grouper annotation.
+      if (this.subGroupBy === "module") {
+        const isL4 = Number(issueObject.hierarchy_level ?? 0) >= HIERARCHY_LEVEL_SUB_TASK;
+        if (isL4) {
+          const deliveryParentId = issueObject.parent_id || (Array.isArray(value) && value[0] ? value[0] : undefined);
+          return deliveryParentId ? [String(deliveryParentId)] : ["None"];
+        }
+      } else if (!value || isEmpty(value)) {
+        // List (and board epic columns): fall back to parent chain when module_ids is empty
+        // (typical right after create before annotated module_ids arrive).
+        const level = Number(issueObject.hierarchy_level ?? 0);
+        if (level >= HIERARCHY_LEVEL_SUB_TASK) {
+          const parent = issueObject.parent_id
+            ? this.rootIssueStore.issues.getIssueById(issueObject.parent_id)
+            : undefined;
+          return parent?.parent_id ? [String(parent.parent_id)] : ["None"];
+        }
+        return issueObject.parent_id ? [String(issueObject.parent_id)] : ["None"];
       }
     }
     // if value is not defined, return None value in array

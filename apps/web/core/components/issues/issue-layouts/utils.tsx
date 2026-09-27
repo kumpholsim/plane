@@ -54,7 +54,7 @@ import type {
   TGetColumns,
   TSpreadsheetColumn,
 } from "@plane/types";
-import { EIssuesStoreType } from "@plane/types";
+import { EIssuesStoreType, HIERARCHY_LEVEL_DELIVERY } from "@plane/types";
 // plane ui
 import { Avatar } from "@plane/ui";
 import { getHierarchyLevel } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
@@ -264,10 +264,13 @@ const getModuleColumns = (): IGroupByColumn[] | undefined => {
       id: epicId,
       name: epic?.name ?? "Epic",
       icon: <ModuleIcon className="h-3.5 w-3.5" />,
-      payload: { parent_id: epicId },
+      // Header "+" / modal create: L3 under this epic
+      payload: {
+        parent_id: epicId,
+        hierarchy_level: HIERARCHY_LEVEL_DELIVERY,
+      },
     });
-  });
-  // "None" only when there are delivery items without an epic parent in the map
+  }); // "None" only when there are delivery items without an epic parent in the map
   const hasUngrouped = Object.values(issuesMap).some((issue) => {
     if (!issue || issue.project_id !== projectId) return false;
     const level = getHierarchyLevel(issue);

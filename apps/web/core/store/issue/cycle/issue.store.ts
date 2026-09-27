@@ -323,9 +323,11 @@ export class CycleIssues extends BaseIssuesStore implements ICycleIssues {
   ) => {
     // call API call to transfer issues
     const response = await this.cycleService.transferIssues(workspaceSlug, projectId, cycleId, payload);
-    // call fetch issues
+    // Always reload this sprint so transferred cards leave the board
     if (this.paginationOptions) {
-      await this.fetchIssues(workspaceSlug, projectId, "mutation", this.paginationOptions, cycleId);
+      await this.fetchIssues(workspaceSlug, projectId, "mutation", this.paginationOptions, cycleId, true);
+    } else {
+      await this.fetchIssuesWithExistingPagination(workspaceSlug, projectId, "mutation", cycleId);
     }
 
     return response;
@@ -428,8 +430,11 @@ export class CycleIssues extends BaseIssuesStore implements ICycleIssues {
         this.rootIssueStore.issues.removeIssue(optimistic.id);
       });
 
+      // Scrumban reuses module_ids as epic-column keys — never write those to ModuleIssue
       const currentModuleIds =
-        data.module_ids && data.module_ids.length > 0 ? data.module_ids.filter((moduleId) => moduleId != "None") : [];
+        !this.lockStructuralFilters && data.module_ids && data.module_ids.length > 0
+          ? data.module_ids.filter((moduleId) => moduleId != "None")
+          : [];
 
       if (currentModuleIds.length > 0) {
         await this.changeModulesInIssue(workspaceSlug, projectId, response.id, currentModuleIds, []);

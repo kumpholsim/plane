@@ -66,6 +66,7 @@ import { useProjectState } from "@/hooks/store/use-project-state";
 // plane web imports
 import { useFiltersOperatorConfigs } from "@/hooks/rich-filters/use-filters-operator-configs";
 import { isL3DoneProgressStatus } from "@/components/issues/hierarchy-status";
+import { L3ProgressStatusSwatch } from "@/components/issues/l3-progress-status-swatch";
 import { L3_PROGRESS_PHASE_FALLBACK_COLORS, L3_PROGRESS_STATUS_OPTIONS } from "@plane/constants";
 
 export type TWorkItemFiltersEntityProps = {
@@ -216,7 +217,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
               isL3DoneProgressStatus(option.value) ? "bg-success-subtle" : undefined
             )}
           >
-            <span className="size-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: option.color }} />
+            <L3ProgressStatusSwatch color={option.color} progressStatus={option.value} size="sm" />
           </span>
         ),
         ...operatorConfigs,

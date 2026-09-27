@@ -18,6 +18,7 @@ import { ComboDropDown } from "@plane/ui";
 import { cn } from "@plane/utils";
 import { DropdownButton } from "@/components/dropdowns/buttons";
 import { getL3ProgressStatusColor, getL3ProgressStatusOptionClassName } from "@/components/issues/hierarchy-status";
+import { L3ProgressStatusSwatch } from "@/components/issues/l3-progress-status-swatch";
 import { BUTTON_VARIANTS_WITH_TEXT } from "@/components/dropdowns/constants";
 import type { TDropdownProps } from "@/components/dropdowns/types";
 import { useDropdown } from "@/hooks/use-dropdown";
@@ -138,7 +139,7 @@ export const ProgressStatusDropdown = observer(function ProgressStatusDropdown(p
         showTooltip={showTooltip}
         variant={buttonVariant}
       >
-        <span className="size-3.5 flex-shrink-0 rounded-full" style={{ backgroundColor: selectedColor }} aria-hidden />
+        <L3ProgressStatusSwatch color={selectedColor} progressStatus={value} />
         {BUTTON_VARIANTS_WITH_TEXT.includes(buttonVariant) && (
           <span className="flex-grow truncate text-left">{selected?.label ?? "Select progress"}</span>
         )}
@@ -205,11 +206,7 @@ export const ProgressStatusDropdown = observer(function ProgressStatusDropdown(p
                         {({ selected: isSelected }) => (
                           <>
                             <span className="flex min-w-0 items-center gap-2">
-                              <span
-                                className="size-3.5 flex-shrink-0 rounded-full"
-                                style={{ backgroundColor: color }}
-                                aria-hidden
-                              />
+                              <L3ProgressStatusSwatch color={color} progressStatus={option.value} />
                               <span className="truncate">{option.label}</span>
                             </span>
                             {isSelected && <CheckIcon className="size-3.5 flex-shrink-0" />}

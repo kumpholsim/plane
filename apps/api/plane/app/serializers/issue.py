@@ -272,6 +272,11 @@ class IssueCreateSerializer(BaseSerializer):
                 raise serializers.ValidationError(
                     "Hierarchy type is not valid please pass a valid hierarchy_type_id"
                 )
+            current_type_id = getattr(self.instance, "hierarchy_type_id", None) if self.instance is not None else None
+            if current_type_id and hierarchy_type.id != current_type_id:
+                raise serializers.ValidationError(
+                    {"hierarchy_type_id": "Hierarchy type cannot be changed."}
+                )
             # Keep hierarchy_level in sync with type
             attrs["hierarchy_level"] = hierarchy_type.level
 

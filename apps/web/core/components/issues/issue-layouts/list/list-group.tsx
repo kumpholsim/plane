@@ -22,7 +22,7 @@ import type {
   IIssueDisplayProperties,
   TIssueKanbanFilters,
 } from "@plane/types";
-import { EIssueLayoutTypes } from "@plane/types";
+import { EIssueLayoutTypes, HIERARCHY_LEVEL_DELIVERY } from "@plane/types";
 import { Row } from "@plane/ui";
 import { cn } from "@plane/utils";
 // components
@@ -36,7 +36,7 @@ import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 // local imports
 import { GroupDragOverlay } from "../group-drag-overlay";
-import { ListQuickAddIssueButton, QuickAddIssueRoot } from "../quick-add";
+import { ListQuickAddIssueButton, QuickAddIssueRoot, ScrumbanListQuickAdd } from "../quick-add";
 import type { GroupDropLocation } from "../utils";
 import {
   getDestinationFromDropPayload,
@@ -172,9 +172,15 @@ export const ListGroup = observer(function ListGroup(props: Props) {
       } else if (groupByKey === "cycle" && value != "None") {
         preloadedData = { ...preloadedData, cycle_id: value };
       } else if (groupByKey === "module" && value != "None") {
-        // Scrumban's module groups are epics, so new items are parented rather than added to a module
+        // Scrumban's module groups are epics — create L3 under that epic (not a Plane Module)
         preloadedData = isStagedGateScrumban
-          ? { ...preloadedData, parent_id: value }
+          ? {
+              ...preloadedData,
+              parent_id: value,
+              hierarchy_level: HIERARCHY_LEVEL_DELIVERY,
+              // Client epic-column key only; Scrumban quick-add skips ModuleIssue writes
+              module_ids: [value],
+            }
           : { ...preloadedData, module_ids: [value] };
       } else if (groupByKey === "created_by") {
         preloadedData = { ...preloadedData };
@@ -375,14 +381,18 @@ export const ListGroup = observer(function ListGroup(props: Props) {
             !isCompletedCycle &&
             !isWorkflowIssueCreationDisabled && (
               <div className="sticky bottom-0 z-[1] w-full flex-shrink-0">
-                <QuickAddIssueRoot
-                  layout={EIssueLayoutTypes.LIST}
-                  QuickAddButton={ListQuickAddIssueButton}
-                  prePopulatedData={prePopulateQuickAddData(group_by, group.id)}
-                  containerClassName="border-b border-t border-subtle bg-surface-1 "
-                  quickAddCallback={quickAddCallback}
-                  isEpic={isEpic}
-                />
+                {isStagedGateScrumban && group_by === "module" && group.id !== "None" ? (
+                  <ScrumbanListQuickAdd parentIssueId={group.id} quickAddCallback={quickAddCallback} />
+                ) : (
+                  <QuickAddIssueRoot
+                    layout={EIssueLayoutTypes.LIST}
+                    QuickAddButton={ListQuickAddIssueButton}
+                    prePopulatedData={prePopulateQuickAddData(group_by, group.id)}
+                    containerClassName="border-b border-t border-subtle bg-surface-1 "
+                    quickAddCallback={quickAddCallback}
+                    isEpic={isEpic}
+                  />
+                )}
               </div>
             )}
         </div>

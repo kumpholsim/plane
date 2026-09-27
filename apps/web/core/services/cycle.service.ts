@@ -195,6 +195,21 @@ export class CycleService extends APIService {
       });
   }
 
+  async previewTransferIssues(
+    workspaceSlug: string,
+    projectId: string,
+    cycleId: string
+  ): Promise<{
+    staying: { id: string; name: string; sequence_id: number }[];
+    transferring: { id: string; name: string; sequence_id: number }[];
+  }> {
+    return this.get(`/api/workspaces/${workspaceSlug}/projects/${projectId}/cycles/${cycleId}/transfer-issues/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
   async transferIssues(
     workspaceSlug: string,
     projectId: string,

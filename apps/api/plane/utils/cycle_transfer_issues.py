@@ -32,122 +32,69 @@ from plane.bgtasks.issue_activities_task import issue_activity
 from plane.utils.host import base_host
 
 
-def transfer_cycle_issues(
-    slug,
-    project_id,
-    cycle_id,
-    new_cycle_id,
-    request,
-    user_id,
-):
-    """
-    Transfer incomplete issues from one cycle to another and create progress snapshot.
+def _source_cycle_has_ended(cycle) -> bool:
+    return cycle.end_date is not None and cycle.end_date < timezone.now()
 
-    Args:
-        slug: Workspace slug
-        project_id: Project ID
-        cycle_id: Source cycle ID
-        new_cycle_id: Destination cycle ID
-        request: HTTP request object
-        user_id: User ID performing the transfer
 
-    Returns:
-        dict: Response data with success or error message
-    """
-    # Get the new cycle
-    new_cycle = Cycle.objects.filter(workspace__slug=slug, project_id=project_id, pk=new_cycle_id).first()
+def _serialize_transfer_l3(issue) -> dict:
+    return {
+        "id": str(issue.id),
+        "name": issue.name,
+        "sequence_id": issue.sequence_id,
+    }
 
-    # Check if new cycle is already completed
-    if new_cycle.end_date is not None and new_cycle.end_date < timezone.now():
-        return {
-            "success": False,
-            "error": "The cycle where the issues are transferred is already completed",
-        }
 
-    # Get the old cycle with issue counts
-    old_cycle = (
-        Cycle.objects.filter(workspace__slug=slug, project_id=project_id, pk=cycle_id)
-        .annotate(
-            total_issues=Count(
-                "issue_cycle",
-                filter=Q(
-                    issue_cycle__issue__archived_at__isnull=True,
-                    issue_cycle__issue__is_draft=False,
-                    issue_cycle__deleted_at__isnull=True,
-                    issue_cycle__issue__deleted_at__isnull=True,
-                ),
-            )
-        )
-        .annotate(
-            completed_issues=Count(
-                "issue_cycle__issue__state__group",
-                filter=Q(
-                    issue_cycle__issue__state__group="completed",
-                    issue_cycle__issue__archived_at__isnull=True,
-                    issue_cycle__issue__is_draft=False,
-                    issue_cycle__issue__deleted_at__isnull=True,
-                    issue_cycle__deleted_at__isnull=True,
-                ),
-            )
-        )
-        .annotate(
-            cancelled_issues=Count(
-                "issue_cycle__issue__state__group",
-                filter=Q(
-                    issue_cycle__issue__state__group="cancelled",
-                    issue_cycle__issue__archived_at__isnull=True,
-                    issue_cycle__issue__is_draft=False,
-                    issue_cycle__issue__deleted_at__isnull=True,
-                    issue_cycle__deleted_at__isnull=True,
-                ),
-            )
-        )
-        .annotate(
-            started_issues=Count(
-                "issue_cycle__issue__state__group",
-                filter=Q(
-                    issue_cycle__issue__state__group="started",
-                    issue_cycle__issue__archived_at__isnull=True,
-                    issue_cycle__issue__is_draft=False,
-                    issue_cycle__issue__deleted_at__isnull=True,
-                    issue_cycle__deleted_at__isnull=True,
-                ),
-            )
-        )
-        .annotate(
-            unstarted_issues=Count(
-                "issue_cycle__issue__state__group",
-                filter=Q(
-                    issue_cycle__issue__state__group="unstarted",
-                    issue_cycle__issue__archived_at__isnull=True,
-                    issue_cycle__issue__is_draft=False,
-                    issue_cycle__issue__deleted_at__isnull=True,
-                    issue_cycle__deleted_at__isnull=True,
-                ),
-            )
-        )
-        .annotate(
-            backlog_issues=Count(
-                "issue_cycle__issue__state__group",
-                filter=Q(
-                    issue_cycle__issue__state__group="backlog",
-                    issue_cycle__issue__archived_at__isnull=True,
-                    issue_cycle__issue__is_draft=False,
-                    issue_cycle__issue__deleted_at__isnull=True,
-                    issue_cycle__deleted_at__isnull=True,
-                ),
-            )
-        )
+def preview_cycle_transfer_issues(slug, project_id, cycle_id) -> dict:
+    """L3 names that stay (fully done) vs L3 names that will transfer."""
+    from plane.utils.hierarchy_status import issue_ids_to_transfer_from_cycle
+    from plane.utils.issue_parent import HIERARCHY_LEVEL_DELIVERY, get_hierarchy_level
+
+    cycle_issues_qs = CycleIssue.objects.filter(
+        cycle_id=cycle_id,
+        project_id=project_id,
+        workspace__slug=slug,
+        issue__archived_at__isnull=True,
+        issue__is_draft=False,
     )
-    old_cycle = old_cycle.first()
+    transfer_ids = issue_ids_to_transfer_from_cycle(cycle_issues_qs)
 
-    if old_cycle is None:
-        return {
-            "success": False,
-            "error": "Source cycle not found",
-        }
+    issues_in_cycle = {
+        ci.issue_id: ci.issue
+        for ci in cycle_issues_qs.select_related("issue")
+    }
 
-    # Check if project uses estimates
+    staying = []
+    transferring = []
+    transferring_l3_ids = set()
+
+    for issue_id, issue in issues_in_cycle.items():
+        if get_hierarchy_level(issue) != HIERARCHY_LEVEL_DELIVERY:
+            continue
+        row = _serialize_transfer_l3(issue)
+        if issue_id in transfer_ids:
+            transferring.append(row)
+            transferring_l3_ids.add(issue_id)
+        else:
+            staying.append(row)
+
+    missing_parent_ids = []
+    for issue_id, issue in issues_in_cycle.items():
+        if get_hierarchy_level(issue) != 4 or issue_id not in transfer_ids:
+            continue
+        parent_id = issue.parent_id
+        if parent_id and parent_id not in transferring_l3_ids:
+            missing_parent_ids.append(parent_id)
+
+    if missing_parent_ids:
+        for parent in Issue.issue_objects.filter(pk__in=missing_parent_ids):
+            transferring.append(_serialize_transfer_l3(parent))
+
+    staying.sort(key=lambda item: item["sequence_id"] or 0)
+    transferring.sort(key=lambda item: item["sequence_id"] or 0)
+    return {"staying": staying, "transferring": transferring}
+
+
+def _write_cycle_progress_snapshot(old_cycle, slug, project_id, cycle_id):
     estimate_type = Project.objects.filter(
         workspace__slug=slug,
         pk=project_id,
@@ -406,6 +353,8 @@ def transfer_cycle_issues(
 
     # Get the current cycle and save progress snapshot
     current_cycle = Cycle.objects.filter(workspace__slug=slug, project_id=project_id, pk=cycle_id).first()
+    if current_cycle is None:
+        return
 
     current_cycle.progress_snapshot = {
         "total_issues": old_cycle.total_issues,
@@ -431,6 +380,144 @@ def transfer_cycle_issues(
     }
     current_cycle.save(update_fields=["progress_snapshot"])
 
+
+def transfer_cycle_issues(
+    slug,
+    project_id,
+    cycle_id,
+    new_cycle_id,
+    request,
+    user_id,
+):
+    """
+    Transfer incomplete issues from one cycle to another.
+    Writes a progress snapshot only when the source cycle has already ended.
+
+    Args:
+        slug: Workspace slug
+        project_id: Project ID
+        cycle_id: Source cycle ID
+        new_cycle_id: Destination cycle ID
+        request: HTTP request object
+        user_id: User ID performing the transfer
+
+    Returns:
+        dict: Response data with success or error message
+    """
+    # Get the new cycle
+    new_cycle = Cycle.objects.filter(workspace__slug=slug, project_id=project_id, pk=new_cycle_id).first()
+
+    if new_cycle is None:
+        return {
+            "success": False,
+            "error": "Destination cycle not found",
+        }
+
+    if str(new_cycle_id) == str(cycle_id):
+        return {
+            "success": False,
+            "error": "Choose a different sprint to transfer work items",
+        }
+
+    # Check if new cycle is already completed
+    if new_cycle.end_date is not None and new_cycle.end_date < timezone.now():
+        return {
+            "success": False,
+            "error": "The cycle where the issues are transferred is already completed",
+        }
+
+    # Get the old cycle with issue counts
+    old_cycle = (
+        Cycle.objects.filter(workspace__slug=slug, project_id=project_id, pk=cycle_id)
+        .annotate(
+            total_issues=Count(
+                "issue_cycle",
+                filter=Q(
+                    issue_cycle__issue__archived_at__isnull=True,
+                    issue_cycle__issue__is_draft=False,
+                    issue_cycle__deleted_at__isnull=True,
+                    issue_cycle__issue__deleted_at__isnull=True,
+                ),
+            )
+        )
+        .annotate(
+            completed_issues=Count(
+                "issue_cycle__issue__state__group",
+                filter=Q(
+                    issue_cycle__issue__state__group="completed",
+                    issue_cycle__issue__archived_at__isnull=True,
+                    issue_cycle__issue__is_draft=False,
+                    issue_cycle__issue__deleted_at__isnull=True,
+                    issue_cycle__deleted_at__isnull=True,
+                ),
+            )
+        )
+        .annotate(
+            cancelled_issues=Count(
+                "issue_cycle__issue__state__group",
+                filter=Q(
+                    issue_cycle__issue__state__group="cancelled",
+                    issue_cycle__issue__archived_at__isnull=True,
+                    issue_cycle__issue__is_draft=False,
+                    issue_cycle__issue__deleted_at__isnull=True,
+                    issue_cycle__deleted_at__isnull=True,
+                ),
+            )
+        )
+        .annotate(
+            started_issues=Count(
+                "issue_cycle__issue__state__group",
+                filter=Q(
+                    issue_cycle__issue__state__group="started",
+                    issue_cycle__issue__archived_at__isnull=True,
+                    issue_cycle__issue__is_draft=False,
+                    issue_cycle__issue__deleted_at__isnull=True,
+                    issue_cycle__deleted_at__isnull=True,
+                ),
+            )
+        )
+        .annotate(
+            unstarted_issues=Count(
+                "issue_cycle__issue__state__group",
+                filter=Q(
+                    issue_cycle__issue__state__group="unstarted",
+                    issue_cycle__issue__archived_at__isnull=True,
+                    issue_cycle__issue__is_draft=False,
+                    issue_cycle__issue__deleted_at__isnull=True,
+                    issue_cycle__deleted_at__isnull=True,
+                ),
+            )
+        )
+        .annotate(
+            backlog_issues=Count(
+                "issue_cycle__issue__state__group",
+                filter=Q(
+                    issue_cycle__issue__state__group="backlog",
+                    issue_cycle__issue__archived_at__isnull=True,
+                    issue_cycle__issue__is_draft=False,
+                    issue_cycle__issue__deleted_at__isnull=True,
+                    issue_cycle__deleted_at__isnull=True,
+                ),
+            )
+        )
+    )
+    old_cycle = old_cycle.first()
+
+    if old_cycle is None:
+        return {
+            "success": False,
+            "error": "Source cycle not found",
+        }
+
+    # Mid-sprint transfers move items only. Snapshot (and lock) after the source has ended.
+    if _source_cycle_has_ended(old_cycle):
+        _write_cycle_progress_snapshot(
+            old_cycle=old_cycle,
+            slug=slug,
+            project_id=project_id,
+            cycle_id=cycle_id,
+        )
+
     # Get issues to transfer (hierarchy fully-done rule + classic incomplete)
     from plane.utils.hierarchy_status import issue_ids_to_transfer_from_cycle
 
@@ -447,23 +534,45 @@ def transfer_cycle_issues(
         project_id=project_id,
         workspace__slug=slug,
         issue_id__in=transfer_issue_ids,
+        deleted_at__isnull=True,
     )
 
-    updated_cycles = []
-    update_cycle_issue_activity = []
-    for cycle_issue in cycle_issues:
-        cycle_issue.cycle_id = new_cycle_id
-        updated_cycles.append(cycle_issue)
-        update_cycle_issue_activity.append(
-            {
-                "old_cycle_id": str(cycle_id),
-                "new_cycle_id": str(new_cycle_id),
-                "issue_id": str(cycle_issue.issue_id),
-            }
-        )
+    update_cycle_issue_activity = [
+        {
+            "old_cycle_id": str(cycle_id),
+            "new_cycle_id": str(new_cycle_id),
+            "issue_id": str(cycle_issue.issue_id),
+        }
+        for cycle_issue in cycle_issues
+    ]
 
-    # Bulk update cycle issues
-    cycle_issues = CycleIssue.objects.bulk_update(updated_cycles, ["cycle_id"], batch_size=100)
+    already_on_dest = set(
+        CycleIssue.objects.filter(
+            cycle_id=new_cycle_id,
+            issue_id__in=transfer_issue_ids,
+            deleted_at__isnull=True,
+        ).values_list("issue_id", flat=True)
+    )
+    # Already on the destination: drop the source membership (unique on cycle+issue)
+    if already_on_dest:
+        CycleIssue.objects.filter(
+            cycle_id=cycle_id,
+            issue_id__in=already_on_dest,
+            deleted_at__isnull=True,
+        ).delete()
+    remaining_pks = [ci.pk for ci in cycle_issues if ci.issue_id not in already_on_dest]
+    if remaining_pks:
+        CycleIssue.objects.filter(pk__in=remaining_pks).update(cycle_id=new_cycle_id)
+
+    from plane.utils.issue_cycle import sync_subtask_cycles_for_parents
+
+    sync_subtask_cycles_for_parents(
+        transfer_issue_ids,
+        new_cycle_id,
+        project_id,
+        new_cycle.workspace_id,
+        user_id,
+    )
 
     # Capture Issue Activity
     issue_activity.delay(
