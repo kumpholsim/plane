@@ -267,7 +267,7 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                       leading={
                         isL3Swimlane ? (
                           // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
-                          <div className="flex min-w-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <HierarchyTypeBadge issue={l3Issue} disabled={!canEditL3} updateIssue={updateIssue} />
                             {l3Issue.project_id && (
                               <IssueIdentifier

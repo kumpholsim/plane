@@ -15,7 +15,12 @@ import { IconButton } from "@plane/propel/icon-button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { EIssuesStoreType, IBlockUpdateData, TIssue } from "@plane/types";
-import { EIssueLayoutTypes, GANTT_TIMELINE_TYPE, HIERARCHY_LEVEL_DELIVERY } from "@plane/types";
+import {
+  EIssueLayoutTypes,
+  GANTT_TIMELINE_TYPE,
+  HIERARCHY_LEVEL_DELIVERY,
+  HIERARCHY_LEVEL_MILESTONE,
+} from "@plane/types";
 import { renderFormattedPayloadDate } from "@plane/utils";
 // components
 import { TimeLineTypeContext } from "@/components/gantt-chart/contexts";
@@ -31,6 +36,7 @@ import { useIssuesActions } from "@/hooks/use-issues-actions";
 import { useTimeLineChart } from "@/hooks/use-timeline-chart";
 import { useBulkOperationStatus } from "@/hooks/use-bulk-operation-status";
 import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
+import { IssueService } from "@/services/issue/issue.service";
 // local imports
 import { IssueLayoutHOC } from "../issue-layout-HOC";
 import { GanttQuickAddIssueButton, QuickAddIssueRoot } from "../quick-add";
@@ -40,6 +46,12 @@ import type { TGanttHierarchyMode } from "./hierarchy";
 import { buildScrumbanGanttHierarchy, ensureGanttEpicPlaceholders } from "./hierarchy";
 
 const EMPTY_EXPANDED_IDS = new Set<string>();
+const issueService = new IssueService();
+
+const flattenIssueResults = (results: unknown): TIssue[] => {
+  if (Array.isArray(results)) return results as TIssue[];
+  return [];
+};
 
 interface IBaseGanttRoot {
   viewId?: string | undefined;
@@ -81,6 +93,7 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
   const hierarchyMode: TGanttHierarchyMode =
     (appliedDisplayFilters?.gantt_hierarchy as TGanttHierarchyMode | undefined) ?? "l3_l4";
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [milestoneEpicIds, setMilestoneEpicIds] = useState<string[]>([]);
   const seededModeRef = useRef<TGanttHierarchyMode | null>(null);
   const suppressAutoExpandRef = useRef(false);
 
@@ -108,6 +121,10 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
   }, [hierarchyMode, isStagedGateScrumban, projectId, workspaceSlug, viewId]);
 
   const rawIssueIds = useMemo(() => (issues.groupedIssueIds?.[ALL_ISSUES] as string[]) ?? [], [issues.groupedIssueIds]);
+  const hierarchyIssueIds = useMemo(() => {
+    if (hierarchyMode !== "l1_l2") return rawIssueIds;
+    return Array.from(new Set([...rawIssueIds, ...milestoneEpicIds]));
+  }, [hierarchyMode, milestoneEpicIds, rawIssueIds]);
   const nextPageResults = issues.getPaginationData(undefined, undefined)?.nextPageResults;
 
   const { enableIssueCreation } = issues?.viewFlags || {};
@@ -120,7 +137,7 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
   const parentIdsWithChildren = useMemo(() => {
     if (!isStagedGateScrumban) return [] as string[];
     const { parentChildMap } = buildScrumbanGanttHierarchy({
-      issueIds: rawIssueIds,
+      issueIds: hierarchyIssueIds,
       getIssueById,
       mode: hierarchyMode,
       expandedIds: EMPTY_EXPANDED_IDS,
@@ -128,7 +145,7 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
     return Object.entries(parentChildMap)
       .filter(([, childIds]) => childIds.length > 0)
       .map(([id]) => id);
-  }, [getIssueById, hierarchyMode, isStagedGateScrumban, rawIssueIds]);
+  }, [getIssueById, hierarchyMode, isStagedGateScrumban, hierarchyIssueIds]);
 
   const parentIdsWithChildrenKey = parentIdsWithChildren.join("|");
 
@@ -141,28 +158,55 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
       };
     }
     return buildScrumbanGanttHierarchy({
-      issueIds: rawIssueIds,
+      issueIds: hierarchyIssueIds,
       getIssueById,
       mode: hierarchyMode,
       expandedIds,
     });
-  }, [expandedIds, getIssueById, hierarchyMode, isStagedGateScrumban, rawIssueIds]);
+  }, [expandedIds, getIssueById, hierarchyIssueIds, hierarchyMode, isStagedGateScrumban, rawIssueIds]);
 
   const allExpanded = parentIdsWithChildren.length > 0 && parentIdsWithChildren.every((id) => expandedIds.has(id));
 
-  // Seed epic rows + rolled-up dates for L2 timeline parents
+  // Milestones and epics are not cycle items, so load them for the Milestone view.
   useEffect(() => {
-    if (!isStagedGateScrumban || hierarchyMode !== "l2_l3") return;
+    if (!isStagedGateScrumban || hierarchyMode !== "l1_l2" || !workspaceSlug || !projectId) return;
+    let cancelled = false;
+    void issueService
+      .getIssues(workspaceSlug.toString(), projectId.toString(), {
+        hierarchy_level: "1,2",
+        per_page: "1000",
+      })
+      .then((response) => {
+        if (cancelled) return;
+        const loaded = flattenIssueResults(response?.results);
+        for (const issue of loaded) {
+          issues.addIssue(issue, false);
+        }
+        setMilestoneEpicIds(loaded.map((issue) => issue.id));
+        return undefined;
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [hierarchyMode, isStagedGateScrumban, issues, projectId, workspaceSlug]);
+
+  // Seed parent rows + rolled-up dates for timeline parents that are not in the current list.
+  useEffect(() => {
+    if (!isStagedGateScrumban || (hierarchyMode !== "l2_l3" && hierarchyMode !== "l1_l2")) return;
     ensureGanttEpicPlaceholders({
       parentChildMap: hierarchy.parentChildMap,
       getIssueById,
       addIssue: (issuesToAdd) => {
-        // Seed map only — do not append synthetic epics to the cycle/project issue list.
+        // Seed map only — do not append synthetic parents to the cycle/project issue list.
         for (const issue of issuesToAdd) {
           issues.addIssue(issue, false);
         }
       },
       projectId: projectId?.toString(),
+      ...(hierarchyMode === "l1_l2"
+        ? { hierarchyLevel: HIERARCHY_LEVEL_MILESTONE, fallbackName: "Milestone", markEpic: false }
+        : {}),
     });
   }, [getIssueById, hierarchy.parentChildMap, hierarchyMode, isStagedGateScrumban, issues, projectId]);
 
@@ -305,6 +349,17 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
               <div className="flex shrink-0 items-center gap-2 border-b border-subtle bg-surface-1 px-4 py-2">
                 <span className="text-12 font-medium text-secondary">Timeline hierarchy</span>
                 <div className="flex items-center gap-1 rounded-md border border-subtle p-0.5">
+                  <button
+                    type="button"
+                    className={`rounded px-2.5 py-1 text-12 font-medium transition-colors ${
+                      hierarchyMode === "l1_l2"
+                        ? "bg-accent-primary text-on-color"
+                        : "text-secondary hover:bg-layer-1 hover:text-primary"
+                    }`}
+                    onClick={() => setHierarchyMode("l1_l2")}
+                  >
+                    Milestone View
+                  </button>
                   <button
                     type="button"
                     className={`rounded px-2.5 py-1 text-12 font-medium transition-colors ${

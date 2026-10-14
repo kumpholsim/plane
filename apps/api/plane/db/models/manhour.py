@@ -31,3 +31,26 @@ class ManhourManualEntry(WorkspaceBaseModel):
 
     def __str__(self):
         return f"{self.user_id} {self.entry_date} {self.description}"
+
+
+class WorkspacePublicHoliday(WorkspaceBaseModel):
+    """Workspace-wide day off; deducts sprint capacity and manhour report working days."""
+
+    date = models.DateField()
+    name = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        verbose_name = "Workspace Public Holiday"
+        verbose_name_plural = "Workspace Public Holidays"
+        db_table = "workspace_public_holidays"
+        ordering = ("date",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "date"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="workspace_public_holiday_unique_date_when_deleted_at_null",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.workspace_id} {self.date} {self.name}"

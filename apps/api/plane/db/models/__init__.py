@@ -90,7 +90,7 @@ from .recent_visit import UserRecentVisit
 
 from .label import Label
 
-from .manhour import ManhourManualEntry
+from .manhour import ManhourManualEntry, WorkspacePublicHoliday
 
 from .project_hierarchy_type import (
     ProjectHierarchyType,

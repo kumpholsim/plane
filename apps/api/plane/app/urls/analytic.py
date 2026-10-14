@@ -21,6 +21,7 @@ from plane.app.views import (
     WorkspaceVelocityEndpoint,
     WorkspaceManhourReportEndpoint,
     WorkspaceManhourEntryEndpoint,
+    WorkspacePublicHolidayEndpoint,
 )
 
 
@@ -109,5 +110,15 @@ urlpatterns = [
         "workspaces/<str:slug>/manhour-entries/<uuid:entry_id>/",
         WorkspaceManhourEntryEndpoint.as_view(),
         name="workspace-manhour-entry",
+    ),
+    path(
+        "workspaces/<str:slug>/public-holidays/",
+        WorkspacePublicHolidayEndpoint.as_view(),
+        name="workspace-public-holidays",
+    ),
+    path(
+        "workspaces/<str:slug>/public-holidays/<uuid:holiday_id>/",
+        WorkspacePublicHolidayEndpoint.as_view(),
+        name="workspace-public-holiday",
     ),
 ]

@@ -18,6 +18,7 @@ type Props = {
   to: Date;
   averageLabel: string;
   averageValue: string;
+  averageNote?: string | null;
   totalLabel: string;
   totalValue: string;
   columns: {
@@ -132,6 +133,11 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: MTEL_BRAND_COLOR,
   },
+  summaryNote: {
+    fontSize: 7,
+    color: "#6B7280",
+    marginTop: 3,
+  },
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#F3F4F6",
@@ -186,6 +192,7 @@ export function ManhourReportDocument(props: Props) {
     to,
     averageLabel,
     averageValue,
+    averageNote,
     totalLabel,
     totalValue,
     columns,
@@ -222,6 +229,7 @@ export function ManhourReportDocument(props: Props) {
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>{averageLabel}</Text>
               <Text style={styles.summaryValue}>{averageValue}</Text>
+              {averageNote ? <Text style={styles.summaryNote}>{averageNote}</Text> : null}
             </View>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>{totalLabel}</Text>

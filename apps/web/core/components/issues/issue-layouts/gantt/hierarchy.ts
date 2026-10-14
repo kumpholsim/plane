@@ -8,7 +8,7 @@ import type { TIssue } from "@plane/types";
 import { HIERARCHY_LEVEL_DELIVERY, HIERARCHY_LEVEL_EPIC, HIERARCHY_LEVEL_SUB_TASK } from "@plane/types";
 import { getHierarchyLevel } from "@/components/issues/issue-detail-widgets/sub-issues/depth";
 
-export type TGanttHierarchyMode = "l2_l3" | "l3_l4";
+export type TGanttHierarchyMode = "l1_l2" | "l2_l3" | "l3_l4";
 
 export type TGanttHierarchyMeta = {
   depth: 0 | 1;
@@ -46,8 +46,54 @@ export const rollupChildDates = (
   };
 };
 
+const appendParentChildren = (args: {
+  parents: TIssue[];
+  childrenByParent: Map<string, TIssue[]>;
+  orphans: TIssue[];
+  blockIds: string[];
+  metaById: Record<string, TGanttHierarchyMeta>;
+  parentChildMap: Record<string, string[]>;
+  expandedIds: Set<string>;
+}) => {
+  const { parents, childrenByParent, orphans, blockIds, metaById, parentChildMap, expandedIds } = args;
+  for (const parent of parents) {
+    const children = (childrenByParent.get(parent.id) ?? []).toSorted(sortBySortOrder);
+    const childIds = children.map((child) => child.id);
+    parentChildMap[parent.id] = childIds;
+    metaById[parent.id] = {
+      depth: 0,
+      parentId: null,
+      hasChildren: childIds.length > 0,
+      childIds,
+    };
+    blockIds.push(parent.id);
+    if (expandedIds.has(parent.id)) {
+      for (const child of children) {
+        metaById[child.id] = {
+          depth: 1,
+          parentId: parent.id,
+          hasChildren: false,
+          childIds: [],
+        };
+        blockIds.push(child.id);
+      }
+    }
+  }
+
+  for (const orphan of orphans.toSorted(sortBySortOrder)) {
+    metaById[orphan.id] = {
+      depth: 0,
+      parentId: null,
+      hasChildren: false,
+      childIds: [],
+    };
+    blockIds.push(orphan.id);
+  }
+};
+
 /**
  * Build flat gantt block order with optional nested children for Scrumban hierarchy modes.
+ * - l1_l2: Milestone (L1) rows with Epic (L2) children
  * - l2_l3: Epic (L2) rows with Delivery (L3) children
  * - l3_l4: Delivery (L3) rows with Sub-task (L4) children
  */
@@ -83,39 +129,50 @@ export const buildScrumbanGanttHierarchy = (
       }
     }
 
-    for (const parent of parents) {
-      const children = (childrenByParent.get(parent.id) ?? []).toSorted(sortBySortOrder);
-      const childIds = children.map((child) => child.id);
-      parentChildMap[parent.id] = childIds;
-      metaById[parent.id] = {
-        depth: 0,
-        parentId: null,
-        hasChildren: childIds.length > 0,
-        childIds,
-      };
-      blockIds.push(parent.id);
-      if (expandedIds.has(parent.id)) {
-        for (const child of children) {
-          metaById[child.id] = {
-            depth: 1,
-            parentId: parent.id,
-            hasChildren: false,
-            childIds: [],
-          };
-          blockIds.push(child.id);
-        }
+    appendParentChildren({
+      parents,
+      childrenByParent,
+      orphans: orphanChildren,
+      blockIds,
+      metaById,
+      parentChildMap,
+      expandedIds,
+    });
+
+    return { blockIds, metaById, parentChildMap };
+  }
+
+  if (mode === "l1_l2") {
+    const epics = issues.filter((issue) => getHierarchyLevel(issue) === HIERARCHY_LEVEL_EPIC);
+    const epicsByMilestone = new Map<string, TIssue[]>();
+    const ungrouped: TIssue[] = [];
+
+    for (const epic of epics) {
+      if (epic.parent_id) {
+        const list = epicsByMilestone.get(epic.parent_id) ?? [];
+        list.push(epic);
+        epicsByMilestone.set(epic.parent_id, list);
+      } else {
+        ungrouped.push(epic);
       }
     }
 
-    for (const child of orphanChildren.toSorted(sortBySortOrder)) {
-      metaById[child.id] = {
-        depth: 0,
-        parentId: null,
-        hasChildren: false,
-        childIds: [],
-      };
-      blockIds.push(child.id);
+    const milestones: TIssue[] = [];
+    for (const milestoneId of epicsByMilestone.keys()) {
+      const existing = getIssueById(milestoneId);
+      milestones.push(existing ?? ({ id: milestoneId, name: "Milestone", sort_order: 0 } as TIssue));
     }
+    milestones.sort(sortBySortOrder);
+
+    appendParentChildren({
+      parents: milestones,
+      childrenByParent: epicsByMilestone,
+      orphans: ungrouped,
+      blockIds,
+      metaById,
+      parentChildMap,
+      expandedIds,
+    });
 
     return { blockIds, metaById, parentChildMap };
   }
@@ -186,8 +243,19 @@ export const ensureGanttEpicPlaceholders = (args: {
   getIssueById: (id: string) => TIssue | undefined;
   addIssue: (issues: TIssue[]) => void;
   projectId: string | undefined;
+  hierarchyLevel?: number;
+  fallbackName?: string;
+  markEpic?: boolean;
 }) => {
-  const { parentChildMap, getIssueById, addIssue, projectId } = args;
+  const {
+    parentChildMap,
+    getIssueById,
+    addIssue,
+    projectId,
+    hierarchyLevel = HIERARCHY_LEVEL_EPIC,
+    fallbackName = "Epic",
+    markEpic = true,
+  } = args;
   const toUpsert: TIssue[] = [];
 
   for (const [parentId, childIds] of Object.entries(parentChildMap)) {
@@ -200,10 +268,10 @@ export const ensureGanttEpicPlaceholders = (args: {
     if (!existing) {
       toUpsert.push({
         id: parentId,
-        name: "Epic",
+        name: fallbackName,
         project_id: resolvedProjectId,
-        hierarchy_level: HIERARCHY_LEVEL_EPIC,
-        is_epic: true,
+        hierarchy_level: hierarchyLevel,
+        is_epic: markEpic,
         start_date: rollup.start_date ?? null,
         target_date: rollup.target_date ?? null,
         sequence_id: 0,

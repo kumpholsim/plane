@@ -2,12 +2,22 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 import pytest
 from django.utils import timezone
 
-from plane.db.models import Estimate, EstimatePoint, Issue, IssueAssignee, ManhourManualEntry, Project, ProjectMember, State
+from plane.db.models import (
+    Estimate,
+    EstimatePoint,
+    Issue,
+    IssueAssignee,
+    ManhourManualEntry,
+    Project,
+    ProjectMember,
+    State,
+    WorkspacePublicHoliday,
+)
 from plane.db.models.estimate import EstimateType
 from plane.utils.manhour_report import build_manhour_report, format_duration_hms, parse_report_dates
 
@@ -89,7 +99,7 @@ def test_report_filters_dates_and_merges_l4_with_standalone(project, create_user
     now = timezone.now()
     state = _state(project, create_user)
     one_sp = _estimate_point(project, create_user, "1")
-    in_range = _issue(project, create_user, state, name="In range L4", estimate=one_sp)
+    in_range = _issue(project, create_user, state, name="In range L4", manhour=2.5, estimate=one_sp)
     IssueAssignee.objects.create(issue=in_range, assignee=create_user, project=project, workspace=project.workspace)
     Issue.objects.filter(id=in_range.id).update(created_at=now - timedelta(days=2))
 
@@ -136,8 +146,46 @@ def test_report_filters_dates_and_merges_l4_with_standalone(project, create_user
     assert payload["rows"][0]["source"] == "standalone"
     assert payload["rows"][0]["duration"] == "0:15:00"
     assert payload["rows"][1]["source"] == "issue"
-    assert payload["rows"][1]["duration"] == "8:00:00"
+    assert payload["rows"][1]["duration"] == "2:30:00"
     assert payload["rows"][2]["duration"] == "0:00:00"
-    assert payload["summary"]["total_hours"] == 8.25
+    assert payload["summary"]["total_hours"] == 2.75
     assert payload["summary"]["row_count"] == 3
     assert payload["member"]["id"] == str(create_user.id)
+
+
+@pytest.mark.unit
+@pytest.mark.django_db
+def test_report_excludes_workspace_public_holidays_from_day_count(project, create_user):
+    workspace = project.workspace
+    ManhourManualEntry.objects.create(
+        workspace=workspace,
+        user=create_user,
+        description="Ten hours",
+        manhour=10,
+        entry_date=date(2026, 10, 1),
+        created_by=create_user,
+    )
+    start, end = date(2026, 10, 1), date(2026, 10, 10)
+    WorkspacePublicHoliday.objects.create(workspace=workspace, date=start + timedelta(days=2), name="Holiday A")
+    WorkspacePublicHoliday.objects.create(workspace=workspace, date=start + timedelta(days=4), name="Holiday B")
+    WorkspacePublicHoliday.objects.create(workspace=workspace, date=end + timedelta(days=1), name="Outside range")
+
+    payload = build_manhour_report(workspace.slug, create_user, str(create_user.id), "2026-10-01", "2026-10-10")
+
+    assert payload["summary"]["holiday_count"] == 2
+    assert payload["summary"]["day_count"] == 8
+    assert payload["summary"]["average_daily_hours"] == 1.25
+    assert [holiday["name"] for holiday in payload["public_holidays"]] == ["Holiday A", "Holiday B"]
+
+
+@pytest.mark.unit
+@pytest.mark.django_db
+def test_report_day_count_never_drops_below_one(project, create_user):
+    workspace = project.workspace
+    start = date(2026, 10, 1)
+    WorkspacePublicHoliday.objects.create(workspace=workspace, date=start, name="Only day")
+
+    payload = build_manhour_report(workspace.slug, create_user, str(create_user.id), "2026-10-01", "2026-10-01")
+
+    assert payload["summary"]["holiday_count"] == 1
+    assert payload["summary"]["day_count"] == 1

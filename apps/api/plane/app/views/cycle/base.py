@@ -55,6 +55,7 @@ from plane.db.models import (
 from plane.utils.analytics_plot import burndown_plot
 from plane.bgtasks.recent_visited_task import recent_visited_task
 from plane.utils.host import base_host
+from plane.utils.public_holidays import workspace_public_holidays
 from plane.utils.cycle_transfer_issues import preview_cycle_transfer_issues, transfer_cycle_issues
 from .. import BaseAPIView, BaseViewSet
 from plane.bgtasks.webhook_task import model_activity
@@ -1071,27 +1072,40 @@ class CycleCapacityEndpoint(BaseAPIView):
 
     Max capacity starts at average velocity, then:
     - decays 10% of that default each calendar day after cycle start (hits 0 after 10 days)
-    - and is reduced by public / personal holiday days (1.5 SP each)
+    - and is reduced by holiday days (1.5 SP each): workspace public holidays dated inside the
+      sprint, plus each member's personal leave days
 
     Done L4 counts are returned so teams can compare finished work vs remaining load.
     The bar track stays anchored to the default velocity so the max marker moves left as days pass.
     """
 
+    def _project_tz(self, project):
+        try:
+            return pytz.timezone(getattr(project, "timezone", None) or "UTC")
+        except Exception:
+            return pytz.UTC
+
+    def _local_date(self, value, local_tz):
+        if value is None:
+            return None
+        if timezone.is_aware(value):
+            return value.astimezone(local_tz).date()
+        return value.date() if hasattr(value, "date") else value
+
     def _days_elapsed(self, cycle, project):
         if not cycle.start_date:
             return 0
-        project_tz_name = getattr(project, "timezone", None) or "UTC"
-        try:
-            local_tz = pytz.timezone(project_tz_name)
-        except Exception:
-            local_tz = pytz.UTC
+        local_tz = self._project_tz(project)
         today = timezone.now().astimezone(local_tz).date()
-        start = cycle.start_date
-        if timezone.is_aware(start):
-            start_date = start.astimezone(local_tz).date()
-        else:
-            start_date = start.date() if hasattr(start, "date") else start
-        return max(0, (today - start_date).days)
+        return max(0, (today - self._local_date(cycle.start_date, local_tz)).days)
+
+    def _sprint_public_holidays(self, slug, cycle, project):
+        if not cycle.start_date or not cycle.end_date:
+            return []
+        local_tz = self._project_tz(project)
+        return workspace_public_holidays(
+            slug, self._local_date(cycle.start_date, local_tz), self._local_date(cycle.end_date, local_tz)
+        )
 
     def _capacity_max(self, average_velocity, public_holiday_days, personal_holiday_days, days_elapsed):
         base = float(average_velocity or 15)
@@ -1133,7 +1147,8 @@ class CycleCapacityEndpoint(BaseAPIView):
             return None, Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
 
         average_velocity = float(getattr(project, "average_velocity", 15) or 15)
-        public_holiday_days = float(getattr(cycle, "public_holiday_days", 0) or 0)
+        public_holidays = self._sprint_public_holidays(slug, cycle, project)
+        public_holiday_days = float(len(public_holidays))
         personal_holiday_days = getattr(cycle, "personal_holiday_days", None) or {}
         if not isinstance(personal_holiday_days, dict):
             personal_holiday_days = {}
@@ -1174,6 +1189,33 @@ class CycleCapacityEndpoint(BaseAPIView):
         )
 
         by_assignee = {}
+
+        # Roster is the project, not whoever already has an L4 card.
+        from plane.db.models import ProjectMember
+
+        project_members = ProjectMember.objects.filter(
+            workspace__slug=slug,
+            project_id=project_id,
+            is_active=True,
+            member__isnull=False,
+            member__is_bot=False,
+        ).select_related("member")
+        for membership in project_members:
+            user = membership.member
+            assignee_id = str(user.id)
+            avatar_url = (
+                f"/api/assets/v2/static/{user.avatar_asset_id}/" if user.avatar_asset_id else (user.avatar or None)
+            )
+            by_assignee[assignee_id] = {
+                "assignee_id": assignee_id,
+                "display_name": user.display_name or user.email or user.first_name or "Member",
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "avatar_url": avatar_url,
+                "estimate_points": 0.0,
+                "done_subtasks": 0,
+            }
+
         for row in open_rows:
             assignee_id = str(row["assignee_id"]) if row["assignee_id"] else None
             if not assignee_id:
@@ -1285,6 +1327,7 @@ class CycleCapacityEndpoint(BaseAPIView):
                 "people_count": people_count,
                 "velocity_by_role": velocity_by_role,
                 "public_holiday_days": public_holiday_days,
+                "public_holidays": public_holidays,
                 "sp_per_holiday_day": CAPACITY_SP_PER_HOLIDAY_DAY,
                 "daily_decay_fraction": CAPACITY_DAILY_DECAY_FRACTION,
                 "days_elapsed": days_elapsed,
@@ -1308,12 +1351,6 @@ class CycleCapacityEndpoint(BaseAPIView):
             return Response({"error": "Cycle not found"}, status=status.HTTP_404_NOT_FOUND)
 
         update_kwargs = {}
-
-        if "public_holiday_days" in request.data:
-            try:
-                update_kwargs["public_holiday_days"] = max(0.0, float(request.data.get("public_holiday_days") or 0))
-            except (TypeError, ValueError):
-                return Response({"error": "Invalid public_holiday_days"}, status=status.HTTP_400_BAD_REQUEST)
 
         if "personal_holiday_days" in request.data:
             incoming = request.data.get("personal_holiday_days") or {}

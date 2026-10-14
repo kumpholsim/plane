@@ -15,6 +15,7 @@ import { setToast, TOAST_TYPE } from "@plane/propel/toast";
 import type { ICycle, IProject, TCycleCapacityMember, TCycleCapacityResponse } from "@plane/types";
 import { getFileURL } from "@plane/utils";
 import { CycleService } from "@/services/cycle.service";
+import { CapacityPublicHolidays } from "./public-holidays";
 
 type Props = {
   isOpen: boolean;
@@ -132,8 +133,6 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
   const { workspaceSlug, projectId, cycleId } = useParams();
   const [data, setData] = useState<TCycleCapacityResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [publicHolidayDraft, setPublicHolidayDraft] = useState("0");
-  const [savingPublic, setSavingPublic] = useState(false);
 
   const loadCapacity = useCallback(async () => {
     if (!workspaceSlug || !projectId || !cycleId) return;
@@ -145,7 +144,6 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
         cycleId.toString()
       );
       setData(response);
-      setPublicHolidayDraft(String(response.public_holiday_days));
     } catch {
       setToast({
         type: TOAST_TYPE.ERROR,
@@ -162,7 +160,6 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
   }, [isOpen, loadCapacity]);
 
   const persist = async (payload: {
-    public_holiday_days?: number;
     personal_holiday_days?: Record<string, number>;
   }): Promise<TCycleCapacityResponse | null> => {
     if (!workspaceSlug || !projectId || !cycleId) return null;
@@ -176,7 +173,6 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
           payload
         );
         setData(response);
-        setPublicHolidayDraft(String(response.public_holiday_days));
         return response;
       } catch (capacityError: unknown) {
         await cycleService.patchCycle(workspaceSlug.toString(), projectId.toString(), cycleId.toString(), payload);
@@ -186,7 +182,6 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
           cycleId.toString()
         );
         setData(response);
-        setPublicHolidayDraft(String(response.public_holiday_days));
         if (capacityError) {
           // Fallback succeeded — ignore original capacity endpoint failure.
         }
@@ -205,19 +200,6 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
         message,
       });
       return null;
-    }
-  };
-
-  const commitPublicHolidays = async () => {
-    const parsed = Math.max(0, Number(publicHolidayDraft));
-    const normalized = Number.isFinite(parsed) ? parsed : 0;
-    setPublicHolidayDraft(String(normalized));
-    if (data && normalized === data.public_holiday_days) return;
-    setSavingPublic(true);
-    try {
-      await persist({ public_holiday_days: normalized });
-    } finally {
-      setSavingPublic(false);
     }
   };
 
@@ -277,31 +259,10 @@ export const CycleCapacityModal = observer(function CycleCapacityModal(props: Pr
             )}
           </div>
 
-          <label
-            htmlFor="capacity-public-holidays"
-            className="relative z-10 mb-3 flex items-center justify-between gap-2 text-13"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <span className="text-secondary">Team public holidays</span>
-            <input
-              id="capacity-public-holidays"
-              type="number"
-              min={0}
-              step={0.5}
-              disabled={savingPublic || loading}
-              value={publicHolidayDraft}
-              onChange={(e) => setPublicHolidayDraft(e.target.value)}
-              onBlur={() => void commitPublicHolidays()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-              className="focus:border-accent-primary pointer-events-auto w-16 rounded border border-subtle bg-surface-1 px-1.5 py-0.5 text-13 text-primary outline-none"
-            />
-          </label>
+          <CapacityPublicHolidays
+            sprintHolidays={data?.public_holidays ?? []}
+            spPerHolidayDay={data?.sp_per_holiday_day ?? 1.5}
+          />
 
           {loading && !data ? (
             <p className="text-13 text-tertiary">Loading capacity…</p>

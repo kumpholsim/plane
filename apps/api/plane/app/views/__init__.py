@@ -223,7 +223,11 @@ from .analytic.project_analytics import (
     ProjectAdvanceAnalyticsChartEndpoint,
 )
 from .analytic.velocity import WorkspaceVelocityEndpoint
-from .analytic.manhour import WorkspaceManhourReportEndpoint, WorkspaceManhourEntryEndpoint
+from .analytic.manhour import (
+    WorkspaceManhourReportEndpoint,
+    WorkspaceManhourEntryEndpoint,
+    WorkspacePublicHolidayEndpoint,
+)
 
 from .notification.base import (
     NotificationViewSet,

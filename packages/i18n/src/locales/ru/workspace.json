@@ -149,6 +149,7 @@
         "project": "Project",
         "multiple_projects": "Multiple",
         "average_daily": "Average daily hours",
+        "holidays_excluded": "Excludes {count, plural, one {# public holiday} other {# public holidays}}",
         "total_hours": "Total hours",
         "description": "Description",
         "duration": "Duration",

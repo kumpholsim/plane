@@ -86,7 +86,15 @@ export const ManhourReportModal = observer(function ManhourReportModal(props: Pr
     () => (data?.rows ?? []).filter((row) => !excludedKeys.has(rowKey(row))),
     [data?.rows, excludedKeys]
   );
-  const summary = useMemo(() => summarizeVisibleRows(visibleRows, range.from, range.to), [visibleRows, range]);
+  const holidayCount = data?.summary.holiday_count ?? 0;
+  const summary = useMemo(
+    () => summarizeVisibleRows(visibleRows, range.from, range.to, holidayCount),
+    [visibleRows, range, holidayCount]
+  );
+  const averageNote =
+    holidayCount > 0
+      ? t("workspace_analytics.velocity.manhour_report.holidays_excluded", { count: holidayCount })
+      : null;
   const defaultMemberName = data?.member.display_name || "";
   const defaultProjectName =
     projectChipLabel(visibleRows, t("workspace_analytics.velocity.manhour_report.multiple_projects")) ?? "";
@@ -146,6 +154,7 @@ export const ManhourReportModal = observer(function ManhourReportModal(props: Pr
           to={range.to}
           averageLabel={t("workspace_analytics.velocity.manhour_report.average_daily")}
           averageValue={summary.average_daily_duration}
+          averageNote={averageNote}
           totalLabel={t("workspace_analytics.velocity.manhour_report.total_hours")}
           totalValue={summary.total_duration}
           columns={{
@@ -225,6 +234,7 @@ export const ManhourReportModal = observer(function ManhourReportModal(props: Pr
               to={range.to}
               rows={previewRows}
               averageDuration={summary.average_daily_duration}
+              averageNote={averageNote}
               totalDuration={summary.total_duration}
               onExclude={handleExclude}
               onMemberNameChange={setMemberNameDraft}

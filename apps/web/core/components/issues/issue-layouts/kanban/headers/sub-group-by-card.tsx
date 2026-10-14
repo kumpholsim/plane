@@ -50,7 +50,8 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
   return (
     <div
       className={cn(
-        "relative flex max-w-md min-w-0 flex-shrink flex-row items-center gap-1 rounded-xs py-1.5",
+        "relative flex min-w-0 flex-shrink flex-row items-center rounded-xs py-1.5",
+        emphasizeTitle ? "max-w-2xl gap-1.5" : "max-w-md gap-1",
         className
       )}
     >
@@ -70,7 +71,7 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
         )}
       </button>
 
-      {leading}
+      {leading ? <div className="flex shrink-0 items-center gap-1">{leading}</div> : null}
 
       {!leading && (
         <div className="flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center overflow-hidden rounded-xs">
@@ -80,7 +81,7 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
 
       <div
         className={cn(
-          "flex min-w-0 items-center gap-1",
+          "flex min-w-0 flex-1 items-center gap-1 overflow-hidden",
           // 0.975rem * 0.75 ≈ 0.731rem (25% smaller than prior L3 size)
           emphasizeTitle ? "font-normal text-[0.731rem] leading-snug" : "text-13"
         )}
@@ -88,7 +89,7 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
         {onTitleClick ? (
           <button
             type="button"
-            className="font-normal truncate text-left text-primary"
+            className="font-normal min-w-0 flex-1 truncate text-left text-primary"
             onClick={(e) => {
               e.stopPropagation();
               onTitleClick();
@@ -100,16 +101,17 @@ export const HeaderSubGroupByCard = observer(function HeaderSubGroupByCard(props
         ) : (
           <button
             type="button"
-            className="font-normal truncate text-left text-primary"
+            className="font-normal min-w-0 flex-1 truncate text-left text-primary"
             onClick={(e) => {
               e.stopPropagation();
               toggleCollapsed();
             }}
+            title={title}
           >
             {title}
           </button>
         )}
-        {trailing}
+        {trailing ? <div className="shrink-0">{trailing}</div> : null}
         <div className={cn("shrink-0 pl-2 font-medium text-tertiary", emphasizeTitle ? "text-[0.731rem]" : "text-13")}>
           {count || 0}
         </div>

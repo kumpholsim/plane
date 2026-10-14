@@ -4,6 +4,8 @@
  * See the LICENSE file for details.
  */
 
+import { useState } from "react";
+import { CalendarDays } from "lucide-react";
 import { observer } from "mobx-react";
 import { usePathname } from "next/navigation";
 // i18n
@@ -15,6 +17,7 @@ import { ProjectIcon } from "@plane/propel/icons";
 import { Breadcrumbs, Header } from "@plane/ui";
 // components
 import { BreadcrumbLink } from "@/components/common/breadcrumb-link";
+import { WorkspacePublicHolidaysModal } from "@/components/public-holidays/modal";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useUserPermissions } from "@/hooks/store/user";
@@ -31,6 +34,7 @@ export const ProjectsBaseHeader = observer(function ProjectsBaseHeader() {
   const { allowPermissions } = useUserPermissions();
 
   const pathname = usePathname();
+  const [isHolidaysModalOpen, setIsHolidaysModalOpen] = useState(false);
   // auth
   const isAuthorizedUser = allowPermissions(
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
@@ -58,6 +62,17 @@ export const ProjectsBaseHeader = observer(function ProjectsBaseHeader() {
         <div className="hidden md:flex">
           <HeaderFilters />
         </div>
+        {!isArchived && (
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => setIsHolidaysModalOpen(true)}
+            prependIcon={<CalendarDays className="size-3.5" />}
+            className="items-center gap-1"
+          >
+            <span className="hidden sm:inline-block">Public holidays</span>
+          </Button>
+        )}
         {isAuthorizedUser && !isArchived ? (
           <Button
             variant="primary"
@@ -75,6 +90,7 @@ export const ProjectsBaseHeader = observer(function ProjectsBaseHeader() {
           <></>
         )}
       </Header.RightItem>
+      <WorkspacePublicHolidaysModal isOpen={isHolidaysModalOpen} onClose={() => setIsHolidaysModalOpen(false)} />
     </Header>
   );
 });

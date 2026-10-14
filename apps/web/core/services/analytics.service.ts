@@ -16,6 +16,7 @@ import type {
   TManhourReportResponse,
   TVelocityIndividualResponse,
   TVelocityProjectResponse,
+  TWorkspacePublicHoliday,
 } from "@plane/types";
 // services
 import { APIService } from "./api.service";
@@ -114,6 +115,48 @@ export class AnalyticsService extends APIService {
   ): Promise<TManhourReportResponse> {
     return this.get(`/api/workspaces/${workspaceSlug}/manhour-report/`, { params })
       .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async getPublicHolidays(
+    workspaceSlug: string,
+    params?: { start_date?: string; end_date?: string }
+  ): Promise<TWorkspacePublicHoliday[]> {
+    return this.get(`/api/workspaces/${workspaceSlug}/public-holidays/`, { params })
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async createPublicHoliday(
+    workspaceSlug: string,
+    payload: { date: string; name?: string }
+  ): Promise<TWorkspacePublicHoliday> {
+    return this.post(`/api/workspaces/${workspaceSlug}/public-holidays/`, payload)
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async updatePublicHoliday(
+    workspaceSlug: string,
+    holidayId: string,
+    payload: { name: string }
+  ): Promise<TWorkspacePublicHoliday> {
+    return this.patch(`/api/workspaces/${workspaceSlug}/public-holidays/${holidayId}/`, payload)
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
+  async deletePublicHoliday(workspaceSlug: string, holidayId: string): Promise<void> {
+    return this.delete(`/api/workspaces/${workspaceSlug}/public-holidays/${holidayId}/`)
+      .then(() => undefined)
       .catch((err) => {
         throw err?.response?.data;
       });

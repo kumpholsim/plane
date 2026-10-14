@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import type { TWorkspacePublicHoliday } from "../analytics";
 import type { TIssue } from "../issues/issue";
 import type { IIssueFilterOptions } from "../view-props";
 
@@ -192,7 +193,9 @@ export type TCycleCapacityResponse = {
   total_done_estimate_points: number;
   people_count: number;
   velocity_by_role: TCycleCapacityRoleVelocity[];
+  /** Count of workspace public holidays dated inside the sprint */
   public_holiday_days: number;
+  public_holidays: TWorkspacePublicHoliday[];
   sp_per_holiday_day: number;
   /** Fraction of average_velocity removed from max per day after cycle start */
   daily_decay_fraction: number;
@@ -204,6 +207,5 @@ export type TCycleCapacityResponse = {
 };
 
 export type TCycleCapacityUpdatePayload = {
-  public_holiday_days?: number;
   personal_holiday_days?: Record<string, number>;
 };

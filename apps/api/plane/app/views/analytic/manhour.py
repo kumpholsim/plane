@@ -11,8 +11,9 @@ from rest_framework.response import Response
 
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.views.base import BaseAPIView
-from plane.db.models import ManhourManualEntry, Project, Workspace
+from plane.db.models import ManhourManualEntry, Project, Workspace, WorkspacePublicHoliday
 from plane.utils.manhour_report import build_manhour_report, workspace_member_exists
+from plane.utils.public_holidays import serialize_public_holiday, workspace_public_holidays
 
 
 class WorkspaceManhourReportEndpoint(BaseAPIView):
@@ -99,4 +100,53 @@ class WorkspaceManhourEntryEndpoint(BaseAPIView):
         if entry is None:
             return Response({"error": "Entry does not exist"}, status=status.HTTP_404_NOT_FOUND)
         entry.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class WorkspacePublicHolidayEndpoint(BaseAPIView):
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
+    def get(self, request: HttpRequest, slug: str) -> Response:
+        start = parse_date(request.GET.get("start_date") or "")
+        end = parse_date(request.GET.get("end_date") or "")
+        return Response(workspace_public_holidays(slug, start, end), status=status.HTTP_200_OK)
+
+    @allow_permission([ROLE.ADMIN], level="WORKSPACE")
+    def post(self, request: HttpRequest, slug: str) -> Response:
+        try:
+            workspace = Workspace.objects.get(slug=slug)
+        except Workspace.DoesNotExist:
+            return Response({"error": "Workspace does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        holiday_date = parse_date(str(request.data.get("date") or ""))
+        if not holiday_date:
+            return Response({"error": "date is required (YYYY-MM-DD)"}, status=status.HTTP_400_BAD_REQUEST)
+        name = str(request.data.get("name") or "").strip()[:255]
+
+        holiday = WorkspacePublicHoliday.objects.filter(workspace=workspace, date=holiday_date).first()
+        if holiday is None:
+            holiday = WorkspacePublicHoliday.objects.create(
+                workspace=workspace, date=holiday_date, name=name, created_by=request.user
+            )
+            return Response(serialize_public_holiday(holiday), status=status.HTTP_201_CREATED)
+        if name and holiday.name != name:
+            holiday.name = name
+            holiday.save(update_fields=["name", "updated_at"])
+        return Response(serialize_public_holiday(holiday), status=status.HTTP_200_OK)
+
+    @allow_permission([ROLE.ADMIN], level="WORKSPACE")
+    def patch(self, request: HttpRequest, slug: str, holiday_id: UUID) -> Response:
+        holiday = WorkspacePublicHoliday.objects.filter(workspace__slug=slug, id=holiday_id).first()
+        if holiday is None:
+            return Response({"error": "Holiday does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        holiday.name = str(request.data.get("name") or "").strip()[:255]
+        holiday.updated_by = request.user
+        holiday.save(update_fields=["name", "updated_at", "updated_by"])
+        return Response(serialize_public_holiday(holiday), status=status.HTTP_200_OK)
+
+    @allow_permission([ROLE.ADMIN], level="WORKSPACE")
+    def delete(self, request: HttpRequest, slug: str, holiday_id: UUID) -> Response:
+        holiday = WorkspacePublicHoliday.objects.filter(workspace__slug=slug, id=holiday_id).first()
+        if holiday is None:
+            return Response({"error": "Holiday does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        holiday.delete(soft=False)
         return Response(status=status.HTTP_204_NO_CONTENT)

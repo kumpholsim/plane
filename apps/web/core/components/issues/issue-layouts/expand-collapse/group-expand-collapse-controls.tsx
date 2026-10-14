@@ -5,12 +5,16 @@
  */
 
 import { observer } from "mobx-react";
-import { ChevronsUpDown, Expand, FoldVertical, Shrink, UnfoldVertical } from "lucide-react";
+import { useParams } from "next/navigation";
+import { ChevronsUpDown, Expand, FoldVertical, LayoutGrid, Rows3, Shrink, UnfoldVertical } from "lucide-react";
+import { EIssueFilterType } from "@plane/constants";
 import { IconButton } from "@plane/propel/icon-button";
 import { Tooltip } from "@plane/propel/tooltip";
 import { EIssueLayoutTypes } from "@plane/types";
 import { useIssues } from "@/hooks/store/use-issues";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useIssuesActions } from "@/hooks/use-issues-actions";
+import { useIsStagedGateScrumban } from "@/hooks/use-workflow-mode";
 import { useBoardFullscreen } from "../kanban/board-fullscreen-context";
 import { useIssueExpandCollapse } from "./context";
 
@@ -41,14 +45,36 @@ export const GroupExpandCollapseControls = observer(function GroupExpandCollapse
   const { cycle, isAvailable, nextAction } = useIssueExpandCollapse();
   const storeType = useIssueStoreType();
   const { issuesFilter } = useIssues(storeType);
+  const { updateFilters } = useIssuesActions(storeType);
+  const { projectId } = useParams();
+  const isStagedGateScrumban = useIsStagedGateScrumban();
   const boardFullscreen = useBoardFullscreen();
   const layout = issuesFilter?.issueFilters?.displayFilters?.layout;
   const showBoardFullscreen = layout === EIssueLayoutTypes.KANBAN && !!boardFullscreen;
+  const showBoardViewToggle = layout === EIssueLayoutTypes.KANBAN && isStagedGateScrumban && !!projectId;
+  const isStoryBoardView = issuesFilter?.issueFilters?.displayFilters?.board_view === "story";
 
-  if (!isAvailable && !showBoardFullscreen) return null;
+  const toggleBoardView = () => {
+    if (!projectId) return;
+    void updateFilters(projectId.toString(), EIssueFilterType.DISPLAY_FILTERS, {
+      board_view: isStoryBoardView ? "swimlane" : "story",
+    });
+  };
+
+  if (!isAvailable && !showBoardFullscreen && !showBoardViewToggle) return null;
 
   return (
     <div className="flex items-center gap-1">
+      {showBoardViewToggle && (
+        <Tooltip tooltipContent={isStoryBoardView ? "Swimlane view" : "Story view"} position="bottom">
+          <IconButton
+            size="lg"
+            variant="secondary"
+            icon={isStoryBoardView ? Rows3 : LayoutGrid}
+            onClick={toggleBoardView}
+          />
+        </Tooltip>
+      )}
       {isAvailable && (
         <Tooltip tooltipContent={NEXT_ACTION_UI[nextAction].tooltip} position="bottom">
           <IconButton size="lg" variant="secondary" icon={NEXT_ACTION_UI[nextAction].icon} onClick={cycle} />

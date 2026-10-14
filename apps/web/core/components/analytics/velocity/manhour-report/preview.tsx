@@ -17,6 +17,8 @@ type Props = {
   to: Date;
   rows: TManhourReportRow[];
   averageDuration: string;
+  /** e.g. "Excludes 2 public holidays" when the range contains workspace holidays */
+  averageNote?: string | null;
   totalDuration: string;
   onExclude: (row: TManhourReportRow) => void;
   onMemberNameChange: (value: string) => void;
@@ -32,6 +34,7 @@ export function ManhourReportPreview(props: Props) {
     to,
     rows,
     averageDuration,
+    averageNote,
     totalDuration,
     onExclude,
     onMemberNameChange,
@@ -91,6 +94,7 @@ export function ManhourReportPreview(props: Props) {
             <div className="mt-1 text-24 font-semibold tabular-nums" style={{ color: MTEL_BRAND_COLOR }}>
               {averageDuration}
             </div>
+            {averageNote && <div className="mt-0.5 text-11 text-[#6B7280]">{averageNote}</div>}
           </div>
           <div
             className="border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3"

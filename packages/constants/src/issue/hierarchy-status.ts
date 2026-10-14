@@ -81,3 +81,12 @@ export const boardStateKeyFromExternalId = (externalId: string | null | undefine
   if (!externalId?.startsWith(HIERARCHY_BOARD_STATE_PREFIX)) return null;
   return externalId.slice(HIERARCHY_BOARD_STATE_PREFIX.length) as THierarchyBoardStateKey;
 };
+
+/** Story view board column for an L3 by the stage of its progress status (phase is ignored). */
+export const boardKeyForL3ProgressStatus = (progressStatus: string | null | undefined): THierarchyBoardStateKey => {
+  if (!progressStatus) return HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO;
+  if (progressStatus.endsWith("_in_progress")) return HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_IN_PROGRESS;
+  if (progressStatus.endsWith("_under_review")) return HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_UNDER_REVIEW;
+  if (/_done(_no_(dev|qa))?$/.test(progressStatus)) return HIERARCHY_BOARD_STATE_KEYS.DONE;
+  return HIERARCHY_BOARD_STATE_KEYS.DESIGN_DEV_TODO;
+};

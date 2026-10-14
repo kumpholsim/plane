@@ -12,7 +12,7 @@ from django.utils.dateparse import parse_date
 
 from plane.db.models import Issue, ManhourManualEntry, User, WorkspaceMember
 from plane.utils.issue_parent import HIERARCHY_LEVEL_SUB_TASK
-from plane.utils.manhour import manhour_from_estimate_value
+from plane.utils.public_holidays import workspace_public_holidays
 from plane.utils.velocity import member_project_ids
 
 
@@ -44,10 +44,6 @@ def _day_bounds(start, end):
 
 
 def _issue_hours(issue) -> float:
-    estimate_value = issue.estimate_point.value if issue.estimate_point_id and issue.estimate_point else None
-    converted = manhour_from_estimate_value(estimate_value)
-    if converted is not None:
-        return converted
     return _float_hours(issue.manhour)
 
 
@@ -70,9 +66,10 @@ def workspace_member_exists(slug: str, user_id) -> bool:
     return WorkspaceMember.objects.filter(workspace__slug=slug, member_id=user_id, is_active=True).exists()
 
 
-def _summarize(rows: list[dict], start, end) -> dict:
+def _summarize(rows: list[dict], start, end, holiday_count: int = 0) -> dict:
+    """Average daily hours divide by calendar days in range minus workspace public holidays."""
     total = sum(_float_hours(row.get("manhour")) for row in rows)
-    day_count = max(1, (end - start).days + 1)
+    day_count = max(1, (end - start).days + 1 - holiday_count)
     average = total / day_count
     return {
         "total_hours": round(total, 2),
@@ -81,6 +78,7 @@ def _summarize(rows: list[dict], start, end) -> dict:
         "average_daily_duration": format_duration_hms(average),
         "row_count": len(rows),
         "day_count": day_count,
+        "holiday_count": holiday_count,
     }
 
 
@@ -98,7 +96,7 @@ def _issue_rows(slug: str, project_ids, assignee_id, start, end, member_name: st
             issue_assignee__assignee_id=assignee_id,
             issue_assignee__deleted_at__isnull=True,
         )
-        .select_related("project", "estimate_point")
+        .select_related("project")
         .distinct()
     )
     rows = []
@@ -168,6 +166,7 @@ def build_manhour_report(slug: str, user, assignee_id: str, start_raw: str | Non
     rows = _issue_rows(slug, project_ids, assignee.id, start, end, member_name)
     rows.extend(_standalone_rows(slug, assignee.id, start, end, member_name))
     rows.sort(key=lambda row: (row["date"], row["created_at"] or "", row["id"]))
+    public_holidays = workspace_public_holidays(slug, start, end)
 
     return {
         "member": {
@@ -180,6 +179,7 @@ def build_manhour_report(slug: str, user, assignee_id: str, start_raw: str | Non
             "start_date": start.isoformat(),
             "end_date": end.isoformat(),
         },
-        "summary": _summarize(rows, start, end),
+        "summary": _summarize(rows, start, end, len(public_holidays)),
+        "public_holidays": public_holidays,
         "rows": rows,
     }

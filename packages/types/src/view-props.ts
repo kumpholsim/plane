@@ -162,7 +162,9 @@ export interface IIssueDisplayFilterOptions {
   show_empty_groups?: boolean;
   sub_issue?: boolean;
   /** Scrumban timeline: L2 parents with L3 children, or L3 parents with L4 children */
-  gantt_hierarchy?: "l2_l3" | "l3_l4";
+  gantt_hierarchy?: "l1_l2" | "l2_l3" | "l3_l4";
+  /** Scrumban board: L3 swimlane rows, or L3 story boxes placed by progress status */
+  board_view?: "swimlane" | "story";
 }
 export interface IIssueDisplayProperties {
   assignee?: boolean;

@@ -203,9 +203,20 @@ export type TManhourReportResponse = {
     total_duration: string;
     average_daily_duration: string;
     row_count: number;
+    /** Calendar days in range minus workspace public holidays (min 1) */
     day_count: number;
+    holiday_count: number;
   };
+  public_holidays: TWorkspacePublicHoliday[];
   rows: TManhourReportRow[];
+};
+
+/** Workspace-wide day off; deducts sprint capacity and manhour report working days */
+export type TWorkspacePublicHoliday = {
+  id: string;
+  /** YYYY-MM-DD */
+  date: string;
+  name: string;
 };
 
 export type TManhourManualEntryPayload = {

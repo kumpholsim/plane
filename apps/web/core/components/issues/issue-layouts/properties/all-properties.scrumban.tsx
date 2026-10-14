@@ -621,17 +621,6 @@ export const ScrumbanIssueProperties = observer(function ScrumbanIssueProperties
               </div>
             </WithDisplayPropertiesHOC>
           )}
-
-          {showManhour && (
-            // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
-            <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
-              <ManhourField
-                value={manhourField.value}
-                disabled={isReadOnly || manhourField.disabled}
-                onChange={(next) => void handleManhour(next)}
-              />
-            </div>
-          )}
         </>
       )}
     </div>

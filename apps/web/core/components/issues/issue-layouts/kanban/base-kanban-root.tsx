@@ -33,6 +33,7 @@ import type { IQuickActionProps, TRenderQuickActions } from "../list/list-view-t
 //components
 import { getSourceFromDropPayload } from "../utils";
 import { KanBan } from "./default";
+import { KanBanStoryView } from "./story-board";
 import { KanBanSwimLanes } from "./swimlanes";
 
 export type KanbanStoreType =
@@ -121,6 +122,8 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
   const userDisplayFilters = displayFilters || null;
 
   const KanBanView = sub_group_by ? KanBanSwimLanes : KanBan;
+  const isStoryBoardView =
+    lockStructuralFilters && !!sub_group_by && issuesFilter?.issueFilters?.displayFilters?.board_view === "story";
 
   const { enableInlineEditing, enableQuickAdd, enableIssueCreation } = issues?.viewFlags || {};
 
@@ -274,29 +277,47 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
         >
           <div className={`relative h-full min-w-full bg-surface-2 ${lockStructuralFilters ? "w-full" : "w-max"}`}>
             <div className={`h-full ${lockStructuralFilters ? "w-full" : "w-max"}`}>
-              <KanBanView
-                issuesMap={issueMap}
-                groupedIssueIds={groupedIssueIds ?? {}}
-                getGroupIssueCount={issues.getGroupIssueCount}
-                displayProperties={displayProperties}
-                sub_group_by={sub_group_by}
-                group_by={group_by}
-                orderBy={orderBy}
-                updateIssue={updateIssue}
-                quickActions={renderQuickActions}
-                handleCollapsedGroups={handleCollapsedGroups}
-                collapsedGroups={collapsedGroups}
-                enableQuickIssueCreate={enableQuickAdd}
-                showEmptyGroup={userDisplayFilters?.show_empty_groups ?? true}
-                quickAddCallback={quickAddIssue}
-                disableIssueCreation={!enableIssueCreation || !isEditingAllowed || isCompletedCycle}
-                canEditProperties={canEditProperties}
-                addIssuesToView={addIssuesToView}
-                scrollableContainerRef={scrollableContainerRef}
-                handleOnDrop={handleOnDrop}
-                loadMoreIssues={fetchMoreIssues}
-                isEpic={isEpic}
-              />
+              {isStoryBoardView ? (
+                <KanBanStoryView
+                  issuesMap={issueMap}
+                  groupedIssueIds={groupedIssueIds ?? {}}
+                  getGroupIssueCount={issues.getGroupIssueCount}
+                  displayProperties={displayProperties}
+                  updateIssue={updateIssue}
+                  collapsedGroups={collapsedGroups}
+                  handleCollapsedGroups={handleCollapsedGroups}
+                  loadMoreIssues={fetchMoreIssues}
+                  enableQuickIssueCreate={enableQuickAdd}
+                  quickAddCallback={quickAddIssue}
+                  disableIssueCreation={!enableIssueCreation || !isEditingAllowed || isCompletedCycle}
+                  canEditProperties={canEditProperties}
+                  isEpic={isEpic}
+                />
+              ) : (
+                <KanBanView
+                  issuesMap={issueMap}
+                  groupedIssueIds={groupedIssueIds ?? {}}
+                  getGroupIssueCount={issues.getGroupIssueCount}
+                  displayProperties={displayProperties}
+                  sub_group_by={sub_group_by}
+                  group_by={group_by}
+                  orderBy={orderBy}
+                  updateIssue={updateIssue}
+                  quickActions={renderQuickActions}
+                  handleCollapsedGroups={handleCollapsedGroups}
+                  collapsedGroups={collapsedGroups}
+                  enableQuickIssueCreate={enableQuickAdd}
+                  showEmptyGroup={userDisplayFilters?.show_empty_groups ?? true}
+                  quickAddCallback={quickAddIssue}
+                  disableIssueCreation={!enableIssueCreation || !isEditingAllowed || isCompletedCycle}
+                  canEditProperties={canEditProperties}
+                  addIssuesToView={addIssuesToView}
+                  scrollableContainerRef={scrollableContainerRef}
+                  handleOnDrop={handleOnDrop}
+                  loadMoreIssues={fetchMoreIssues}
+                  isEpic={isEpic}
+                />
+              )}
             </div>
           </div>
         </div>

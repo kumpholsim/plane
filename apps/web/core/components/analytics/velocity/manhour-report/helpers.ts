@@ -43,9 +43,10 @@ export function formatDurationHms(hours: number): string {
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-export function summarizeVisibleRows(rows: TManhourReportRow[], from: Date, to: Date) {
+/** Average divides by calendar days in range minus workspace public holidays (min 1). */
+export function summarizeVisibleRows(rows: TManhourReportRow[], from: Date, to: Date, holidayCount = 0) {
   const total = rows.reduce((sum, row) => sum + (row.manhour || 0), 0);
-  const dayCount = Math.max(1, differenceInCalendarDays(to, from) + 1);
+  const dayCount = Math.max(1, differenceInCalendarDays(to, from) + 1 - holidayCount);
   const average = total / dayCount;
   return {
     total_hours: Math.round(total * 100) / 100,
@@ -54,6 +55,7 @@ export function summarizeVisibleRows(rows: TManhourReportRow[], from: Date, to: 
     average_daily_duration: formatDurationHms(average),
     row_count: rows.length,
     day_count: dayCount,
+    holiday_count: holidayCount,
   };
 }
 
